@@ -4,7 +4,7 @@
 #include "timeManager.hpp"
 
 namespace {
-#if 0
+#if 1
 	const int MoveHorizon = 47; // 15分切れ負け用。
 	const float MaxRatio = 3.0; // 15分切れ負け用。
 	//const float MaxRatio = 5.0; // 15分 秒読み10秒用。

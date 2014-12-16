@@ -41,7 +41,7 @@
 #define MAKE_SEARCHED_BOOK
 #endif
 
-#if 1
+#if 0
 #define DENOUSEN_FINAL
 #endif
 

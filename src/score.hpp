@@ -26,7 +26,7 @@ inline bool exactOrUpper(const Bound st) {
 // 評価値
 enum Score {
 	ScoreZero          = 0,
-	ScoreDraw          = -45,
+	ScoreDraw          = 0,
 	ScoreMaxEvaluate   = 30000,
 	ScoreMateLong      = 30002,
 	ScoreMate1Ply      = 32599,
