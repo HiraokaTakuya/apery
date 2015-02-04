@@ -332,8 +332,9 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 
 	Ply currentPly = pos.gamePly();
 	while (ssCmd >> token) {
-		SetUpStates->push(StateInfo());
 		const Move move = usiToMove(pos, token);
+		if (move.isNone()) break;
+		SetUpStates->push(StateInfo());
 		pos.doMove(move, SetUpStates->top());
 		++currentPly;
 	}
