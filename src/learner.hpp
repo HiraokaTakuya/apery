@@ -87,9 +87,10 @@ public:
 		readBook(pos, ssCmd);
 		size_t threadNum;
 		ssCmd >> threadNum;
-		ssCmd >> depth_;
+		ssCmd >> minDepth_;
+		ssCmd >> maxDepth_;
 		std::cout << "thread_num: " << threadNum
-				  << "\nbase search depth: " << depth_ << std::endl;
+				  << "\nsearch depth min, max: " << minDepth_ << ", " << maxDepth_ << std::endl;
 		// 既に 1 つのSearcher, Positionが立ち上がっているので、指定した数 - 1 の Searcher, Position を立ち上げる。
 		threadNum = std::max<size_t>(0, threadNum - 1);
 		std::vector<Searcher> searchers(threadNum);
@@ -206,7 +207,7 @@ private:
 		return index_++;
 	}
 	void learnParse1Body(Position& pos, std::mt19937& mt) {
-		std::uniform_int_distribution<Ply> dist(depth_, depth_ + 1);
+		std::uniform_int_distribution<Ply> dist(minDepth_, maxDepth_);
 		const size_t endNum = bookMovesDatum_.size();
 		pos.searcher()->tt.clear();
 		for (size_t i = lockingIndexIncrement<true>(); i < endNum; i = lockingIndexIncrement<true>()) {
@@ -445,7 +446,8 @@ private:
 
 	std::mutex mutex_;
 	size_t index_;
-	Ply depth_;
+	Ply minDepth_;
+	Ply maxDepth_;
 	std::mt19937 mt_;
 	std::vector<std::mt19937> mts_;
 	std::vector<Position> positions_;
