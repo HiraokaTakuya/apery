@@ -74,16 +74,22 @@ public:
 	Move operator | (const Move rhs) const { return Move(*this) |= rhs; }
 	bool operator == (const Move rhs) const { return this->value() == rhs.value(); }
 	bool operator != (const Move rhs) const { return !(*this == rhs); }
+	bool operator < (const Move rhs) const { return this->value() < rhs.value(); } // for learn
 	std::string promoteFlagToStringUSI() const { return (this->isPromotion() ? "+" : ""); }
 	std::string toUSI() const;
 	std::string toCSA() const;
 
 	static Move moveNone() { return Move(MoveNone); }
 	static Move moveNull() { return Move(MoveNull); }
+	// 学習時に、正解の手のPV、その他の手のPVを MoveNone で区切りながら 1 次元配列に格納していく。
+	// 格納するその他のPVの最後に MovePVsEnd を格納する。それをフラグに次の指し手に遷移する。
+	// 正解のPV, MoveNone, その他0のPV, MoveNone, その他1のPV, MoveNone, MovePVsEnd という感じに並ぶ。
+	static Move movePVsEnd() { return Move(MovePVsEnd); }
 
 	static const u32 PromoteFlag = 1 << 14;
 	static const u32 MoveNone    = 0;
 	static const u32 MoveNull    = 129;
+	static const u32 MovePVsEnd  = 1 << 15; // for learn
 
 private:
 	u32 value_;

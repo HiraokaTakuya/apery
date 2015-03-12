@@ -22,20 +22,20 @@ void EvalList::set(const Position& pos) {
 		++nlist;														\
 	}
 
-	FOO(handB, HPawn  , Apery::f_hand_pawn  , Apery::e_hand_pawn  , Black);
-	FOO(handW, HPawn  , Apery::e_hand_pawn  , Apery::f_hand_pawn  , White);
-	FOO(handB, HLance , Apery::f_hand_lance , Apery::e_hand_lance , Black);
-	FOO(handW, HLance , Apery::e_hand_lance , Apery::f_hand_lance , White);
-	FOO(handB, HKnight, Apery::f_hand_knight, Apery::e_hand_knight, Black);
-	FOO(handW, HKnight, Apery::e_hand_knight, Apery::f_hand_knight, White);
-	FOO(handB, HSilver, Apery::f_hand_silver, Apery::e_hand_silver, Black);
-	FOO(handW, HSilver, Apery::e_hand_silver, Apery::f_hand_silver, White);
-	FOO(handB, HGold  , Apery::f_hand_gold  , Apery::e_hand_gold  , Black);
-	FOO(handW, HGold  , Apery::e_hand_gold  , Apery::f_hand_gold  , White);
-	FOO(handB, HBishop, Apery::f_hand_bishop, Apery::e_hand_bishop, Black);
-	FOO(handW, HBishop, Apery::e_hand_bishop, Apery::f_hand_bishop, White);
-	FOO(handB, HRook  , Apery::f_hand_rook  , Apery::e_hand_rook  , Black);
-	FOO(handW, HRook  , Apery::e_hand_rook  , Apery::f_hand_rook  , White);
+	FOO(handB, HPawn  , f_hand_pawn  , e_hand_pawn  , Black);
+	FOO(handW, HPawn  , e_hand_pawn  , f_hand_pawn  , White);
+	FOO(handB, HLance , f_hand_lance , e_hand_lance , Black);
+	FOO(handW, HLance , e_hand_lance , f_hand_lance , White);
+	FOO(handB, HKnight, f_hand_knight, e_hand_knight, Black);
+	FOO(handW, HKnight, e_hand_knight, f_hand_knight, White);
+	FOO(handB, HSilver, f_hand_silver, e_hand_silver, Black);
+	FOO(handW, HSilver, e_hand_silver, f_hand_silver, White);
+	FOO(handB, HGold  , f_hand_gold  , e_hand_gold  , Black);
+	FOO(handW, HGold  , e_hand_gold  , f_hand_gold  , White);
+	FOO(handB, HBishop, f_hand_bishop, e_hand_bishop, Black);
+	FOO(handW, HBishop, e_hand_bishop, f_hand_bishop, White);
+	FOO(handB, HRook  , f_hand_rook  , e_hand_rook  , Black);
+	FOO(handW, HRook  , e_hand_rook  , f_hand_rook  , White);
 #undef FOO
 
 	Bitboard bb = pos.bbOf(King).notThisAnd(pos.occupiedBB());

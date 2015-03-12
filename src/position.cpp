@@ -251,7 +251,7 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
 		handKey -= zobHand(hpTo, us);
 		boardKey += zobrist(ptTo, to, us);
 
-		prefetch(Searcher::tt.firstEntry(boardKey + handKey));
+		prefetch(csearcher()->tt.firstEntry(boardKey + handKey));
 
 		const int handnum = hand(us).numOf(hpTo);
 		const int listIndex = evalList_.squareHandToList[HandPieceToSquareHand[us][hpTo] + handnum];
@@ -325,7 +325,7 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
 
 			st_->material += (us == Black ? capturePieceScore(ptCaptured) : -capturePieceScore(ptCaptured));
 		}
-		prefetch(Searcher::tt.firstEntry(boardKey + handKey));
+		prefetch(csearcher()->tt.firstEntry(boardKey + handKey));
 		// Occupied は to, from の位置のビットを操作するよりも、
 		// Black と White の or を取る方が速いはず。
 		byTypeBB_[Occupied] = bbOf(Black) | bbOf(White);
@@ -1771,7 +1771,9 @@ void Position::set(const std::string& sfen, Thread* th) {
 	char token;
 	Square sq = A9;
 
+	Searcher* s = std::move(searcher_);
 	clear();
+	setSearcher(s);
 
 	// 盤上の駒
 	while (ss.get(token) && token != ' ') {

@@ -3,16 +3,15 @@
 #include "thread.hpp"
 #include "usi.hpp"
 
-ThreadPool g_threads;
-
-Thread::Thread() /*: splitPoints()*/ {
+Thread::Thread(Searcher* s) /*: splitPoints()*/ {
+    searcher = s;
 	exit = false;
 	searching = false;
 	splitPointsSize = 0;
 	maxPly = 0;
 	activeSplitPoint = nullptr;
 	activePosition = nullptr;
-	idx = g_threads.size();
+	idx = s->threads.size();
 
 	// move constructor
 	handle = std::thread(&Thread::idleLoop, this);
@@ -25,7 +24,6 @@ Thread::~Thread() {
 	handle.join(); // Wait for thread termination
 }
 
-extern void checkTime();
 void TimerThread::idleLoop() {
 	while (!exit) {
 		{
@@ -35,7 +33,7 @@ void TimerThread::idleLoop() {
 			}
 		}
 		if (msec) {
-			checkTime();
+			searcher->checkTime();
 		}
 	}
 }
@@ -47,7 +45,7 @@ void MainThread::idleLoop() {
 			thinking = false;
 			while (!thinking && !exit) {
 				// UI 関連だから要らないのかも。
-				g_threads.sleepCond_.notify_one();
+				searcher->threads.sleepCond_.notify_one();
 				sleepCond.wait(lock);
 			}
 		}
@@ -57,7 +55,7 @@ void MainThread::idleLoop() {
 		}
 
 		searching = true;
-		Searcher::think();
+		searcher->think();
 		assert(searching);
 		searching = false;
 	}
@@ -93,11 +91,11 @@ void Thread::waitFor(volatile const bool& b) {
 	sleepCond.wait(lock, [&] { return b; });
 }
 
-void ThreadPool::init() {
+void ThreadPool::init(Searcher* s) {
 	sleepWhileIdle_ = true;
-	timer_ = new TimerThread();
-	push_back(new MainThread());
-	readUSIOptions();
+	timer_ = new TimerThread(s);
+	push_back(new MainThread(s));
+	readUSIOptions(s);
 }
 
 ThreadPool::~ThreadPool() {
@@ -109,15 +107,15 @@ ThreadPool::~ThreadPool() {
 	}
 }
 
-void ThreadPool::readUSIOptions() {
-	maxThreadsPerSplitPoint_ = g_options["Max_Threads_per_Split_Point"];
-	minimumSplitDepth_       = g_options["Min_Split_Depth"] * OnePly;
-	const size_t requested   = g_options["Threads"];
+void ThreadPool::readUSIOptions(Searcher* s) {
+	maxThreadsPerSplitPoint_ = s->options["Max_Threads_per_Split_Point"];
+	minimumSplitDepth_       = s->options["Min_Split_Depth"] * OnePly;
+	const size_t requested   = s->options["Threads"];
 
 	assert(0 < requested);
 
 	while (size() < requested) {
-		push_back(new Thread());
+		push_back(new Thread(s));
 	}
 
 	while (requested < size()) {
@@ -147,24 +145,29 @@ void ThreadPool::waitForThinkFinished() {
 }
 
 void ThreadPool::startThinking(const Position& pos, const LimitsType& limits,
-							   const std::vector<Move>& searchMoves, StateStackPtr&& states)
+							   const std::vector<Move>& searchMoves)
 {
 	waitForThinkFinished();
-	Searcher::searchTimer.restart();
+	pos.searcher()->searchTimer.restart();
 
-	Searcher::signals.stopOnPonderHit = Searcher::signals.firstRootMove = false;
-	Searcher::signals.stop = Searcher::signals.failedLowAtRoot = false;
+	pos.searcher()->signals.stopOnPonderHit = pos.searcher()->signals.firstRootMove = false;
+	pos.searcher()->signals.stop = pos.searcher()->signals.failedLowAtRoot = false;
 
-	g_rootPosition = pos;
-	Searcher::limits = limits;
-	Searcher::setUpStates = std::move(states);
-	Searcher::rootMoves.clear();
+	pos.searcher()->rootPosition = pos;
+	pos.searcher()->limits = limits;
+	pos.searcher()->rootMoves.clear();
 
-	for (MoveList<Legal> ml(pos); !ml.end(); ++ml) {
+#if defined LEARN
+	const MoveType MT = LegalAll;
+#else
+	const MoveType MT = Legal;
+#endif
+
+	for (MoveList<MT> ml(pos); !ml.end(); ++ml) {
 		if (searchMoves.empty()
 			|| std::find(searchMoves.begin(), searchMoves.end(), ml.move()) != searchMoves.end())
 		{
-			Searcher::rootMoves.push_back(RootMove(ml.move()));
+			pos.searcher()->rootMoves.push_back(RootMove(ml.move()));
 		}
 	}
 
@@ -180,7 +183,7 @@ void Thread::split(Position& pos, SearchStack* ss, const Score alpha, const Scor
 	assert(pos.isOK());
 	assert(bestScore <= alpha && alpha < beta && beta <= ScoreInfinite);
 	assert(-ScoreInfinite < bestScore);
-	assert(g_threads.minSplitDepth() <= depth);
+	assert(searcher->threads.minSplitDepth() <= depth);
 
 	assert(searching);
 	assert(splitPointsSize < MaxSplitPointsPerThread);
@@ -205,7 +208,7 @@ void Thread::split(Position& pos, SearchStack* ss, const Score alpha, const Scor
 	sp.cutoff = false;
 	sp.ss = ss;
 
-	g_threads.mutex_.lock();
+	searcher->threads.mutex_.lock();
 	sp.mutex.lock();
 
 	++splitPointsSize;
@@ -216,8 +219,8 @@ void Thread::split(Position& pos, SearchStack* ss, const Score alpha, const Scor
 	size_t slavesCount = 1;
 	Thread* slave;
 
-	while ((slave = g_threads.availableSlave(this)) != nullptr
-		   && ++slavesCount <= g_threads.maxThreadsPerSplitPoint_ && !Fake)
+	while ((slave = searcher->threads.availableSlave(this)) != nullptr
+		   && ++slavesCount <= searcher->threads.maxThreadsPerSplitPoint_ && !Fake)
 	{
 		sp.slavesMask |= UINT64_C(1) << slave->idx;
 		slave->activeSplitPoint = &sp;
@@ -227,11 +230,11 @@ void Thread::split(Position& pos, SearchStack* ss, const Score alpha, const Scor
 
 	if (1 < slavesCount || Fake) {
 		sp.mutex.unlock();
-		g_threads.mutex_.unlock();
+		searcher->threads.mutex_.unlock();
 		Thread::idleLoop();
 		assert(!searching);
 		assert(!activePosition);
-		g_threads.mutex_.lock();
+		searcher->threads.mutex_.lock();
 		sp.mutex.lock();
 	}
 
@@ -243,7 +246,7 @@ void Thread::split(Position& pos, SearchStack* ss, const Score alpha, const Scor
 	bestMove = sp.bestMove;
 	bestScore = sp.bestScore;
 
-	g_threads.mutex_.unlock();
+	searcher->threads.mutex_.unlock();
 	sp.mutex.unlock();
 }
 

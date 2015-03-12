@@ -139,9 +139,11 @@ using KKPType    = int32_t;
 using MidKPPType = int32_t;
 using MidKKPType = int32_t;
 using MidKKType  = int32_t;
+using MidKPType  = int32_t;
 using OutKPPType = int16_t;
 using OutKKPType = int32_t;
 using OutKKType  = int32_t;
+using OutKPType  = int32_t;
 KPPType pc_on_sq[nsquare][fe_end*(fe_end+1)/2];
 KKPType kkp[nsquare][nsquare][kkp_end];
 
@@ -149,11 +151,13 @@ MidKPPType mid_pc_on_sq[nsquare][fe_end*(fe_end+1)/2];
 MidKKPType mid_kkp[nsquare][nsquare][kkp_end];
 MidKKPType mid_new_kkp[nsquare][nsquare][fe_end];
 MidKKType  mid_kk[nsquare][nsquare];
+MidKPType  mid_kp[nsquare][fe_end];
 
 OutKPPType out_pc_on_sq[nsquare][fe_end*(fe_end+1)/2];
 //OutKKPType out_kkp[nsquare][nsquare][kkp_end];
 OutKKPType out_new_kkp[nsquare][nsquare][fe_end];
 OutKKType  out_kk[nsquare][nsquare];
+MidKPType  out_kp[nsquare][fe_end];
 
 #define PcOnSq(k,i)         pc_on_sq[k][(i)*((i)+3)/2]
 #define PcPcOnSq(k,i,j)     pc_on_sq[k][(i)*((i)+1)/2+(j)]
@@ -292,6 +296,24 @@ void convertFV() {
 		}
 	}
 
+	// KP 差分値化
+	for (Square ksq = A9; ksq < nsquare; ++ksq) {
+		for (FVIndex ihand0 : Hand0FVIndex) {
+			for (int i = 18; 1 < i; --i) {
+				if (4 < i && f_hand_lance  <= ihand0) continue;
+				if (2 < i && f_hand_bishop <= ihand0) continue;
+				MidPcOnSq(ksq, ihand0 + i) -= MidPcOnSq(ksq, ihand0 + i - 1);
+			}
+		}
+	}
+
+	// KP を KP 用の配列に格納
+	for (Square ksq = A9; ksq < nsquare; ++ksq) {
+		for (FVIndex i = f_hand_pawn; i < fe_end; ++i) {
+			mid_kp[ksq][i] = MidPcOnSq(ksq, i);
+		}
+	}
+
 	// KMN を差分化する。
 	for (Square ksq = A9; ksq < nsquare; ++ksq) {
 		for (FVIndex ihand0 : Hand0FVIndex) {
@@ -324,17 +346,9 @@ void convertFV() {
 		for (Square ksqW = A9; ksqW < nsquare; ++ksqW) {
 			auto handcopy = [&](const int handnum, const FVIndex kkp_hand_index) {
 				for (int i = 0; i < handnum; ++i) {
-					const auto fe_pair = g_kkpToKP[kkp_hand_index];
 					if (i != 0) {
-						mid_kkp[ksqB][ksqW][kkp_hand_index + i] += MidPcOnSq(ksqB, fe_pair.first + i) - MidPcOnSq(Inv(ksqW), fe_pair.second + i);
 						mid_kkp[ksqB][ksqW][kkp_hand_index + i] -= kkp[ksqB][ksqW][kkp_hand_index];
 					}
-				}
-			};
-			auto boardcopy = [&](const Square sq_ini, const FVIndex kkp_index) {
-				for (Square sq = sq_ini; sq < nsquare; ++sq) {
-					const auto fe_pair = g_kkpToKP[kkp_index];
-					mid_kkp[ksqB][ksqW][kkp_index + sq] += MidPcOnSq(ksqB, fe_pair.first + sq) - MidPcOnSq(Inv(ksqW), fe_pair.second + Inv(sq));
 				}
 			};
 
@@ -345,21 +359,14 @@ void convertFV() {
 			handcopy( 5, kkp_hand_gold  );
 			handcopy( 3, kkp_hand_bishop);
 			handcopy( 3, kkp_hand_rook  );
-
-			boardcopy(A8, kkp_pawn  );
-			boardcopy(A8, kkp_lance );
-			boardcopy(A7, kkp_knight);
-			boardcopy(A9, kkp_silver);
-			boardcopy(A9, kkp_gold  );
-			boardcopy(A9, kkp_bishop);
-			boardcopy(A9, kkp_horse );
-			boardcopy(A9, kkp_rook  );
-			boardcopy(A9, kkp_dragon);
 		}
 	}
 
 	// KP = 0
-	// KP は KKP に足し込んだので、評価値の差分計算時に KP が邪魔にならないように 0 にしておく。
+	// 評価値の差分計算時に KP が邪魔にならないように 0 にしておく。
+	// 対局時は KP は KKP に足し込んでおけば良いが、
+	// 学習に使う際に KP と KKP それぞれの値を知りたい場合もあるので、
+	// KP を KKP に足し込まず、別途ファイルに出力しておく。
 	for (Square ksq = A9; ksq < nsquare; ++ksq) {
 		for (FVIndex i = f_hand_pawn; i < fe_end; ++i) {
 			MidPcOnSq(ksq, i) = 0;
@@ -453,8 +460,10 @@ int main(int argc, char* argv[]) {
 //	std::copy(&(***std::begin(mid_kkp     )), &(***std::end(mid_kkp     )), &(***std::begin(out_kkp     )));
 	std::copy(&(***std::begin(mid_new_kkp )), &(***std::end(mid_new_kkp )), &(***std::begin(out_new_kkp )));
 	std::copy(&(** std::begin(mid_kk      )), &(** std::end(mid_kk      )), &(** std::begin(out_kk      )));
+	std::copy(&(** std::begin(mid_kp      )), &(** std::end(mid_kp      )), &(** std::begin(out_kp      )));
 
 	ofs.write(reinterpret_cast<char*>(&out_pc_on_sq[0][0]  ), sizeof(out_pc_on_sq));
 	ofs.write(reinterpret_cast<char*>(&out_new_kkp[0][0][0]), sizeof(out_new_kkp ));
 	ofs.write(reinterpret_cast<char*>(&out_kk[0][0]        ), sizeof(out_kk      ));
+	ofs.write(reinterpret_cast<char*>(&out_kp[0][0]        ), sizeof(out_kp      ));
 }

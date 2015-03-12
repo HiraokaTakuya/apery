@@ -5,6 +5,7 @@
 #include "usi.hpp"
 #include "thread.hpp"
 #include "tt.hpp"
+#include "search.hpp"
 
 #if defined FIND_MAGIC
 // Magic Bitboard の Magic Number を求める為のソフト
@@ -34,10 +35,9 @@ int main() {
 int main(int argc, char* argv[]) {
 	initTable();
 	Position::initZobrist();
-	g_threads.init();
-	Searcher::tt.setSize(g_options["USI_Hash"]);
-
-	doUSICommandLoop(argc, argv);
+	auto s = std::unique_ptr<Searcher>(new Searcher);
+	s->init();
+	s->doUSICommandLoop(argc, argv);
 }
 
 #endif

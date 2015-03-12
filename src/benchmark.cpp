@@ -4,15 +4,19 @@
 #include "position.hpp"
 #include "search.hpp"
 
-void setPosition(Position& pos, std::istringstream& ssCmd);
-void go(const Position& pos, std::istringstream& ssCmd);
-
 // 今はベンチマークというより、PGO ビルドの自動化の為にある。
 void benchmark(Position& pos) {
 	std::string token;
 	LimitsType limits;
 
-	g_options["Threads"] = std::string("1");
+	std::string options[] = {"name Threads value 1",
+							 "name MultiPV value 1",
+							 "name OwnBook value false",
+							 "name Max_Random_Score_Diff value 0"};
+	for (auto& str : options) {
+		std::istringstream is(str);
+		pos.searcher()->setOption(is);
+	}
 
 	std::ifstream ifs("benchmark.sfen");
 	std::string sfen;
@@ -22,5 +26,6 @@ void benchmark(Position& pos) {
 		setPosition(pos, ss_sfen);
 		std::istringstream ss_go("byoyomi 10000");
 		go(pos, ss_go);
+		pos.searcher()->threads.waitForThinkFinished();
 	}
 }

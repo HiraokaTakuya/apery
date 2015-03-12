@@ -84,12 +84,12 @@ void TimeManager::pvInstability(const int currChanges, const int prevChanges) {
 		currChanges * (optimumSearchTime_ / 2) + prevChanges * (optimumSearchTime_ / 3);
 }
 
-void TimeManager::init(LimitsType& limits, const Ply currentPly, const Color us) {
-	const int emergencyMoveHorizon = g_options["Emergency_Move_Horizon"];
-	const int emergencyBaseTime    = g_options["Emergency_Base_Time"];
-	const int emergencyMoveTime    = g_options["Emergency_Move_Time"];
-	const int minThinkingTime      = g_options["Minimum_Thinking_Time"];
-    const int slowMover            = g_options["Slow_Mover"];
+void TimeManager::init(LimitsType& limits, const Ply currentPly, const Color us, Searcher* s) {
+	const int emergencyMoveHorizon = s->options["Emergency_Move_Horizon"];
+	const int emergencyBaseTime    = s->options["Emergency_Base_Time"];
+	const int emergencyMoveTime    = s->options["Emergency_Move_Time"];
+	const int minThinkingTime      = s->options["Minimum_Thinking_Time"];
+    const int slowMover            = s->options["Slow_Mover"];
 
 	unstablePVExtraTime_ = 0;
 	optimumSearchTime_ = maximumSearchTime_ = limits.time[us];
@@ -110,7 +110,7 @@ void TimeManager::init(LimitsType& limits, const Ply currentPly, const Color us)
 		maximumSearchTime_ = std::min(maximumSearchTime_, t2);
 	}
 
-	if (g_options["USI_Ponder"]) {
+	if (s->options["USI_Ponder"]) {
 		optimumSearchTime_ += optimumSearchTime_ / 4;
 	}
 

@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <set>
+#include <unordered_map>
 #include <random>
 #include <thread>
 #include <mutex>
@@ -199,6 +201,15 @@ enum SyncCout {
 std::ostream& operator << (std::ostream& os, SyncCout sc);
 #define SYNCCOUT std::cout << IOLock
 #define SYNCENDL std::endl << IOUnlock
+
+#if defined LEARN
+#undef SYNCCOUT
+#undef SYNCENDL
+class Eraser {};
+extern Eraser SYNCCOUT;
+extern Eraser SYNCENDL;
+template <typename T> Eraser& operator << (Eraser& temp, const T&) { return temp; }
+#endif
 
 // N 回ループを展開させる。t は lambda で書くと良い。
 // こんな感じに書くと、lambda がテンプレート引数の数値の分だけ繰り返し生成される。

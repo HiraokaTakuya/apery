@@ -2,15 +2,35 @@
 #define THREAD_HPP
 
 #include "common.hpp"
-#include "movePicker.hpp"
-#include "search.hpp"
 #include "evaluate.hpp"
 #include "usi.hpp"
+#include "tt.hpp"
 
 const int MaxThreads = 64;
 const int MaxSplitPointsPerThread = 8;
 
 struct Thread;
+struct SearchStack;
+class MovePicker;
+
+enum NodeType {
+	Root, PV, NonPV, SplitPointRoot, SplitPointPV, SplitPointNonPV
+};
+
+// 時間や探索深さの制限を格納する為の構造体
+struct LimitsType {
+	LimitsType() { memset(this, 0, sizeof(LimitsType)); }
+	bool useTimeManagement() const { return !(depth | nodes | moveTime | static_cast<int>(infinite)); }
+
+	int time[ColorNum];
+	int increment[ColorNum];
+	int movesToGo;
+	Ply depth;
+	u32 nodes;
+	int moveTime;
+	bool infinite;
+	bool ponder;
+};
 
 struct SplitPoint {
 	const Position* pos;
@@ -36,7 +56,7 @@ struct SplitPoint {
 };
 
 struct Thread {
-	Thread();
+	explicit Thread(Searcher* s);
 	virtual ~Thread();
 
 	virtual void idleLoop();
@@ -61,46 +81,37 @@ struct Thread {
 	volatile int splitPointsSize;
 	volatile bool searching;
 	volatile bool exit;
+    Searcher* searcher;
 };
 
 struct MainThread : public Thread {
-	MainThread() : thinking(true) {}
+	explicit MainThread(Searcher* s) : Thread(s), thinking(true) {}
 	virtual void idleLoop();
 	volatile bool thinking;
 };
 
 struct TimerThread : public Thread {
-	TimerThread() : msec(0) {}
+	explicit TimerThread(Searcher* s) : Thread(s), msec(0) {}
 	virtual void idleLoop();
 	int msec;
 };
 
 class ThreadPool : public std::vector<Thread*> {
 public:
-	void init();
+	void init(Searcher* s);
 	~ThreadPool();
 
 	MainThread* mainThread() { return static_cast<MainThread*>((*this)[0]); }
 	Depth minSplitDepth() const { return minimumSplitDepth_; }
 	TimerThread* timerThread() { return timer_; }
-
-	// 一箇所でしか呼ばないので、FORCE_INLINE
-	FORCE_INLINE void wakeUp() {
-		for (size_t i = 0; i < size(); ++i) {
-			(*this)[i]->maxPly = 0;
-		}
-		sleepWhileIdle_ = g_options["Use_Sleeping_Threads"];
-	}
-	// 一箇所でしか呼ばないので、FORCE_INLINE
-	FORCE_INLINE void sleep() {
-		sleepWhileIdle_ = true;
-	}
-	void readUSIOptions();
+	void wakeUp(Searcher* s);
+	void sleep();
+	void readUSIOptions(Searcher* s);
 	Thread* availableSlave(Thread* master) const;
 	void setTimer(const int msec);
 	void waitForThinkFinished();
 	void startThinking(const Position& pos, const LimitsType& limits,
-					   const std::vector<Move>& searchMoves, StateStackPtr&& states);
+					   const std::vector<Move>& searchMoves);
 
 	bool sleepWhileIdle_;
 	size_t maxThreadsPerSplitPoint_;
@@ -111,7 +122,5 @@ private:
 	TimerThread* timer_;
 	Depth minimumSplitDepth_;
 };
-
-extern ThreadPool g_threads;
 
 #endif // #ifndef THREAD_HPP

@@ -1,6 +1,6 @@
 COMPILER = g++
 #COMPILER = mpicxx
-CFLAGS   = -std=c++11 -fno-exceptions -fno-rtti -Wextra -Ofast #-MMD -MP
+CFLAGS   = -std=c++11 -fno-exceptions -fno-rtti -Wextra -Ofast -MMD -MP
 LDFLAGS  = -lpthread #-lboost_mpi -lboost_serialization
 LIBS     =
 INCLUDE  = #-I../include

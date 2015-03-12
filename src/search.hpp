@@ -5,6 +5,7 @@
 #include "pieceScore.hpp"
 #include "timeManager.hpp"
 #include "tt.hpp"
+#include "thread.hpp"
 
 class Position;
 struct SplitPoint;
@@ -20,25 +21,6 @@ struct SearchStack {
 	bool skipNullMove;
 	Score staticEvalRaw; // 評価関数の差分計算用、値が入っていないときは INT_MAX にしておく。
 						 // 常に Black の評価値を入れておく。
-};
-
-enum NodeType {
-	Root, PV, NonPV, SplitPointRoot, SplitPointPV, SplitPointNonPV
-};
-
-// 時間や探索深さの制限を格納する為の構造体
-struct LimitsType {
-	LimitsType() { memset(this, 0, sizeof(LimitsType)); }
-	bool useTimeManagement() const { return !(depth | nodes | moveTime | static_cast<int>(infinite)); }
-
-	int time[ColorNum];
-	int increment[ColorNum];
-	int movesToGo;
-	Ply depth;
-	u32 nodes;
-	int moveTime;
-	bool infinite;
-	bool ponder;
 };
 
 struct SignalsType {
@@ -114,38 +96,47 @@ typedef Stats<true>  Gains;
 class TranspositionTable;
 
 struct Searcher {
-	static volatile SignalsType signals;
-	static LimitsType limits;
-	static std::vector<Move> searchMoves;
-	static Time searchTimer;
-	static StateStackPtr setUpStates;
-	static std::vector<RootMove> rootMoves;
+	// static メンバ関数からだとthis呼べないので代わりに thisptr を使う。
+	// static じゃないときは this を入れることにする。
+	STATIC Searcher* thisptr;
+	STATIC volatile SignalsType signals;
+	STATIC LimitsType limits;
+	STATIC std::vector<Move> searchMoves;
+	STATIC Time searchTimer;
+	STATIC StateStackPtr setUpStates;
+	STATIC std::vector<RootMove> rootMoves;
 
-	static size_t pvSize;
-	static size_t pvIdx;
-	static TimeManager timeManager;
-	static Ply bestMoveChanges;
-	static History history;
-	static Gains gains;
-	static TranspositionTable tt;
+	STATIC size_t pvSize;
+	STATIC size_t pvIdx;
+	STATIC TimeManager timeManager;
+	STATIC Ply bestMoveChanges;
+	STATIC History history;
+	STATIC Gains gains;
+	STATIC TranspositionTable tt;
 
-	static void idLoop(Position& pos);
-	static std::string pvInfoToUSI(Position& pos, const Ply depth, const Score alpha, const Score beta);
-	template <NodeType NT, bool INCHECK>
-	static Score qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth);
 #if defined INANIWA_SHIFT
-	static void detectInaniwa(const Position& pos);
+	STATIC InaniwaFlag inaniwaFlag;
+#endif
+	STATIC Position rootPosition;
+	STATIC ThreadPool threads;
+	STATIC OptionsMap options;
+
+	STATIC void init();
+	STATIC void idLoop(Position& pos);
+	STATIC std::string pvInfoToUSI(Position& pos, const Ply depth, const Score alpha, const Score beta);
+	template <NodeType NT, bool INCHECK>
+	STATIC Score qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth);
+#if defined INANIWA_SHIFT
+	STATIC void detectInaniwa(const Position& pos);
 #endif
 	template <NodeType NT>
-	static Score search(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth, const bool cutNode);
-	static void think();
-};
-#if defined INANIWA_SHIFT
-extern InaniwaFlag g_inaniwaFlag;
-#endif
-extern Position g_rootPosition;
+	STATIC Score search(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth, const bool cutNode);
+	STATIC void think();
+    STATIC void checkTime();
 
-extern bool g_inaniwaGame;
+	STATIC void doUSICommandLoop(int argc, char* argv[]);
+	STATIC void setOption(std::istringstream& ssCmd);
+};
 
 void initSearchTable();
 

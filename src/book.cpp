@@ -3,9 +3,7 @@
 #include "move.hpp"
 #include "usi.hpp"
 #include "thread.hpp"
-
-// 定跡生成時に探索を行い、score を得る為に必要。
-void go(const Position& pos, std::istringstream& ssCmd);
+#include "search.hpp"
 
 MT64bit Book::mt64bit_; // 定跡のhash生成用なので、seedは固定でデフォルト値を使う。
 Key Book::ZobPiece[PieceNone][SquareNum];
@@ -79,18 +77,9 @@ void Book::binary_search(const Key key) {
 	seekg(low * sizeof(BookEntry), std::ios_base::beg);
 }
 
-Key Book::bookKey(const Position& pos, const bool inaniwaBook) {
+Key Book::bookKey(const Position& pos) {
 	Key key = 0;
 	Bitboard bb = pos.occupiedBB();
-
-	if (inaniwaBook) {
-		// 自陣から5段目までと、角の位置のみから key を生成する。
-		const Color us = pos.turn();
-		const Rank TRank6 = (us == Black ? Rank6 : Rank4);
-		const Bitboard TRank1_5BB = inFrontMask(oppositeColor(us), TRank6);
-		bb &= TRank1_5BB;
-		bb |= pos.bbOf(Bishop);
-	}
 
 	while (bb.isNot0()) {
 		const Square sq = bb.firstOneFromI9();
@@ -106,13 +95,13 @@ Key Book::bookKey(const Position& pos, const bool inaniwaBook) {
 	return key;
 }
 
-std::tuple<Move, Score> Book::probe(const Position& pos, const std::string& fName, const bool pickBest, const bool inaniwaBook) {
+std::tuple<Move, Score> Book::probe(const Position& pos, const std::string& fName, const bool pickBest) {
 	BookEntry entry;
 	u16 best = 0;
 	u32 sum = 0;
 	Move move = Move::moveNone();
-	const Key key = bookKey(pos, inaniwaBook);
-	const Score min_book_score = static_cast<Score>(static_cast<int>(g_options["Min_Book_Score"]));
+	const Key key = bookKey(pos);
+	const Score min_book_score = static_cast<Score>(static_cast<int>(pos.searcher()->options["Min_Book_Score"]));
 	Score score;
 
 	if (fileName_ != fName && !open(fName.c_str())) {
@@ -161,7 +150,7 @@ inline bool countCompare(const BookEntry& b1, const BookEntry& b2) {
 }
 
 #if !defined MINIMUL
-void makeBook(Position& pos, const bool inaniwaBook) {
+void makeBook(Position& pos) {
 	std::ifstream ifs("../book.sfen", std::ios::binary);
 	std::string token;
 	std::string line;
@@ -181,7 +170,7 @@ void makeBook(Position& pos, const bool inaniwaBook) {
 				sfen += token + " ";
 			}
 		}
-		pos.set(sfen, g_threads.mainThread());
+		pos.set(sfen, pos.searcher()->threads.mainThread());
 		StateStackPtr SetUpStates = StateStackPtr(new std::stack<StateInfo>());
 		Ply currentPly = pos.gamePly();
 		while (ss >> token) {
@@ -191,7 +180,7 @@ void makeBook(Position& pos, const bool inaniwaBook) {
 				std::cout << "!!! Illegal move = " << token << " !!!" << std::endl;
 				break;
 			}
-			const Key key = Book::bookKey(pos, inaniwaBook);
+			const Key key = Book::bookKey(pos);
 			bool isFind = false;
 			if (bookMap.find(key) != bookMap.end()) {
 				for (auto& elem : bookMap[key]) {
@@ -235,7 +224,7 @@ void makeBook(Position& pos, const bool inaniwaBook) {
 	}
 #endif
 
-	std::ofstream ofs((inaniwaBook ? "inaniwabook.bin" : "book.bin"), std::ios::binary);
+	std::ofstream ofs("book.bin", std::ios::binary);
 	for (auto& elem : bookMap) {
 		for (auto& elel : elem.second) {
 			ofs.write(reinterpret_cast<char*>(&(elel)), sizeof(BookEntry));
@@ -244,8 +233,8 @@ void makeBook(Position& pos, const bool inaniwaBook) {
 
 	std::cout << "book making was done" << std::endl;
 }
-void makeBookCSA1Line(Position& pos, const bool inaniwaBook) {
-	std::ifstream ifs((inaniwaBook ? "../utf8inaniwakifu.csa" : "../2chkifu/2013/utf82chkifu.csa"), std::ios::binary);
+void makeBookCSA1Line(Position& pos) {
+	std::ifstream ifs("../2chkifu/2013/utf82chkifu.csa", std::ios::binary);
 	std::string line;
 	std::map<Key, std::vector<BookEntry> > bookMap;
 
@@ -260,16 +249,15 @@ void makeBookCSA1Line(Position& pos, const bool inaniwaBook) {
 		const std::string gote = elem;
 		ss >> elem; // (0:引き分け,1:先手の勝ち,2:後手の勝ち)
 		const Color winner = (elem == "1" ? Black : elem == "2" ? White : ColorNum);
-		const Color inaniwaColor = (sente == "Inaniwa" ? Black : gote == "Inaniwa" ? White : ColorNum);
 		// 勝った方の指し手を記録していく。
 		// 又は稲庭戦法側を記録していく。
-		const Color saveColor = (inaniwaBook ? inaniwaColor : winner);
+		const Color saveColor = winner;
 
 		if (!std::getline(ifs, line)) {
 			std::cout << "!!! header only !!!" << std::endl;
 			return;
 		}
-		pos.set(DefaultStartPositionSFEN, g_threads.mainThread());
+		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
 		StateStackPtr SetUpStates = StateStackPtr(new std::stack<StateInfo>());
 		while (!line.empty()) {
 			const std::string moveStrCSA = line.substr(0, 6);
@@ -282,7 +270,7 @@ void makeBookCSA1Line(Position& pos, const bool inaniwaBook) {
 			line.erase(0, 6); // 先頭から6文字削除
 			if (pos.turn() == saveColor) {
 				// 先手、後手の内、片方だけを記録する。
-				const Key key = Book::bookKey(pos, inaniwaBook);
+				const Key key = Book::bookKey(pos);
 				bool isFind = false;
 				if (bookMap.find(key) != bookMap.end()) {
 					for (std::vector<BookEntry>::iterator it = bookMap[key].begin();
@@ -306,13 +294,13 @@ void makeBookCSA1Line(Position& pos, const bool inaniwaBook) {
 
 					std::istringstream ssCmd("byoyomi 1000");
 					go(pos, ssCmd);
-					g_threads.waitForThinkFinished();
+					pos.searcher()->threads.waitForThinkFinished();
 
 					pos.undoMove(move);
 					SetUpStates->pop();
 
 					// doMove してから search してるので点数が反転しているので直す。
-					const Score score = -Searcher::rootMoves[0].score_;
+					const Score score = -pos.csearcher()->rootMoves[0].score_;
 #else
 					const Score score = ScoreZero;
 #endif
@@ -353,7 +341,7 @@ void makeBookCSA1Line(Position& pos, const bool inaniwaBook) {
 	}
 #endif
 
-	std::ofstream ofs((inaniwaBook ? "inaniwabook.bin" : "book.bin"), std::ios::binary);
+	std::ofstream ofs("book.bin", std::ios::binary);
 	for (auto& elem : bookMap) {
 		for (auto& elel : elem.second) {
 			ofs.write(reinterpret_cast<char*>(&(elel)), sizeof(BookEntry));

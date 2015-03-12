@@ -727,7 +727,7 @@ template MoveStack* generateMoves<NonCaptureMinusPro>(MoveStack* moveStackList, 
 template MoveStack* generateMoves<Evasion           >(MoveStack* moveStackList, const Position& pos);
 template MoveStack* generateMoves<NonEvasion        >(MoveStack* moveStackList, const Position& pos);
 template MoveStack* generateMoves<Legal             >(MoveStack* moveStackList, const Position& pos);
-#if !defined NDEBUG
+#if !defined NDEBUG || defined LEARN
 template MoveStack* generateMoves<LegalAll          >(MoveStack* moveStackList, const Position& pos);
 #endif
 template MoveStack* generateMoves<Recapture         >(MoveStack* moveStackList, const Position& pos, const Square to);

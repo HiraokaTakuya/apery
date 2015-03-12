@@ -7,6 +7,16 @@
 
 #if 0
 #define LEARN
+#if 0
+#define MPI_LEARN
+#endif
+#endif
+
+#if 1 && !defined LEARN
+#define USE_GLOBAL
+#define STATIC static
+#else
+#define STATIC
 #endif
 
 #if 0
@@ -24,17 +34,13 @@
 #endif
 
 #if 1
-#define USE_KING_SQUARE_SCORE
+#define USE_K_FIX_OFFSET
 #endif
 
 #if defined (HAVE_SSE2) || defined (HAVE_SSE4)
 #if 0
 #define SSE_EVAL
 #endif
-#endif
-
-#if 0
-#define USE_RELATIVE
 #endif
 
 #if 1
