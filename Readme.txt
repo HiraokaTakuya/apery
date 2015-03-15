@@ -17,7 +17,7 @@ Apery は GNU General Public License version 3 またはそれ以降のバージ
 
 利用環境
 
-メモリが 64GB ある前提で作っているので、メモリが 16GB 以下であれば動作しません。
+メモリに 600 MB 程度空きがあること。
 64bit OS であること。
 
 

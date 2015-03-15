@@ -91,7 +91,7 @@ OptionsMap::OptionsMap() {
 	(*this)["Emergency_Base_Time"]         = USIOption(200, 0, 30000);
 	(*this)["Emergency_Move_Time"]         = USIOption(70, 0, 5000);
 	(*this)["Slow_Mover"]                  = USIOption(70, 10, 1000);
-	(*this)["Minimum_Thinking_Time"]       = USIOption(360000, 0, INT_MAX);
+	(*this)["Minimum_Thinking_Time"]       = USIOption(1500, 0, INT_MAX);
 	(*this)["Min_Split_Depth"]             = USIOption(minSplitDepth, 4, 12, onThreads);
 	(*this)["Max_Threads_per_Split_Point"] = USIOption(5, 4, 8, onThreads);
 	(*this)["Threads"]                     = USIOption(cpus, 1, MaxThreads, onThreads);
