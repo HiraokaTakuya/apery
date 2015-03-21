@@ -175,6 +175,11 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 		KKPType oneArrayKKP[1];
 		KKType oneArrayKK[1];
 	};
+	// todo: これらは学習時しか使わないのにメモリ使うから設計が間違っている。
+	KPPType kpp_raw[SquareNum][fe_end][fe_end];
+	KKPType kkp_raw[SquareNum][SquareNum][fe_end];
+	KKType  kk_raw[SquareNum][SquareNum];
+
 	// todo: これらややこしいし汚いので使わないようにする。
 	//       型によっては kkps_begin_index などの値が異なる。
 	//       ただ、end - begin のサイズは型によらず一定。
@@ -418,7 +423,7 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 	}
 	void read() {
 #define FOO(x) {														\
-			std::ifstream ifs("../bin/20141122/" #x ".bin", std::ios::binary); \
+			std::ifstream ifs("" #x ".bin", std::ios::binary); \
 			if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));	\
 		}
 

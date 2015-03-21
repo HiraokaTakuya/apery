@@ -18,38 +18,67 @@ template <> void Evaluater<float, float, float>::incParam(const Position& pos, c
 	const int* list0 = pos.cplist0();
 	const int* list1 = pos.cplist1();
 	const float f = dinc / FVScale; // same as Bonanza
-#define FOO(indices, oneArray, f)									\
-	for (auto index : indices) {									\
-		if (index == std::numeric_limits<ptrdiff_t>::max()) break;	\
-		if (0 <= index) oneArray[ index] += f;						\
-		else            oneArray[-index] -= f;						\
-	}
 
-	auto kks = kkIndices(sq_bk, sq_wk);
-	FOO(kks, oneArrayKK, f);
+	kk_raw[sq_bk][sq_wk] += f;
 	for (int i = 0; i < pos.nlist(); ++i) {
 		const int k0 = list0[i];
 		const int k1 = list1[i];
 		for (int j = 0; j < i; ++j) {
 			const int l0 = list0[j];
 			const int l1 = list1[j];
-			auto kppbs = kppIndices(sq_bk, k0, l0);
-			FOO(kppbs, oneArrayKPP,  f);
-			auto kppws = kppIndices(inverse(sq_wk), k1, l1);
-			FOO(kppws, oneArrayKPP, -f);
+			kpp_raw[sq_bk         ][k0][l0] += f;
+			kpp_raw[inverse(sq_wk)][k1][l1] -= f;
 		}
-		auto kkps = kkpIndices(sq_bk, sq_wk, k0);
-		FOO(kkps, oneArrayKKP, f);
+		kkp_raw[sq_bk][sq_wk][k0] += f;
 	}
-#undef FOO
 }
 
-inline Evaluater<float, float, float>& operator += (Evaluater<float, float, float>& lhs, const Evaluater<float, float, float>& rhs) {
-	// template 引数が全部 float 型で同じサイズなのでこれで動く。
-	for (size_t i = 0; i < sizeof(lhs)/sizeof(lhs.oneArrayKK[0]); ++i) {
-		lhs.oneArrayKK[i] += rhs.oneArrayKK[i];
-	}
+inline Evaluater<float, float, float>& operator += (Evaluater<float, float, float>& lhs, Evaluater<float, float, float>& rhs) {
+	for (auto lit = &(***std::begin(lhs.kpp_raw)), rit = &(***std::begin(rhs.kpp_raw)); lit != &(***std::end(lhs.kpp_raw)); ++lit, ++rit)
+		*lit += *rit;
+	for (auto lit = &(***std::begin(lhs.kkp_raw)), rit = &(***std::begin(rhs.kkp_raw)); lit != &(***std::end(lhs.kkp_raw)); ++lit, ++rit)
+		*lit += *rit;
+	for (auto lit = &(** std::begin(lhs.kk_raw )), rit = &(** std::begin(rhs.kk_raw )); lit != &(** std::end(lhs.kk_raw )); ++lit, ++rit)
+		*lit += *rit;
+
 	return lhs;
+}
+
+// kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
+inline void lowerDimension(Evaluater<float, float, float>& param) {
+#define FOO(indices, oneArray, sum)									\
+	for (auto index : indices) {									\
+		if (index == std::numeric_limits<ptrdiff_t>::max()) break;	\
+		if (0 <= index) oneArray[ index] += sum;					\
+		else            oneArray[-index] -= sum;					\
+	}
+
+	// KPP
+	for (Square ksq = I9; ksq < SquareNum; ++ksq) {
+		for (int i = 0; i < fe_end; ++i) {
+			for (int j = 0; j < fe_end; ++j) {
+				auto indices = param.kppIndices(ksq, i, j);
+				FOO(indices, param.oneArrayKPP, param.kpp_raw[ksq][i][j]);
+			}
+		}
+	}
+	// KKP
+	for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+		for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+			for (int i = 0; i < fe_end; ++i) {
+				auto indices = param.kkpIndices(ksq0, ksq1, i);
+				FOO(indices, param.oneArrayKKP, param.kkp_raw[ksq0][ksq1][i]);
+			}
+		}
+	}
+	// KK
+	for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+		for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+			auto indices = param.kkIndices(ksq0, ksq1);
+			FOO(indices, param.oneArrayKK, param.kk_raw[ksq0][ksq1]);
+		}
+	}
+#undef FOO
 }
 
 struct Parse2Data {
@@ -127,9 +156,9 @@ private:
 		ss >> elem; // 対局日
 		bmdBase[Black].date = bmdBase[White].date = elem;
 		ss >> elem; // 先手名
-		bmdBase[Black].date = elem;
+		bmdBase[Black].player = elem;
 		ss >> elem; // 後手名
-		bmdBase[White].date = elem;
+		bmdBase[White].player = elem;
 		ss >> elem; // 引き分け勝ち負け
 		bmdBase[Black].winner = (elem == "1");
 		bmdBase[White].winner = (elem == "2");
@@ -225,8 +254,7 @@ private:
 					const Score recordScore = recordIt->score_;
 					bmd.recordIsNth = recordIt - std::begin(pos.searcher()->rootMoves);
 					bmd.pvBuffer.clear();
-					for (auto& move : recordIt->pv_)
-						bmd.pvBuffer.push_back(move);
+					bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordIt->pv_), std::end(recordIt->pv_));
 
 					const auto recordPVSize = bmd.pvBuffer.size();
 
@@ -235,15 +263,13 @@ private:
 							 it >= std::begin(pos.searcher()->rootMoves) && FVWindow > (it->score_ - recordScore);
 							 --it)
 						{
-							for (auto& move : it->pv_)
-								bmd.pvBuffer.push_back(move);
+							bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(it->pv_), std::end(it->pv_));
 						}
 						for (auto it = recordIt + 1;
 							 it < std::end(pos.searcher()->rootMoves) && FVWindow > (recordScore - it->score_);
 							 ++it)
 						{
-							for (auto& move : it->pv_)
-								bmd.pvBuffer.push_back(move);
+							bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(it->pv_), std::end(it->pv_));
 						}
 					}
 
@@ -425,6 +451,7 @@ private:
 			for (auto& parse2 : parse2Datum_) {
 				parse2Data_.params += parse2.params;
 			}
+			lowerDimension(parse2Data_.params);
 			std::cout << "update eval ... " << std::flush;
 			updateEval();
 			std::cout << "done" << std::endl;
