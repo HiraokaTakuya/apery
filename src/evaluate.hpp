@@ -175,10 +175,6 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 		KKPType oneArrayKKP[1];
 		KKType oneArrayKK[1];
 	};
-	// todo: これらは学習時しか使わないのにメモリ使うから設計が間違っている。
-	KPPType kpp_raw[SquareNum][fe_end][fe_end];
-	KKPType kkp_raw[SquareNum][SquareNum][fe_end];
-	KKType  kk_raw[SquareNum][SquareNum];
 
 	// todo: これらややこしいし汚いので使わないようにする。
 	//       型によっては kkps_begin_index などの値が異なる。
@@ -305,7 +301,6 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 					ret[retIdx++] = sign*(&r_kp_b[ipiece][R_Mid + -abs(makeFile(ksq) - makeFile(isq))][R_Mid + makeRank(ksq) - makeRank(isq)] - &oneArrayKKP[0]);
 				}
 			};
-			const int ibegin = kppIndexBegin(i);
 			if (E1 < ksq) {
 				ret[retIdx++] = sign*(&kp[inverseFile(ksq)][inverseFileIndexIfOnBoard(i)] - &oneArrayKKP[0]);
 			}
@@ -423,7 +418,7 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 	}
 	void read() {
 #define FOO(x) {														\
-			std::ifstream ifs("" #x ".bin", std::ios::binary); \
+			std::ifstream ifs("" #x ".bin", std::ios::binary);			\
 			if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));	\
 		}
 
@@ -518,8 +513,6 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 		}
 #undef FOO
 	}
-	// 学習用の型以外でこれは使わないこと。
-	void incParam(const Position& pos, const double dinc);
 };
 
 extern const int kppArray[31];
