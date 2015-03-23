@@ -96,14 +96,14 @@
 #define DEBUGCERR(x) std::cerr << #x << " = " << (x) << " (L" << __LINE__ << ")" << " " << __FILE__ << std::endl;
 
 // bit幅を指定する必要があるときは、以下の型を使用する。
-typedef  int8_t  s8;
-typedef uint8_t  u8;
-typedef  int16_t s16;
-typedef uint16_t u16;
-typedef  int32_t s32;
-typedef uint32_t u32;
-typedef  int64_t s64;
-typedef uint64_t u64;
+using s8  =  int8_t;
+using u8  = uint8_t;
+using s16 =  int16_t;
+using u16 = uint16_t;
+using s32 =  int32_t;
+using u32 = uint32_t;
+using s64 =  int64_t;
+using u64 = uint64_t;
 
 // Binary表記
 // Binary<11110>::value とすれば、30 となる。
@@ -255,7 +255,7 @@ template <typename T> inline void prefetch(T* addr) {
 #endif
 }
 
-typedef u64 Key;
+using Key = u64;
 
 // Size は 2のべき乗であること。
 template <typename T, size_t Size>

@@ -4,7 +4,7 @@
 #include "overloadEnumOperators.hpp"
 #include "common.hpp"
 
-typedef int Ply;
+using Ply = int;
 
 const Ply MaxPly = 128;
 const Ply MaxPlyPlus2 = MaxPly + 2;

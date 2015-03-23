@@ -59,7 +59,7 @@ struct StateInfo : public StateInfoMin {
 	Key key() const { return boardKey + handKey; }
 };
 
-typedef std::unique_ptr<std::stack<StateInfo> > StateStackPtr;
+using StateStackPtr = std::unique_ptr<std::stack<StateInfo> >;
 
 class Move;
 struct Thread;

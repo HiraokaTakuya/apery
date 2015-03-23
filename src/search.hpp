@@ -90,8 +90,8 @@ private:
 	Score table_[2][PieceNone][SquareNum];
 };
 
-typedef Stats<false> History;
-typedef Stats<true>  Gains;
+using History = Stats<false>;
+using Gains   = Stats<true>;
 
 class TranspositionTable;
 
