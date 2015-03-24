@@ -11,7 +11,7 @@
 #define PRINT_PV
 #endif
 
-struct LearnEvaluater : public Evaluater<float, float, float> {
+struct LearnEvaluater : public EvaluaterBase<float, float, float> {
 	float kpp_raw[SquareNum][fe_end][fe_end];
 	float kkp_raw[SquareNum][SquareNum][fe_end];
 	float kk_raw[SquareNum][SquareNum];
@@ -73,6 +73,8 @@ struct LearnEvaluater : public Evaluater<float, float, float> {
 		}
 #undef FOO
 	}
+
+	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
 LearnEvaluater& operator += (LearnEvaluater& lhs, LearnEvaluater& rhs) {
@@ -468,7 +470,7 @@ private:
 		for (Rank r = Rank9; r < RankNum; ++r) {
 			for (File f = FileA; FileI <= f; --f) {
 				const Square sq = makeSquare(f, r);
-				printf("%5d", KPP[B2][f_gold + C2][f_gold + sq]);
+				printf("%5d", Evaluater::KPP[B2][f_gold + C2][f_gold + sq]);
 			}
 			printf("\n");
 		}
@@ -486,7 +488,7 @@ private:
 	std::vector<std::vector<BookMoveData> > bookMovesDatum_;
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
-	Evaluater<s16, s32, s32> eval_;
+	Evaluater eval_;
 
 	static const Score FVWindow = static_cast<Score>(200);
 };

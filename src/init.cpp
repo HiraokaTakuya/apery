@@ -300,7 +300,7 @@ void initTable() {
 	initBetweenBB();
 	initCheckTable();
 
-	auto eval = std::unique_ptr<Evaluater<s16, s32, s32> >(new Evaluater<s16, s32, s32>);
+	auto eval = std::unique_ptr<Evaluater>(new Evaluater);
 	eval->init();
 
 	Book::init();

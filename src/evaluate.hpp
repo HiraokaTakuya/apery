@@ -11,51 +11,54 @@
 // f_xxx が味方の駒、e_xxx が敵の駒
 // Bonanza の影響で持ち駒 0 の場合のインデックスが存在するが、参照する事は無い。
 // todo: 持ち駒 0 の位置を詰めてテーブルを少しでも小さくする。(キャッシュに少しは乗りやすい?)
-enum { f_hand_pawn   = 0, // 0
-	   e_hand_pawn   = f_hand_pawn   + 19,
-	   f_hand_lance  = e_hand_pawn   + 19,
-	   e_hand_lance  = f_hand_lance  +  5,
-	   f_hand_knight = e_hand_lance  +  5,
-	   e_hand_knight = f_hand_knight +  5,
-	   f_hand_silver = e_hand_knight +  5,
-	   e_hand_silver = f_hand_silver +  5,
-	   f_hand_gold   = e_hand_silver +  5,
-	   e_hand_gold   = f_hand_gold   +  5,
-	   f_hand_bishop = e_hand_gold   +  5,
-	   e_hand_bishop = f_hand_bishop +  3,
-	   f_hand_rook   = e_hand_bishop +  3,
-	   e_hand_rook   = f_hand_rook   +  3,
-	   fe_hand_end   = e_hand_rook   +  3,
+enum {
+	f_hand_pawn   = 0, // 0
+	e_hand_pawn   = f_hand_pawn   + 19,
+	f_hand_lance  = e_hand_pawn   + 19,
+	e_hand_lance  = f_hand_lance  +  5,
+	f_hand_knight = e_hand_lance  +  5,
+	e_hand_knight = f_hand_knight +  5,
+	f_hand_silver = e_hand_knight +  5,
+	e_hand_silver = f_hand_silver +  5,
+	f_hand_gold   = e_hand_silver +  5,
+	e_hand_gold   = f_hand_gold   +  5,
+	f_hand_bishop = e_hand_gold   +  5,
+	e_hand_bishop = f_hand_bishop +  3,
+	f_hand_rook   = e_hand_bishop +  3,
+	e_hand_rook   = f_hand_rook   +  3,
+	fe_hand_end   = e_hand_rook   +  3,
 
-	   f_pawn        = fe_hand_end,
-	   e_pawn        = f_pawn        + 81,
-	   f_lance       = e_pawn        + 81,
-	   e_lance       = f_lance       + 81,
-	   f_knight      = e_lance       + 81,
-	   e_knight      = f_knight      + 81,
-	   f_silver      = e_knight      + 81,
-	   e_silver      = f_silver      + 81,
-	   f_gold        = e_silver      + 81,
-	   e_gold        = f_gold        + 81,
-	   f_bishop      = e_gold        + 81,
-	   e_bishop      = f_bishop      + 81,
-	   f_horse       = e_bishop      + 81,
-	   e_horse       = f_horse       + 81,
-	   f_rook        = e_horse       + 81,
-	   e_rook        = f_rook        + 81,
-	   f_dragon      = e_rook        + 81,
-	   e_dragon      = f_dragon      + 81,
-	   fe_end        = e_dragon      + 81
+	f_pawn        = fe_hand_end,
+	e_pawn        = f_pawn        + 81,
+	f_lance       = e_pawn        + 81,
+	e_lance       = f_lance       + 81,
+	f_knight      = e_lance       + 81,
+	e_knight      = f_knight      + 81,
+	f_silver      = e_knight      + 81,
+	e_silver      = f_silver      + 81,
+	f_gold        = e_silver      + 81,
+	e_gold        = f_gold        + 81,
+	f_bishop      = e_gold        + 81,
+	e_bishop      = f_bishop      + 81,
+	f_horse       = e_bishop      + 81,
+	e_horse       = f_horse       + 81,
+	f_rook        = e_horse       + 81,
+	e_rook        = f_rook        + 81,
+	f_dragon      = e_rook        + 81,
+	e_dragon      = f_dragon      + 81,
+	fe_end        = e_dragon      + 81
 };
 
 const int FVScale = 32;
 
-const int KPPIndexArray[] = { f_hand_pawn, e_hand_pawn, f_hand_lance, e_hand_lance, f_hand_knight,
-							  e_hand_knight, f_hand_silver, e_hand_silver, f_hand_gold, e_hand_gold,
-							  f_hand_bishop, e_hand_bishop, f_hand_rook, e_hand_rook, /*fe_hand_end,*/
-							  f_pawn, e_pawn, f_lance, e_lance, f_knight, e_knight, f_silver, e_silver,
-							  f_gold, e_gold, f_bishop, e_bishop, f_horse, e_horse, f_rook, e_rook,
-							  f_dragon, e_dragon, fe_end };
+const int KPPIndexArray[] = {
+	f_hand_pawn, e_hand_pawn, f_hand_lance, e_hand_lance, f_hand_knight,
+	e_hand_knight, f_hand_silver, e_hand_silver, f_hand_gold, e_hand_gold,
+	f_hand_bishop, e_hand_bishop, f_hand_rook, e_hand_rook, /*fe_hand_end,*/
+	f_pawn, e_pawn, f_lance, e_lance, f_knight, e_knight, f_silver, e_silver,
+	f_gold, e_gold, f_bishop, e_bishop, f_horse, e_horse, f_rook, e_rook,
+	f_dragon, e_dragon, fe_end
+};
 
 inline Square kppIndexToSquare(const int i) {
 	const auto it = std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i);
@@ -133,16 +136,7 @@ struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
 };
 extern KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-// 探索時に参照する評価関数テーブル
-extern s32 KK[SquareNum][SquareNum];
-extern s16 KPP[SquareNum][fe_end][fe_end];
-extern s32 KKP[SquareNum][SquareNum][fe_end];
-
-extern const s32 K_Fix_Offset[SquareNum];
-
-class Position;
-
-template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
+template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBase {
 	static const int R_Mid = 8; // 相対位置の中心のindex
 	union {
 		// 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
@@ -410,7 +404,18 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 		assert(*(std::end(ret)-1) == std::numeric_limits<ptrdiff_t>::max());
 		return ret;
 	}
-	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
+};
+
+struct Evaluater : public EvaluaterBase<s16, s32, s32> {
+	// 探索時に参照する評価関数テーブル
+	static s32 KK[SquareNum][SquareNum];
+	static s16 KPP[SquareNum][fe_end][fe_end];
+	static s32 KKP[SquareNum][SquareNum][fe_end];
+#if defined USE_K_FIX_OFFSET
+	static const s32 K_Fix_Offset[SquareNum];
+#endif
+
+	void clear() { memset(this, 0, sizeof(*this)); }
 	void init() {
 		clear();
 		read();
@@ -465,11 +470,6 @@ template<typename KPPType, typename KKPType, typename KKType> struct Evaluater {
 #undef FOO
 	}
 	void setEvaluate() {
-		// todo: 実行時に確認しているのはダサいのでコンパイル時にチェックすること。
-		assert(sizeof(KPPType) == sizeof(KPP[0][0][0]));
-		assert(sizeof(KKPType) == sizeof(KKP[0][0][0]));
-		assert(sizeof(KKType ) == sizeof(KK [0][0]   ));
-
 #define FOO(indices, oneArray, sum)										\
 		for (auto index : indices) {									\
 			if (index == std::numeric_limits<ptrdiff_t>::max()) break;	\

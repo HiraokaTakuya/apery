@@ -5,11 +5,12 @@
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-s32 KK[SquareNum][SquareNum];
-s16 KPP[SquareNum][fe_end][fe_end];
-s32 KKP[SquareNum][SquareNum][fe_end];
+s32 Evaluater::KK[SquareNum][SquareNum];
+s16 Evaluater::KPP[SquareNum][fe_end][fe_end];
+s32 Evaluater::KKP[SquareNum][SquareNum][fe_end];
 
-const s32 K_Fix_Offset[SquareNum] = {
+#if defined USE_K_FIX_OFFSET
+const s32 Evaluater::K_Fix_Offset[SquareNum] = {
 	2000*FVScale, 1700*FVScale, 1350*FVScale, 1000*FVScale,  650*FVScale,  350*FVScale,  100*FVScale,    0*FVScale,    0*FVScale,
 	1800*FVScale, 1500*FVScale, 1250*FVScale, 1000*FVScale,  650*FVScale,  350*FVScale,  100*FVScale,    0*FVScale,    0*FVScale, 
 	1800*FVScale, 1500*FVScale, 1250*FVScale, 1000*FVScale,  650*FVScale,  350*FVScale,  100*FVScale,    0*FVScale,    0*FVScale, 
@@ -20,6 +21,7 @@ const s32 K_Fix_Offset[SquareNum] = {
 	1900*FVScale, 1600*FVScale, 1350*FVScale, 1000*FVScale,  650*FVScale,  350*FVScale,  100*FVScale,    0*FVScale,    0*FVScale, 
 	2000*FVScale, 1700*FVScale, 1350*FVScale, 1000*FVScale,  650*FVScale,  350*FVScale,  100*FVScale,    0*FVScale,    0*FVScale
 };
+#endif
 
 EvaluateHashTable g_evalTable;
 
@@ -47,9 +49,9 @@ namespace {
 		const int* list0 = pos.cplist0();
 		const int* list1 = pos.cplist1();
 
-		s32 sum = KKP[sq_bk][sq_wk][index[0]];
-		const auto* pkppb = KPP[sq_bk         ][index[0]];
-		const auto* pkppw = KPP[inverse(sq_wk)][index[1]];
+		s32 sum = Evaluater::KKP[sq_bk][sq_wk][index[0]];
+		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
+		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
 		for (int i = 0; i < pos.nlist(); ++i) {
 			sum += pkppb[list0[i]];
 			sum -= pkppw[list1[i]];
@@ -121,8 +123,8 @@ namespace {
 		else {
 			assert(pos.cl().size == 2);
 			diff += doapc(pos, pos.cl().clistpair[1].newlist);
-			diff -= KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
-			diff += KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
+			diff -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
+			diff += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
 			const int listIndex_cap = pos.cl().listindex[1];
 			pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
 			pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
@@ -132,8 +134,8 @@ namespace {
 			diff -= doapc(pos, pos.cl().clistpair[0].oldlist);
 
 			diff -= doapc(pos, pos.cl().clistpair[1].oldlist);
-			diff += KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
-			diff -= KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
+			diff += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
+			diff -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
 			pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
 			pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
 		}
@@ -194,12 +196,12 @@ namespace {
 		const int* list0 = pos.plist0();
 		const int* list1 = pos.plist1();
 
-		const auto* ppkppb = KPP[sq_bk         ];
-		const auto* ppkppw = KPP[inverse(sq_wk)];
+		const auto* ppkppb = Evaluater::KPP[sq_bk         ];
+		const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 
-		s32 score = KK[sq_bk][sq_wk];
+		s32 score = Evaluater::KK[sq_bk][sq_wk];
 		// loop 開始を i = 1 からにして、i = 0 の分のKKPを先に足す。
-		score += KKP[sq_bk][sq_wk][list0[0]];
+		score += Evaluater::KKP[sq_bk][sq_wk][list0[0]];
 		for (int i = 1; i < pos.nlist(); ++i) {
 			const int k0 = list0[i];
 			const int k1 = list1[i];
@@ -211,7 +213,7 @@ namespace {
 				score += pkppb[l0];
 				score -= pkppw[l1];
 			}
-			score += KKP[sq_bk][sq_wk][k0];
+			score += Evaluater::KKP[sq_bk][sq_wk][k0];
 		}
 
 		score += pos.material() * FVScale;
@@ -264,10 +266,10 @@ Score evaluateUnUseDiff(const Position& pos) {
 
 	nlist = make_list_unUseDiff(pos, list0, list1, nlist);
 
-	const auto* ppkppb = KPP[sq_bk         ];
-	const auto* ppkppw = KPP[inverse(sq_wk)];
+	const auto* ppkppb = Evaluater::KPP[sq_bk         ];
+	const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 
-	s32 score = KK[sq_bk][sq_wk];
+	s32 score = Evaluater::KK[sq_bk][sq_wk];
 	for (int i = 0; i < nlist; ++i) {
 		const int k0 = list0[i];
 		const int k1 = list1[i];
@@ -279,7 +281,7 @@ Score evaluateUnUseDiff(const Position& pos) {
 			score += pkppb[l0];
 			score -= pkppw[l1];
 		}
-		score += KKP[sq_bk][sq_wk][k0];
+		score += Evaluater::KKP[sq_bk][sq_wk][k0];
 	}
 
 	score += pos.material() * FVScale;
