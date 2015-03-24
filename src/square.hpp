@@ -170,14 +170,14 @@ inline bool isAligned(const Square from, const Square to, const Square ksq) {
 inline char fileToCharUSI(const File f) { return '1' + f; }
 // todo: アルファベットが辞書順に並んでいない処理系があるなら対応すること。
 inline char rankToCharUSI(const Rank r) {
-	STATIC_ASSERT('a' + 1 == 'b');
-	STATIC_ASSERT('a' + 2 == 'c');
-	STATIC_ASSERT('a' + 3 == 'd');
-	STATIC_ASSERT('a' + 4 == 'e');
-	STATIC_ASSERT('a' + 5 == 'f');
-	STATIC_ASSERT('a' + 6 == 'g');
-	STATIC_ASSERT('a' + 7 == 'h');
-	STATIC_ASSERT('a' + 8 == 'i');
+	static_assert('a' + 1 == 'b', "");
+	static_assert('a' + 2 == 'c', "");
+	static_assert('a' + 3 == 'd', "");
+	static_assert('a' + 4 == 'e', "");
+	static_assert('a' + 5 == 'f', "");
+	static_assert('a' + 6 == 'g', "");
+	static_assert('a' + 7 == 'h', "");
+	static_assert('a' + 8 == 'i', "");
 	return 'a' + r;
 }
 inline std::string squareToStringUSI(const Square sq) {
@@ -212,8 +212,8 @@ inline Square inverseFile(const Square sq) { return makeSquare(inverse(makeFile(
 
 inline bool canPromote(const Color c, const Rank fromOrToRank) {
 #if 1
-	STATIC_ASSERT(Black == 0);
-	STATIC_ASSERT(Rank9 == 0);
+	static_assert(Black == 0, "");
+	static_assert(Rank9 == 0, "");
 	return static_cast<bool>(0x1c00007u & (1u << ((c << 4) + fromOrToRank)));
 #else
 	// 同じ意味。

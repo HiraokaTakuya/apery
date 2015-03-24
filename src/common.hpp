@@ -30,8 +30,6 @@
 #include <cmath>
 #include <cstddef>
 
-#define STATIC_ASSERT(x) static_assert(x, "")
-
 #if defined HAVE_BMI2
 #include <immintrin.h>
 #endif
@@ -252,7 +250,7 @@ struct HashTable {
 	T* operator [] (const Key k) { return &entries_[static_cast<size_t>(k) & (Size-1)]; }
 	void clear() { std::fill(std::begin(entries_), std::end(entries_), T()); }
 	// Size が 2のべき乗であることのチェック
-	STATIC_ASSERT((Size & (Size-1)) == 0);
+	static_assert((Size & (Size-1)) == 0, "");
 
 private:
 	std::vector<T> entries_;

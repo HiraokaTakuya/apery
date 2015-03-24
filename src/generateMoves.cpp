@@ -200,7 +200,7 @@ namespace {
 	// 金, 成り金をまとめて指し手生成
 	template <MoveType MT, PieceType PT, Color US, bool ALL> struct GeneratePieceMoves {
 		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
-			STATIC_ASSERT(PT == Gold || PT == ProPawn || PT == ProLance || PT == ProKnight || PT == ProSilver);
+			static_assert(PT == Gold || PT == ProPawn || PT == ProLance || PT == ProKnight || PT == ProSilver, "");
 			// 金、成金のbitboardをまとめて扱う。
 			// todo: 金、成金 をまとめたbitboardをPositionクラスが持つべきか検討すること。
 			Bitboard fromBB = pos.goldsBB(US);
@@ -439,7 +439,7 @@ namespace {
 	// ALL == true のとき、歩、飛、角の不成、香の2段目の不成、香の3段目の駒を取らない不成も生成する。
 	template <MoveType MT, Color US, bool ALL = false> struct GenerateMoves {
 		MoveStack* operator () (MoveStack* moveStackList, const Position& pos) {
-			STATIC_ASSERT(MT == Capture || MT == NonCapture || MT == CapturePlusPro || MT == NonCaptureMinusPro);
+			static_assert(MT == Capture || MT == NonCapture || MT == CapturePlusPro || MT == NonCaptureMinusPro, "");
 			// Txxx は先手、後手の情報を吸収した変数。数字は先手に合わせている。
 			const Rank TRank6 = (US == Black ? Rank6 : Rank4);
 			const Rank TRank7 = (US == Black ? Rank7 : Rank3);

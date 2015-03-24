@@ -50,7 +50,7 @@ private:
 };
 
 const int ClusterSize = CacheLineSize / sizeof(TTEntry);
-STATIC_ASSERT(0 < ClusterSize);
+static_assert(0 < ClusterSize, "");
 
 struct TTCluster {
 	TTEntry data[ClusterSize];

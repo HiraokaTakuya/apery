@@ -333,8 +333,8 @@ private:
 
 		// T が enum だと 0 になることがある。
 		// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
-		STATIC_ASSERT(std::numeric_limits<T>::max() != 0);
-		STATIC_ASSERT(std::numeric_limits<T>::min() != 0);
+		static_assert(std::numeric_limits<T>::max() != 0, "");
+		static_assert(std::numeric_limits<T>::min() != 0, "");
 		if      (0.0 <= dv && v <= std::numeric_limits<T>::max() - step) v += step;
 		else if (dv <= 0.0 && std::numeric_limits<T>::min() + step <= v) v -= step;
 	}

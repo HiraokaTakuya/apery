@@ -60,7 +60,7 @@ enum PromoteMode {
 // Drop, Check, Evasion, の場合は別で指し手生成を行う。
 template <MoveType MT, PromoteMode PM>
 inline Move selectedMakeMove(const PieceType pt, const Square from, const Square to, const Position& pos) {
-	STATIC_ASSERT(PM == Promote || PM == NonPromote);
+	static_assert(PM == Promote || PM == NonPromote, "");
 	assert(!((pt == Gold || pt == King || MT == Drop) && PM == Promote));
 	Move move = ((MT == NonCapture || MT == NonCaptureMinusPro) ? makeMove(pt, from, to) : makeCaptureMove(pt, from, to, pos));
 	if (PM == Promote) {

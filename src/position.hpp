@@ -171,17 +171,17 @@ public:
 	template <PieceType PT> Bitboard attacksFrom(const Color c, const Square sq, const Bitboard& occupied) const;
 	// 任意の occupied に対する利きを生成する。
 	template <PieceType PT> Bitboard attacksFrom(const Square sq, const Bitboard& occupied) const {
-		STATIC_ASSERT(PT == Bishop || PT == Rook || PT == Horse || PT == Dragon);
+		static_assert(PT == Bishop || PT == Rook || PT == Horse || PT == Dragon, "");
 		// Color は何でも良い。
 		return attacksFrom<PT>(ColorNum, sq, occupied);
 	}
 
 	template <PieceType PT> Bitboard attacksFrom(const Color c, const Square sq) const {
-		STATIC_ASSERT(PT == Gold); // Gold 以外は template 特殊化する。
+		static_assert(PT == Gold, ""); // Gold 以外は template 特殊化する。
 		return goldAttack(c, sq);
 	}
 	template <PieceType PT> Bitboard attacksFrom(const Square sq) const {
-		STATIC_ASSERT(PT == Bishop || PT == Rook || PT == King || PT == Horse || PT == Dragon);
+		static_assert(PT == Bishop || PT == Rook || PT == King || PT == Horse || PT == Dragon, "");
 		// Color は何でも良い。
 		return attacksFrom<PT>(ColorNum, sq);
 	}
@@ -224,7 +224,7 @@ public:
 	Key getKey() const          { return st_->key(); }
 	Key getExclusionKey() const { return st_->key() ^ zobExclusion_; }
 	Key getKeyExcludeTurn() const {
-		STATIC_ASSERT(zobTurn_ == 1);
+		static_assert(zobTurn_ == 1, "");
 		return getKey() >> 1;
 	}
 	void print() const;
