@@ -481,7 +481,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		else if (token == "d"        ) { pos.print(); }
 		else if (token == "s"        ) { measureGenerateMoves(pos); }
 		else if (token == "t"        ) { std::cout << pos.mateMoveIn1Ply().toCSA() << std::endl; }
-		else if (token == "b"        ) { makeBookCSA1Line(pos); }
+		else if (token == "b"        ) { makeBook(pos); }
 #endif
 		else                           { SYNCCOUT << "unknown command: " << cmd << SYNCENDL; }
 	} while (token != "quit" && argc == 1);

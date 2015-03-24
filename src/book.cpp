@@ -150,7 +150,7 @@ inline bool countCompare(const BookEntry& b1, const BookEntry& b2) {
 }
 
 #if !defined MINIMUL
-void makeBookCSA1Line(Position& pos) {
+void makeBook(Position& pos) {
 	std::ifstream ifs("../2chkifu/2013/utf82chkifu.csa", std::ios::binary);
 	std::string line;
 	std::map<Key, std::vector<BookEntry> > bookMap;
