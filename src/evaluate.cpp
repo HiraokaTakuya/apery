@@ -237,15 +237,12 @@ Score evaluateUnUseDiff(const Position& pos) {
 	const Square sq_bk = pos.kingSquare(Black);
 	const Square sq_wk = pos.kingSquare(White);
 	int nlist = 0;
-	int hand0_index[ColorNum] = {0, 0};
 
 #define FOO(hand, HP, list0_index, list1_index, hand0_shift)		\
 	for (u32 i = 1; i <= hand.numOf<HP>(); ++i) {					\
 		list0[nlist] = list0_index + i;								\
 		list1[nlist] = list1_index + i;								\
 		++nlist;													\
-		hand0_index[Black] |= 1 << hand0_shift;						\
-		hand0_index[White] |= 1 << (hand0_shift ^ 1);				\
 	}
 
 	FOO(handB, HPawn  , f_hand_pawn  , e_hand_pawn  ,  0);
