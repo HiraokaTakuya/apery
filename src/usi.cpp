@@ -77,6 +77,7 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
 	(*this)["USI_Ponder"]                  = USIOption(true);
+	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
 	(*this)["Skill_Level"]                 = USIOption(20, 0, 20);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
@@ -164,7 +165,7 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 		else if (token == "byoyomi" || token == "movetime") {
 			// btime wtime の後に byoyomi が来る前提になっているので良くない。
 			ssCmd >> limits.moveTime;
-			if (limits.moveTime != 0) { limits.moveTime -= 500; }
+			if (limits.moveTime != 0) { limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"]; }
 		}
 		else if (token == "depth"   ) { ssCmd >> limits.depth; }
 	}
