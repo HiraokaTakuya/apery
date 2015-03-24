@@ -32,7 +32,6 @@ private:
 	static Key ZobTurn;
 };
 
-void makeBook(Position& pos);
 void makeBookCSA1Line(Position& pos);
 
 #endif // #ifndef BOOK_HPP
