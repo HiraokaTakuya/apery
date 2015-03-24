@@ -1,5 +1,5 @@
-#ifndef BITBOARD_HPP
-#define BITBOARD_HPP
+#ifndef APERY_BITBOARD_HPP
+#define APERY_BITBOARD_HPP
 
 #include "common.hpp"
 #include "square.hpp"
@@ -508,4 +508,4 @@ template <typename T> FORCE_INLINE void foreachBB(Bitboard& bb, Square& sq, T t)
 	}
 }
 
-#endif // #ifndef BITBOARD_HPP
+#endif // #ifndef APERY_BITBOARD_HPP

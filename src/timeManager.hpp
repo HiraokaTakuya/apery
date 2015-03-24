@@ -1,5 +1,5 @@
-#ifndef TIMEMANAGER_HPP
-#define TIMEMANAGER_HPP
+#ifndef APERY_TIMEMANAGER_HPP
+#define APERY_TIMEMANAGER_HPP
 
 #include "evaluate.hpp"
 
@@ -18,4 +18,4 @@ private:
 	int unstablePVExtraTime_;
 };
 
-#endif // #ifndef TIMEMANAGER_HPP
+#endif // #ifndef APERY_TIMEMANAGER_HPP

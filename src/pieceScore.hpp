@@ -1,5 +1,5 @@
-#ifndef PIECESCORE_HPP
-#define PIECESCORE_HPP
+#ifndef APERY_PIECESCORE_HPP
+#define APERY_PIECESCORE_HPP
 
 #include "score.hpp"
 #include "piece.hpp"
@@ -48,4 +48,4 @@ extern const Score PieceScore[PieceNone];
 extern const Score CapturePieceScore[PieceNone];
 extern const Score PromotePieceScore[7];
 
-#endif // #ifndef PIECESCORE_HPP
+#endif // #ifndef APERY_PIECESCORE_HPP

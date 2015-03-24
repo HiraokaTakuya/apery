@@ -1,5 +1,5 @@
-#ifndef PIECE_HPP
-#define PIECE_HPP
+#ifndef APERY_PIECE_HPP
+#define APERY_PIECE_HPP
 
 #include "common.hpp"
 #include "overloadEnumOperators.hpp"
@@ -62,4 +62,4 @@ const HandPiece PieceTypeToHandPieceTable[PieceTypeNum] = {
 };
 inline HandPiece pieceTypeToHandPiece(const PieceType pt) { return PieceTypeToHandPieceTable[pt]; }
 
-#endif // #ifndef PIECE_HPP
+#endif // #ifndef APERY_PIECE_HPP

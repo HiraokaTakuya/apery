@@ -1,9 +1,9 @@
-#ifndef BENCHMARK_HPP
-#define BENCHMARK_HPP
+#ifndef APERY_BENCHMARK_HPP
+#define APERY_BENCHMARK_HPP
 
 #include "common.hpp"
 
 class Position;
 void benchmark(Position& pos);
 
-#endif // #ifndef BENCHMARK_HPP
+#endif // #ifndef APERY_BENCHMARK_HPP

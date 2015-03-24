@@ -1,5 +1,5 @@
-#ifndef THREAD_HPP
-#define THREAD_HPP
+#ifndef APERY_THREAD_HPP
+#define APERY_THREAD_HPP
 
 #include "common.hpp"
 #include "evaluate.hpp"
@@ -123,4 +123,4 @@ private:
 	Depth minimumSplitDepth_;
 };
 
-#endif // #ifndef THREAD_HPP
+#endif // #ifndef APERY_THREAD_HPP

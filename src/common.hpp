@@ -1,5 +1,5 @@
-#ifndef COMMON_HPP
-#define COMMON_HPP
+#ifndef APERY_COMMON_HPP
+#define APERY_COMMON_HPP
 
 #include "ifdef.hpp"
 #include <cinttypes>
@@ -288,4 +288,4 @@ template <typename T> inline void reverseEndian(T& r) {
 }
 #endif
 
-#endif // #ifndef COMMON_HPP
+#endif // #ifndef APERY_COMMON_HPP

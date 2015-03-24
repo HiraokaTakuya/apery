@@ -1,5 +1,5 @@
-#ifndef POSITION_HPP
-#define POSITION_HPP
+#ifndef APERY_POSITION_HPP
+#define APERY_POSITION_HPP
 
 #include "piece.hpp"
 #include "common.hpp"
@@ -417,4 +417,4 @@ public:
 };
 extern const CharToPieceUSI g_charToPieceUSI;
 
-#endif // #ifndef POSITION_HPP
+#endif // #ifndef APERY_POSITION_HPP

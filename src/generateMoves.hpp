@@ -1,5 +1,5 @@
-#ifndef GENERATEMOVES_HPP
-#define GENERATEMOVES_HPP
+#ifndef APERY_GENERATEMOVES_HPP
+#define APERY_GENERATEMOVES_HPP
 
 #include "common.hpp"
 #include "piece.hpp"
@@ -79,4 +79,4 @@ inline Move makeNonPromoteMove(const PieceType pt, const Square from, const Squa
 	return selectedMakeMove<MT, NonPromote>(pt, from, to, pos);
 }
 
-#endif // #ifndef GENERATEMOVES_HPP
+#endif // #ifndef APERY_GENERATEMOVES_HPP

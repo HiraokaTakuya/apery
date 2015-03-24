@@ -1,5 +1,5 @@
-#ifndef SEARCH_HPP
-#define SEARCH_HPP
+#ifndef APERY_SEARCH_HPP
+#define APERY_SEARCH_HPP
 
 #include "move.hpp"
 #include "pieceScore.hpp"
@@ -140,4 +140,4 @@ struct Searcher {
 
 void initSearchTable();
 
-#endif // #ifndef SEARCH_HPP
+#endif // #ifndef APERY_SEARCH_HPP

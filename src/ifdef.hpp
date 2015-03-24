@@ -1,5 +1,5 @@
-#ifndef IFDEF_HPP
-#define IFDEF_HPP
+#ifndef APERY_IFDEF_HPP
+#define APERY_IFDEF_HPP
 
 #if 0
 #define FIND_MAGIC
@@ -51,4 +51,4 @@
 #define DENOUSEN_FINAL
 #endif
 
-#endif // #ifndef IFDEF_HPP
+#endif // #ifndef APERY_IFDEF_HPP

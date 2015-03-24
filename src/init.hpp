@@ -1,5 +1,5 @@
-#ifndef INIT_HPP
-#define INIT_HPP
+#ifndef APERY_INIT_HPP
+#define APERY_INIT_HPP
 
 #include "ifdef.hpp"
 #include "common.hpp"
@@ -11,4 +11,4 @@ void initTable();
 u64 findMagic(const Square sqare, const bool isBishop);
 #endif // #if defined FIND_MAGIC
 
-#endif // #ifndef INIT_HPP
+#endif // #ifndef APERY_INIT_HPP

@@ -1,5 +1,5 @@
-#ifndef SQUARE_HPP
-#define SQUARE_HPP
+#ifndef APERY_SQUARE_HPP
+#define APERY_SQUARE_HPP
 
 #include "overloadEnumOperators.hpp"
 #include "common.hpp"
@@ -221,4 +221,4 @@ inline bool canPromote(const Color c, const Rank fromOrToRank) {
 #endif
 }
 
-#endif // #ifndef SQUARE_HPP
+#endif // #ifndef APERY_SQUARE_HPP

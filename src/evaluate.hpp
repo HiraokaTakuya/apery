@@ -1,5 +1,5 @@
-#ifndef EVALUATE_HPP
-#define EVALUATE_HPP
+#ifndef APERY_EVALUATE_HPP
+#define APERY_EVALUATE_HPP
 
 #include "overloadEnumOperators.hpp"
 #include "common.hpp"
@@ -561,4 +561,4 @@ Score evaluate(Position& pos, SearchStack* ss);
 
 extern EvaluateHashTable g_evalTable;
 
-#endif // #ifndef EVALUATE_HPP
+#endif // #ifndef APERY_EVALUATE_HPP

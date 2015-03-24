@@ -1,5 +1,5 @@
-#ifndef MOVE_HPP
-#define MOVE_HPP
+#ifndef APERY_MOVE_HPP
+#define APERY_MOVE_HPP
 
 #include "common.hpp"
 #include "square.hpp"
@@ -198,4 +198,4 @@ inline Move move16toMove(const Move move, const Position& pos) {
 	return move | pieceType2Move(ptFrom) | capturedPieceType2Move(move.to(), pos);
 }
 
-#endif // #ifndef MOVE_HPP
+#endif // #ifndef APERY_MOVE_HPP

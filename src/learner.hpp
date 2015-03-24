@@ -1,5 +1,5 @@
-#ifndef LEARNER_HPP
-#define LEARNER_HPP
+#ifndef APERY_LEARNER_HPP
+#define APERY_LEARNER_HPP
 
 #include "position.hpp"
 #include "thread.hpp"
@@ -495,4 +495,4 @@ private:
 
 #endif
 
-#endif // #ifndef LEARNER_HPP
+#endif // #ifndef APERY_LEARNER_HPP
