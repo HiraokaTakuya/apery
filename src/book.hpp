@@ -32,6 +32,6 @@ private:
 	static Key ZobTurn;
 };
 
-void makeBook(Position& pos);
+void makeBook(Position& pos, std::istringstream& ssCmd);
 
 #endif // #ifndef BOOK_HPP

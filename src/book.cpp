@@ -150,8 +150,14 @@ inline bool countCompare(const BookEntry& b1, const BookEntry& b2) {
 }
 
 #if !defined MINIMUL
-void makeBook(Position& pos) {
-	std::ifstream ifs("../2chkifu/2013/utf82chkifu.csa", std::ios::binary);
+void makeBook(Position& pos, std::istringstream& ssCmd) {
+	std::string fileName;
+	ssCmd >> fileName;
+	std::ifstream ifs(fileName.c_str(), std::ios::binary);
+	if (!ifs) {
+		std::cout << "I cannot open " << fileName << std::endl;
+		return;
+	}
 	std::string line;
 	std::map<Key, std::vector<BookEntry> > bookMap;
 
