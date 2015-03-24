@@ -1,20 +1,8 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-#include <inttypes.h>
-#define INT64_C(val) val##i64
-#define UINT64_C(val) val##ui64
-#elif defined(__INTEL_COMPILER)
-#include <inttypes.h>
-#define INT64_C(val) val##ll
-#define UINT64_C(val) val##ull
-#else
-#include <cinttypes>
-#endif
-
 #include "ifdef.hpp"
-
+#include <cinttypes>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
