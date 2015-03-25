@@ -25,15 +25,17 @@ const s32 Evaluater::K_Fix_Offset[SquareNum] = {
 
 EvaluateHashTable g_evalTable;
 
-const int kppArray[31] = {0,        f_pawn,   f_lance,  f_knight,
-						  f_silver, f_bishop, f_rook,   f_gold,   
-						  0,        f_gold,   f_gold,   f_gold,
-						  f_gold,   f_horse,  f_dragon,
-						  0,
-						  0,        e_pawn,   e_lance,  e_knight,
-						  e_silver, e_bishop, e_rook,   e_gold,   
-						  0,        e_gold,   e_gold,   e_gold,
-						  e_gold,   e_horse,  e_dragon};
+const int kppArray[31] = {
+	0,        f_pawn,   f_lance,  f_knight,
+	f_silver, f_bishop, f_rook,   f_gold,   
+	0,        f_gold,   f_gold,   f_gold,
+	f_gold,   f_horse,  f_dragon,
+	0,
+	0,        e_pawn,   e_lance,  e_knight,
+	e_silver, e_bishop, e_rook,   e_gold,   
+	0,        e_gold,   e_gold,   e_gold,
+	e_gold,   e_horse,  e_dragon
+};
 
 const int kppHandArray[ColorNum][HandPieceNum] = {
 	{f_hand_pawn, f_hand_lance, f_hand_knight, f_hand_silver,
@@ -153,19 +155,19 @@ namespace {
 		Square sq;
 		Bitboard bb;
 
-#define FOO(posBB, f_pt, e_pt)											\
-		bb = (posBB) & pos.bbOf(Black);									\
-		FOREACH_BB(bb, sq, {											\
-				list0[nlist] = (f_pt) + sq;								\
-				list1[nlist] = (e_pt) + inverse(sq);					\
-				nlist    += 1;											\
-			});															\
-																		\
-		bb = (posBB) & pos.bbOf(White);									\
-		FOREACH_BB(bb, sq, {											\
-				list0[nlist] = (e_pt) + sq;								\
-				list1[nlist] = (f_pt) + inverse(sq);					\
-				nlist    += 1;											\
+#define FOO(posBB, f_pt, e_pt)							\
+		bb = (posBB) & pos.bbOf(Black);					\
+		FOREACH_BB(bb, sq, {							\
+				list0[nlist] = (f_pt) + sq;				\
+				list1[nlist] = (e_pt) + inverse(sq);	\
+				nlist    += 1;							\
+			});											\
+														\
+		bb = (posBB) & pos.bbOf(White);					\
+		FOREACH_BB(bb, sq, {							\
+				list0[nlist] = (e_pt) + sq;				\
+				list1[nlist] = (f_pt) + inverse(sq);	\
+				nlist    += 1;							\
 			});
 
 		FOO(pos.bbOf(Pawn  ), f_pawn  , e_pawn  );
@@ -238,27 +240,27 @@ Score evaluateUnUseDiff(const Position& pos) {
 	const Square sq_wk = pos.kingSquare(White);
 	int nlist = 0;
 
-#define FOO(hand, HP, list0_index, list1_index, hand0_shift)		\
-	for (u32 i = 1; i <= hand.numOf<HP>(); ++i) {					\
-		list0[nlist] = list0_index + i;								\
-		list1[nlist] = list1_index + i;								\
-		++nlist;													\
+#define FOO(hand, HP, list0_index, list1_index)		\
+	for (u32 i = 1; i <= hand.numOf<HP>(); ++i) {	\
+		list0[nlist] = list0_index + i;				\
+		list1[nlist] = list1_index + i;				\
+		++nlist;									\
 	}
 
-	FOO(handB, HPawn  , f_hand_pawn  , e_hand_pawn  ,  0);
-	FOO(handW, HPawn  , e_hand_pawn  , f_hand_pawn  ,  1);
-	FOO(handB, HLance , f_hand_lance , e_hand_lance ,  2);
-	FOO(handW, HLance , e_hand_lance , f_hand_lance ,  3);
-	FOO(handB, HKnight, f_hand_knight, e_hand_knight,  4);
-	FOO(handW, HKnight, e_hand_knight, f_hand_knight,  5);
-	FOO(handB, HSilver, f_hand_silver, e_hand_silver,  6);
-	FOO(handW, HSilver, e_hand_silver, f_hand_silver,  7);
-	FOO(handB, HGold  , f_hand_gold  , e_hand_gold  ,  8);
-	FOO(handW, HGold  , e_hand_gold  , f_hand_gold  ,  9);
-	FOO(handB, HBishop, f_hand_bishop, e_hand_bishop, 10);
-	FOO(handW, HBishop, e_hand_bishop, f_hand_bishop, 11);
-	FOO(handB, HRook  , f_hand_rook  , e_hand_rook  , 12);
-	FOO(handW, HRook  , e_hand_rook  , f_hand_rook  , 13);
+	FOO(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
+	FOO(handW, HPawn  , e_hand_pawn  , f_hand_pawn  );
+	FOO(handB, HLance , f_hand_lance , e_hand_lance );
+	FOO(handW, HLance , e_hand_lance , f_hand_lance );
+	FOO(handB, HKnight, f_hand_knight, e_hand_knight);
+	FOO(handW, HKnight, e_hand_knight, f_hand_knight);
+	FOO(handB, HSilver, f_hand_silver, e_hand_silver);
+	FOO(handW, HSilver, e_hand_silver, f_hand_silver);
+	FOO(handB, HGold  , f_hand_gold  , e_hand_gold  );
+	FOO(handW, HGold  , e_hand_gold  , f_hand_gold  );
+	FOO(handB, HBishop, f_hand_bishop, e_hand_bishop);
+	FOO(handW, HBishop, e_hand_bishop, f_hand_bishop);
+	FOO(handB, HRook  , f_hand_rook  , e_hand_rook  );
+	FOO(handW, HRook  , e_hand_rook  , f_hand_rook  );
 #undef FOO
 
 	nlist = make_list_unUseDiff(pos, list0, list1, nlist);
