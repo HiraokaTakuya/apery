@@ -255,8 +255,18 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 			const File diff_file_kj =
 				static_cast<File>(diff_file_ki == static_cast<File>(0) ? -abs(kfile - jfile) :
 								  kfile_ifile_is_inversed              ? jfile - kfile       : kfile - jfile);
-			ret[retIdx++] = &r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - &oneArrayKPP[0];
-			ret[retIdx++] = &r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + irank - jrank] - &oneArrayKPP[0];
+			if (ipiece == jpiece) {
+				if (diff_file_kj < diff_file_ki || (diff_file_kj == diff_file_ki && -jrank < -irank))
+					ret[retIdx++] = &r_kpp_bb[jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank][ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank] - &oneArrayKPP[0];
+				else
+					ret[retIdx++] = &r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - &oneArrayKPP[0];
+				// 同じ駒の種類の時は、2駒の相対関係は上下がどちらになっても同じ点数であるべき。
+				ret[retIdx++] = &r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + -abs(irank - jrank)] - &oneArrayKPP[0];
+			}
+			else {
+				ret[retIdx++] = &r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - &oneArrayKPP[0];
+				ret[retIdx++] = &r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + irank - jrank] - &oneArrayKPP[0];
+			}
 
 			if (ifile == FileE) {
 				// ppに関してiが5筋なのでjだけ左右反転しても構わない。
