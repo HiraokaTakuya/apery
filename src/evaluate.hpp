@@ -147,6 +147,8 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 			// 相対位置は[file][rank]の順
 			KPPType r_kpp_bb[PieceNone][17][17][PieceNone][17][17];
 			KPPType r_kpp_hb[fe_hand_end][PieceNone][17][17];
+			KPPType xpp[FileNum][fe_end][fe_end];
+			KPPType ypp[RankNum][fe_end][fe_end];
 			KPPType pp[fe_end][fe_end];
 			KPPType r_pp_bb[PieceNone][PieceNone][17][17];
 			KPPType r_pp_hb[fe_hand_end][PieceNone];
@@ -174,15 +176,18 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 	//       型によっては kkps_begin_index などの値が異なる。
 	//       ただ、end - begin のサイズは型によらず一定。
 	size_t kpps_begin_index() const { return &kpp[0][0][0] - &oneArrayKPP[0]; }
-	size_t kpps_end_index() const { return kpps_begin_index() + (sizeof(kpp)+sizeof(r_kpp_bb)+sizeof(r_kpp_hb)+sizeof(pp)+sizeof(r_pp_bb)+sizeof(r_pp_hb))/sizeof(KPPType); }
+	size_t kpps_end_index() const { return kpps_begin_index() + (sizeof(kpp)+sizeof(r_kpp_bb)+sizeof(r_kpp_hb)+sizeof(xpp)+sizeof(ypp)+sizeof(pp)+sizeof(r_pp_bb)+sizeof(r_pp_hb))/sizeof(KPPType); }
 	size_t kkps_begin_index() const { return &kkp[0][0][0] - &oneArrayKKP[0]; }
 	size_t kkps_end_index() const { return kkps_begin_index() + (sizeof(kkp)+sizeof(kp)+sizeof(r_kkp_b)+sizeof(r_kkp_h)+sizeof(r_kp_b)+sizeof(r_kp_h))/sizeof(KKPType); }
 	size_t kks_begin_index() const { return &kk[0][0] - &oneArrayKK[0]; }
 	size_t kks_end_index() const { return kks_begin_index() + (sizeof(kk)+sizeof(k)+sizeof(r_kk))/sizeof(KKType); }
 
-	std::array<ptrdiff_t, 5> kppIndices(Square ksq, int i, int j) {
+	// KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
+	// 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
+	// 0 の時だけは正負が不明だが、0 は歩の持ち駒 0 枚を意味していて無効な値なので問題なし。
+	std::array<ptrdiff_t, 7> kppIndices(Square ksq, int i, int j) {
 		// 最後の要素は常に max 値 が入ることとする。
-		std::array<ptrdiff_t, 5> ret;
+		std::array<ptrdiff_t, 7> ret;
 		int retIdx = 0;
 		// 無効なインデックスは最大値にしておく。
 		std::fill(std::begin(ret), std::end(ret), std::numeric_limits<ptrdiff_t>::max());
@@ -213,12 +218,14 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 		if (j < i) std::swap(i, j);
 
 		ret[retIdx++] = &kpp[ksq][i][j] - &oneArrayKPP[0];
+		ret[retIdx++] = &xpp[makeFile(ksq)][i][j] - &oneArrayKPP[0];
 
 		assert(i < j);
 		if (j < fe_hand_end) {
 			// i, j 共に持ち駒
 			// 相対位置無し。
 			ret[retIdx++] = &pp[i][j] - &oneArrayKPP[0];
+			ret[retIdx++] = &ypp[makeRank(ksq)][i][j] - &oneArrayKPP[0];
 		}
 		else if (i < fe_hand_end) {
 			// i 持ち駒、 j 盤上
@@ -233,6 +240,7 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 			ret[retIdx++] = &r_pp_hb[i][jpiece] - &oneArrayKPP[0];
 
 			ret[retIdx++] = &pp[i][inverseFileIndexIfLefterThanMiddle(j)] - &oneArrayKPP[0];
+			ret[retIdx++] = &ypp[krank][i][inverseFileIndexIfLefterThanMiddle(j)] - &oneArrayKPP[0];
 		}
 		else {
 			// i, j 共に盤上
@@ -282,6 +290,7 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 				if (j < i) std::swap(i, j);
 			}
 			ret[retIdx++] = &pp[i][j] - &oneArrayKPP[0];
+			ret[retIdx++] = &ypp[krank][i][j] - &oneArrayKPP[0];
 		}
 
 		assert(*(std::end(ret)-1) == std::numeric_limits<ptrdiff_t>::max());
@@ -440,6 +449,8 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		FOO(kpp);
 		FOO(r_kpp_bb);
 		FOO(r_kpp_hb);
+		FOO(xpp);
+		FOO(ypp);
 		FOO(pp);
 		FOO(r_pp_bb);
 		FOO(r_pp_hb);
@@ -464,6 +475,8 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		FOO(kpp);
 		FOO(r_kpp_bb);
 		FOO(r_kpp_hb);
+		FOO(xpp);
+		FOO(ypp);
 		FOO(pp);
 		FOO(r_pp_bb);
 		FOO(r_pp_hb);
