@@ -504,7 +504,14 @@ void Searcher::idLoop(Position& pos) {
 	int lastInfoTime = -1; // 将棋所のコンソールが詰まる問題への対処用
 
 	memset(ss, 0, 4 * sizeof(SearchStack));
-	depth = bestMoveChanges = 0;
+	bestMoveChanges = 0;
+#if defined LEARN
+	// 高速化の為に浅い探索は反復深化しないようにする。実戦時ではほぼ影響無い。学習時は浅い探索をひたすら繰り返す為。
+	depth = std::max<Ply>(0, limits.depth - 1);
+#else
+	depth = 0;
+#endif
+
 	ss[0].currentMove = Move::moveNull(); // skip update gains
 	tt.newSearch();
 	history.clear();
