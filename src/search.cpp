@@ -1453,9 +1453,8 @@ bool nyugyoku(const Position& pos) {
 	const Bitboard opponentsField = (us == Black ? inFrontMask<Black, Rank6>() : inFrontMask<White, Rank4>());
 
 	// 二 宣言側の玉が敵陣三段目以内に入っている。
-	if (!pos.bbOf(King, us).andIsNot0(opponentsField)) {
+	if (!pos.bbOf(King, us).andIsNot0(opponentsField))
 		return false;
-	}
 
 	// 三 宣言側が、大駒5点小駒1点で計算して
 	//     先手の場合28点以上の持点がある。
@@ -1468,27 +1467,23 @@ bool nyugyoku(const Position& pos) {
 		+ smallBB.popCount()
 		+ hand.numOf<HPawn>() + hand.numOf<HLance>() + hand.numOf<HKnight>()
 		+ hand.numOf<HSilver>() + hand.numOf<HGold>();
-#if defined DENOUSEN_FINAL
-	if (val < 31) {
+#if defined LAW_24
+	if (val < 31)
 		return false;
-	}
 #else
-	if (val < (us == Black ? 28 : 27)) {
+	if (val < (us == Black ? 28 : 27))
 		return false;
-	}
 #endif
 
 	// 四 宣言側の敵陣三段目以内の駒は、玉を除いて10枚以上存在する。
 
 	// 玉は敵陣にいるので、自駒が敵陣に11枚以上あればよい。
-	if ((pos.bbOf(us) & opponentsField).popCount() < 11) {
+	if ((pos.bbOf(us) & opponentsField).popCount() < 11)
 		return false;
-	}
 
 	// 五 宣言側の玉に王手がかかっていない。
-	if (pos.inCheck()) {
+	if (pos.inCheck())
 		return false;
-	}
 
 	// 六 宣言側の持ち時間が残っている。
 
