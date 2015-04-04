@@ -150,6 +150,18 @@ inline bool countCompare(const BookEntry& b1, const BookEntry& b2) {
 }
 
 #if !defined MINIMUL
+// 以下のようなフォーマットが入力される。
+// <棋譜番号> <日付> <先手名> <後手名> <0:引き分け, 1:先手勝ち, 2:後手勝ち> <総手数> <棋戦名前> <戦形>
+// <CSA1行形式の指し手>
+//
+// (例)
+// 1 2003/09/08 羽生善治 谷川浩司 2 126 王位戦 その他の戦型
+// 7776FU3334FU2726FU4132KI
+//
+// 勝った方の手だけを定跡として使うこととする。
+// 出現回数がそのまま定跡として使う確率となる。
+// 基本的には棋譜を丁寧に選別した上で定跡を作る必要がある。
+// MAKE_SEARCHED_BOOK を on にしていると、定跡生成に非常に時間が掛かる。
 void makeBook(Position& pos, std::istringstream& ssCmd) {
 	std::string fileName;
 	ssCmd >> fileName;
