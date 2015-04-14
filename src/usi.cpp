@@ -65,9 +65,6 @@ namespace {
 }
 
 void OptionsMap::init(Searcher* s) {
-	const int cpus = cpuCoreCount();
-	const int minSplitDepth = (cpus < 6 ? 4 : (cpus < 8 ? 5 : 7));
-	(*this)["Use_Search_Log"]              = USIOption(false);
 	(*this)["USI_Hash"]                    = USIOption(32, 1, 65536, onHashSize, s);
 	(*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
 	(*this)["Book_File"]                   = USIOption("../bin/book.bin");
@@ -81,15 +78,14 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
 	(*this)["Skill_Level"]                 = USIOption(20, 0, 20);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
-	(*this)["Max_Random_Score_Diff_Ply"]   = USIOption(40, SHRT_MIN, SHRT_MAX);
+	(*this)["Max_Random_Score_Diff_Ply"]   = USIOption(40, 0, SHRT_MAX);
 	(*this)["Emergency_Move_Horizon"]      = USIOption(40, 0, 50);
 	(*this)["Emergency_Base_Time"]         = USIOption(200, 0, 30000);
 	(*this)["Emergency_Move_Time"]         = USIOption(70, 0, 5000);
 	(*this)["Slow_Mover"]                  = USIOption(100, 10, 1000);
 	(*this)["Minimum_Thinking_Time"]       = USIOption(1500, 0, INT_MAX);
-	(*this)["Min_Split_Depth"]             = USIOption(minSplitDepth, 4, 12, onThreads, s);
 	(*this)["Max_Threads_per_Split_Point"] = USIOption(5, 4, 8, onThreads, s);
-	(*this)["Threads"]                     = USIOption(cpus, 1, MaxThreads, onThreads, s);
+	(*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
 	(*this)["Use_Sleeping_Threads"]        = USIOption(true);
 }
 

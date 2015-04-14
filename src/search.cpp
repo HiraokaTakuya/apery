@@ -256,12 +256,6 @@ namespace {
 	inline std::string scoreToUSI(const Score score) {
 		return scoreToUSI(score, -ScoreInfinite, ScoreInfinite);
 	}
-
-	void pvInfoToLog(Position& pos, const Ply d, const Score bestScore,
-					 const int elapsedTime, const Move pv[])
-	{
-		// not implemented
-	}
 }
 
 std::string Searcher::pvInfoToUSI(Position& pos, const Ply depth, const Score alpha, const Score beta) {
@@ -639,12 +633,6 @@ void Searcher::idLoop(Position& pos) {
 		//if (skill.enabled() && skill.timeToPick(depth)) {
 		//	skill.pickMove();
 		//}
-
-#if 0
-		if (options["Use_Search_Log"]) {
-			pvInfoToLog(pos, depth, bestScore, searchTimer.elapsed(), &rootMoves[0].pv_[0]);
-		}
-#endif
 
 		if (limits.useTimeManagement() && !signals.stopOnPonderHit) {
 			bool stop = false;

@@ -109,8 +109,8 @@ ThreadPool::~ThreadPool() {
 
 void ThreadPool::readUSIOptions(Searcher* s) {
 	maxThreadsPerSplitPoint_ = s->options["Max_Threads_per_Split_Point"];
-	minimumSplitDepth_       = s->options["Min_Split_Depth"] * OnePly;
 	const size_t requested   = s->options["Threads"];
+	minimumSplitDepth_ = (requested < 6 ? 4 : (requested < 8 ? 5 : 7)) * OnePly;
 
 	assert(0 < requested);
 
