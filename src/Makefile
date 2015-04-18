@@ -40,6 +40,9 @@ sse:
 sse41:
 	$(MAKE) CFLAGS='$(CFLAGS) -DNDEBUG -DHAVE_SSE4 -msse4.1' LDFLAGS='$(LDFLAGS) -flto' $(TARGET)
 
+sse2:
+	$(MAKE) CFLAGS='$(CFLAGS) -DNDEBUG -DHAVE_SSE2 -msse2' LDFLAGS='$(LDFLAGS) -flto' $(TARGET)
+
 nosse:
 	$(MAKE) CFLAGS='$(CFLAGS) -DNDEBUG' LDFLAGS='$(LDFLAGS) -flto' $(TARGET)
 
@@ -55,7 +58,7 @@ profuse:
 pgo:
 	$(MAKE) profgen
 	@./$(TARGET) bench
-	@touch *.[ch]pp
+	@touch $(SOURCES)
 	$(MAKE) profuse
 
 clean:
