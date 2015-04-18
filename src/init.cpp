@@ -300,9 +300,6 @@ void initTable() {
 	initBetweenBB();
 	initCheckTable();
 
-	auto eval = std::unique_ptr<Evaluater>(new Evaluater);
-	eval->init();
-
 	Book::init();
 	initSearchTable();
 }

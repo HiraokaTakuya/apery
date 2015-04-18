@@ -427,49 +427,58 @@ template<typename KPPType, typename KKPType, typename KKType> struct EvaluaterBa
 
 struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 	// 探索時に参照する評価関数テーブル
-	static s32 KK[SquareNum][SquareNum];
 	static s16 KPP[SquareNum][fe_end][fe_end];
 	static s32 KKP[SquareNum][SquareNum][fe_end];
+	static s32 KK[SquareNum][SquareNum];
 #if defined USE_K_FIX_OFFSET
 	static const s32 K_Fix_Offset[SquareNum];
 #endif
 
 	void clear() { memset(this, 0, sizeof(*this)); }
-	void init() {
+	static std::string addSlashIfNone(const std::string& str) {
+		std::string ret = str;
+		if (ret == "")
+			ret += ".";
+		if (ret.back() != '/')
+			ret += "/";
+		return ret;
+	}
+	void init(const std::string& dirName, const bool Synthesized) {
+		// 合成された評価関数バイナリがあればそちらを使う。
+		if (Synthesized) {
+			if (readSynthesized(dirName))
+				return;
+		}
 		clear();
-		read();
+		read(dirName);
 		setEvaluate();
 	}
-	void read() {
+	static bool readSynthesized(const std::string& dirName) {
 #define FOO(x) {														\
-			std::ifstream ifs("" #x ".bin", std::ios::binary);			\
+			std::ifstream ifs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
 			if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));	\
+			else     return false;										\
 		}
-
-		FOO(kpp);
-		FOO(r_kpp_bb);
-		FOO(r_kpp_hb);
-		FOO(xpp);
-		FOO(ypp);
-		FOO(pp);
-		FOO(r_pp_bb);
-		FOO(r_pp_hb);
-		FOO(kp);
-		FOO(kkp);
-		FOO(r_kkp_b);
-		FOO(r_kkp_h);
-		FOO(r_kp_b);
-		FOO(r_kp_h);
-		FOO(kk);
-		FOO(k);
-		FOO(r_kk);
-
+		FOO(KPP);
+		FOO(KKP);
+		FOO(KK);
+#undef FOO
+		return true;
+	}
+	static void writeSynthesized(const std::string& dirName) {
+#define FOO(x) {														\
+			std::ofstream ofs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
+			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
+		}
+		FOO(KPP);
+		FOO(KKP);
+		FOO(KK);
 #undef FOO
 	}
-	void write() {
+	void read(const std::string& dirName) {
 #define FOO(x) {														\
-			std::ofstream ofs("" #x ".bin", std::ios::binary);			\
-			if (ofs) ofs.write(reinterpret_cast<char*>(x), sizeof(x));	\
+			std::ifstream ifs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
+			ifs.read(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
 
 		FOO(kpp);
@@ -489,7 +498,31 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		FOO(kk);
 		FOO(k);
 		FOO(r_kk);
+#undef FOO
+	}
+	void write(const std::string& dirName) {
+#define FOO(x) {														\
+			std::ofstream ofs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
+			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
+		}
 
+		FOO(kpp);
+		FOO(r_kpp_bb);
+		FOO(r_kpp_hb);
+		FOO(xpp);
+		FOO(ypp);
+		FOO(pp);
+		FOO(r_pp_bb);
+		FOO(r_pp_hb);
+		FOO(kp);
+		FOO(kkp);
+		FOO(r_kkp_b);
+		FOO(r_kkp_h);
+		FOO(r_kp_b);
+		FOO(r_kp_h);
+		FOO(kk);
+		FOO(k);
+		FOO(r_kk);
 #undef FOO
 	}
 	void setEvaluate() {

@@ -14,6 +14,9 @@ namespace {
 	void onThreads(Searcher* s, const USIOption&)      { s->threads.readUSIOptions(s); }
 	void onHashSize(Searcher* s, const USIOption& opt) { s->tt.setSize(opt); }
 	void onClearHash(Searcher* s, const USIOption&)    { s->tt.clear(); }
+	void onEvalDir(Searcher*, const USIOption& opt)    {
+		std::unique_ptr<Evaluater>(new Evaluater)->init(opt, true);
+	}
 }
 
 bool CaseInsensitiveLess::operator () (const std::string& s1, const std::string& s2) const {
@@ -73,6 +76,8 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
+	(*this)["Eval_Dir"]                    = USIOption(".", onEvalDir);
+	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
@@ -353,9 +358,6 @@ void Searcher::setOption(std::istringstream& ssCmd) {
 	if (!options.isLegalOption(name)) {
 		std::cout << "No such option: " << name << std::endl;
 	}
-	else if (value.empty()) {
-		options[name] = true;
-	}
 	else {
 		options[name] = value;
 	}
@@ -481,6 +483,9 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 #endif
 		else                           { SYNCCOUT << "unknown command: " << cmd << SYNCENDL; }
 	} while (token != "quit" && argc == 1);
+
+	if (options["Write_Synthesized_Eval"])
+		Evaluater::writeSynthesized(options["Eval_Dir"]);
 
 	threads.waitForThinkFinished();
 }

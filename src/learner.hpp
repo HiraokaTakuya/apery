@@ -119,7 +119,7 @@ struct BookMoveData {
 class Learner {
 public:
 	void learn(Position& pos, std::istringstream& ssCmd) {
-		eval_.init();
+		eval_.init(pos.searcher()->options["Eval_Dir"], false);
 		readBook(pos, ssCmd);
 		size_t threadNum;
 		ssCmd >> threadNum;
@@ -338,7 +338,7 @@ private:
 		if      (0.0 <= dv && v <= std::numeric_limits<T>::max() - step) v += step;
 		else if (dv <= 0.0 && std::numeric_limits<T>::min() + step <= v) v -= step;
 	}
-	void updateEval() {
+	void updateEval(const std::string& dirName) {
 		for (size_t i = eval_.kpps_begin_index(), j = parse2Data_.params.kpps_begin_index(); i < eval_.kpps_end_index(); ++i, ++j)
 			updateFV(eval_.oneArrayKPP[i], parse2Data_.params.oneArrayKPP[j]);
 		for (size_t i = eval_.kkps_begin_index(), j = parse2Data_.params.kkps_begin_index(); i < eval_.kkps_end_index(); ++i, ++j)
@@ -347,7 +347,7 @@ private:
 			updateFV(eval_.oneArrayKK[i], parse2Data_.params.oneArrayKK[j]);
 
 		eval_.setEvaluate();
-		eval_.write();
+		eval_.write(dirName);
 		g_evalTable.clear();
 	}
 	double sigmoid(const double x) const {
@@ -460,7 +460,7 @@ private:
 			}
 			parse2Data_.params.lowerDimension();
 			std::cout << "update eval ... " << std::flush;
-			updateEval();
+			updateEval(pos.searcher()->options["Eval_Dir"]);
 			std::cout << "done" << std::endl;
 			std::cout << "parse2 1 step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 			print();

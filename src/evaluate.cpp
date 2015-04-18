@@ -5,9 +5,9 @@
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-s32 Evaluater::KK[SquareNum][SquareNum];
 s16 Evaluater::KPP[SquareNum][fe_end][fe_end];
 s32 Evaluater::KKP[SquareNum][SquareNum][fe_end];
+s32 Evaluater::KK[SquareNum][SquareNum];
 
 #if defined USE_K_FIX_OFFSET
 const s32 Evaluater::K_Fix_Offset[SquareNum] = {
