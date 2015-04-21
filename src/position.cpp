@@ -65,6 +65,8 @@ Bitboard Position::attacksFrom(const PieceType pt, const Color c, const Square s
 	case Dragon:    return dragonAttack(sq, occupied);
 	default:        UNREACHABLE;
 	}
+	UNREACHABLE;
+	return allOneBB();
 }
 
 // 実際に指し手が合法手かどうか判定
@@ -543,8 +545,8 @@ namespace {
 		}
 		return nextAttacker<SEENextPieceType<PT>::value>(pos, to, opponentAttackers, occupied, attackers, turn);
 	}
-	template <> FORCE_INLINE PieceType nextAttacker<King>(const Position& pos, const Square to, const Bitboard& opponentAttackers,
-														  Bitboard& occupied, Bitboard& attackers, const Color turn)
+	template <> FORCE_INLINE PieceType nextAttacker<King>(const Position&, const Square, const Bitboard&,
+														  Bitboard&, Bitboard&, const Color)
 	{
 		return King;
 	}

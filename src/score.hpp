@@ -34,6 +34,7 @@ enum Score {
 	ScoreMateInMaxPly  = ScoreMate0Ply - MaxPly,
 	ScoreMatedInMaxPly = -ScoreMateInMaxPly,
 	ScoreInfinite      = 32601,
+	ScoreNotEvaluated  = INT_MAX,
 	ScoreNone          = 32602
 };
 OverloadEnumOperators(Score);

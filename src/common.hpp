@@ -207,14 +207,13 @@ template <int N> struct Unroller {
 	}
 };
 template <> struct Unroller<0> {
-	template <typename T> FORCE_INLINE void operator () (T t) {}
+	template <typename T> FORCE_INLINE void operator () (T) {}
 };
 
 const size_t CacheLineSize = 64; // 64byte
 
 // Stockfish ほとんどそのまま
 template <typename T> inline void prefetch(T* addr) {
-// SSE が使えない時は、_mm_prefetch() とかが使えないので、prefetch無しにする。
 #if defined HAVE_SSE2 || defined HAVE_SSE4
 #if defined(__INTEL_COMPILER)
 	// これでプリフェッチが最適化で消えるのを防げるらしい。
@@ -238,6 +237,9 @@ template <typename T> inline void prefetch(T* addr) {
 			charAddr += CacheLineSize;
 		});
 #endif
+#else
+	// SSE が使えない時は、_mm_prefetch() とかが使えないので、prefetch無しにする。
+	addr = addr; // warning 対策
 #endif
 }
 

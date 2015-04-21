@@ -392,7 +392,7 @@ private:
 						pos.doMove(bmd.pvBuffer[recordPVIndex], setUpStates->top());
 					}
 					// evaluate() の差分計算を無効化する。
-					ss[0].staticEvalRaw = ss[1].staticEvalRaw = static_cast<Score>(INT_MAX);
+					ss[0].staticEvalRaw = ss[1].staticEvalRaw = ScoreNotEvaluated;
 					const Score recordScore = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
 #if defined PRINT_PV
 					std::cout << ", score: " << recordScore << std::endl;
@@ -413,7 +413,7 @@ private:
 							setUpStates->push(StateInfo());
 							pos.doMove(bmd.pvBuffer[otherPVIndex], setUpStates->top());
 						}
-						ss[0].staticEvalRaw = ss[1].staticEvalRaw = static_cast<Score>(INT_MAX);
+						ss[0].staticEvalRaw = ss[1].staticEvalRaw = ScoreNotEvaluated;
 						const Score score = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
 						const auto diff = score - recordScore;
 						const double dT = (rootColor == Black ? dsigmoid(diff) : -dsigmoid(diff));

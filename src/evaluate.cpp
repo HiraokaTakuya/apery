@@ -109,7 +109,7 @@ namespace {
 		if (pos.csearcher()->inaniwaFlag != NotInaniwa) return false;
 #endif
 		Move lastMove;
-		if ((ss-1)->staticEvalRaw == INT_MAX || (lastMove = (ss-1)->currentMove).pieceTypeFrom() == King) {
+		if ((ss-1)->staticEvalRaw == ScoreNotEvaluated || (lastMove = (ss-1)->currentMove).pieceTypeFrom() == King) {
 			return false;
 		}
 
@@ -297,7 +297,7 @@ Score evaluateUnUseDiff(const Position& pos) {
 }
 
 Score evaluate(Position& pos, SearchStack* ss) {
-	if (ss->staticEvalRaw != INT_MAX) {
+	if (ss->staticEvalRaw != ScoreNotEvaluated) {
 		// null move の次の手の時のみ、ここに入る。
 		assert((pos.turn() == Black ? ss->staticEvalRaw : -ss->staticEvalRaw) == evaluateUnUseDiff(pos));
 		return (pos.turn() == Black ? ss->staticEvalRaw : -ss->staticEvalRaw) / FVScale;

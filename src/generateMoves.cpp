@@ -5,7 +5,7 @@ namespace {
 	// 馬, 龍の場合
 	template <MoveType MT, PieceType PT, Color US>
 	FORCE_INLINE MoveStack* generateHorseOrDragonMoves(MoveStack* moveStackList, const Position& pos,
-													   const Bitboard& target, const Square ksq)
+													   const Bitboard& target, const Square /*ksq*/)
 	{
 		Bitboard fromBB = pos.bbOf(PT, US);
 		while (fromBB.isNot0()) {
@@ -22,7 +22,7 @@ namespace {
 	// 角, 飛車の場合
 	template <MoveType MT, PieceType PT, Color US, bool ALL>
 	FORCE_INLINE MoveStack* generateBishopOrRookMoves(MoveStack* moveStackList, const Position& pos,
-													  const Bitboard& target, const Square ksq)
+													  const Bitboard& target, const Square /*ksq*/)
 	{
 		Bitboard fromBB = pos.bbOf(PT, US);
 
@@ -199,7 +199,7 @@ namespace {
 
 	// 金, 成り金をまとめて指し手生成
 	template <MoveType MT, PieceType PT, Color US, bool ALL> struct GeneratePieceMoves {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
+		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			static_assert(PT == Gold || PT == ProPawn || PT == ProLance || PT == ProKnight || PT == ProSilver, "");
 			// 金、成金のbitboardをまとめて扱う。
 			// todo: 金、成金 をまとめたbitboardをPositionクラスが持つべきか検討すること。
@@ -219,7 +219,7 @@ namespace {
 	};
 	// 歩の場合
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Pawn, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
+		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			// Txxx は先手、後手の情報を吸収した変数。数字は先手に合わせている。
 			const Rank TRank6 = (US == Black ? Rank6 : Rank4);
 			const Bitboard TRank789BB = inFrontMask<US, TRank6>();
@@ -261,7 +261,7 @@ namespace {
 	};
 	// 香車の場合
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Lance, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
+		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			Bitboard fromBB = pos.bbOf(Lance, US);
 
 			// bitboard のレイアウトが縦になっているので、from と to が同じ 64bit 変数に収まる。
@@ -317,7 +317,7 @@ namespace {
 	};
 	// 桂馬の場合
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Knight, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
+		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			Bitboard fromBB = pos.bbOf(Knight, US);
 			while (fromBB.isNot0()) {
 				const Square from = fromBB.firstOneFromI9();
@@ -361,7 +361,7 @@ namespace {
 	};
 	// 銀の場合
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Silver, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
+		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			Bitboard fromBB = pos.bbOf(Silver, US);
 			while (fromBB.isNot0()) {
 				const Square from = fromBB.firstOneFromI9();
@@ -401,7 +401,7 @@ namespace {
 	// 玉の場合
 	// 必ず盤上に 1 枚だけあることを前提にすることで、while ループを 1 つ無くして高速化している。
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, King, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
+		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			const Square from = pos.kingSquare(US);
 			Bitboard toBB = pos.attacksFrom<King>(US, from) & target;
 			while (toBB.isNot0()) {

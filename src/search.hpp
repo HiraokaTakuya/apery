@@ -19,7 +19,7 @@ struct SearchStack {
 	Depth reduction;
 	Score staticEval;
 	bool skipNullMove;
-	Score staticEvalRaw; // 評価関数の差分計算用、値が入っていないときは INT_MAX にしておく。
+	Score staticEvalRaw; // 評価関数の差分計算用、値が入っていないときは ScoreNotEvaluated にしておく。
 						 // 常に Black の評価値を入れておく。
 };
 
@@ -57,7 +57,7 @@ public:
 	}
 
 	void extractPvFromTT(Position& pos);
-	void insertPvInTT(Position& pos, SearchStack* ss);
+	void insertPvInTT(Position& pos);
 
 public:
 	Score score_;
