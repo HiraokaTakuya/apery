@@ -151,8 +151,11 @@ OverloadEnumOperators(Direction);
 
 // 2つの位置関係のテーブル
 extern Direction SquareRelation[SquareNum][SquareNum];
-
 inline Direction squareRelation(const Square sq1, const Square sq2) { return SquareRelation[sq1][sq2]; }
+
+// 何かの駒で一手で行ける位置関係についての距離のテーブル。桂馬の位置は距離1とする。
+extern int SquareDistance[SquareNum][SquareNum];
+inline int squareDistance(const Square sq1, const Square sq2) { return SquareDistance[sq1][sq2]; }
 
 // from, to, ksq が 縦横斜めの同一ライン上にあれば true を返す。
 template <bool FROM_KSQ_NEVER_BE_DIRECMISC>

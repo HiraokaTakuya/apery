@@ -46,7 +46,7 @@ CheckInfo::CheckInfo(const Position& pos) {
 	checkBB[Dragon   ] = checkBB[Rook  ] | pos.attacksFrom<King>(ksq);
 }
 
-Bitboard Position::attacksFrom(const PieceType pt, const Color c, const Square sq, const Bitboard& occupied) const {
+Bitboard Position::attacksFrom(const PieceType pt, const Color c, const Square sq, const Bitboard& occupied) {
 	switch (pt) {
 	case Occupied:  return allZeroBB();
 	case Pawn:      return pawnAttack(c, sq);

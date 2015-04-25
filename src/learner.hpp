@@ -40,35 +40,44 @@ struct LearnEvaluater : public EvaluaterBase<float, float, float> {
 	// kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
 	void lowerDimension() {
 #define FOO(indices, oneArray, sum)										\
-		for (auto index : indices) {									\
-			if (index == std::numeric_limits<ptrdiff_t>::max()) break;	\
-			if (0 <= index) oneArray[ index] += sum;					\
-			else            oneArray[-index] -= sum;					\
+		for (auto indexAndWeight : indices) {							\
+			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
+			if (0 <= indexAndWeight.first) oneArray[ indexAndWeight.first] += sum; \
+			else                           oneArray[-indexAndWeight.first] -= sum; \
 		}
 
 		// KPP
-		for (Square ksq = I9; ksq < SquareNum; ++ksq) {
-			for (int i = 0; i < fe_end; ++i) {
-				for (int j = 0; j < fe_end; ++j) {
-					auto indices = kppIndices(ksq, i, j);
-					FOO(indices, oneArrayKPP, kpp_raw[ksq][i][j]);
+		{
+			std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
+			for (Square ksq = I9; ksq < SquareNum; ++ksq) {
+				for (int i = 0; i < fe_end; ++i) {
+					for (int j = 0; j < fe_end; ++j) {
+						kppIndices(indices, ksq, i, j);
+						FOO(indices, oneArrayKPP, kpp_raw[ksq][i][j]);
+					}
 				}
 			}
 		}
 		// KKP
-		for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
-			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
-				for (int i = 0; i < fe_end; ++i) {
-					auto indices = kkpIndices(ksq0, ksq1, i);
-					FOO(indices, oneArrayKKP, kkp_raw[ksq0][ksq1][i]);
+		{
+			std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
+			for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+					for (int i = 0; i < fe_end; ++i) {
+						kkpIndices(indices, ksq0, ksq1, i);
+						FOO(indices, oneArrayKKP, kkp_raw[ksq0][ksq1][i]);
+					}
 				}
 			}
 		}
 		// KK
-		for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
-			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
-				auto indices = kkIndices(ksq0, ksq1);
-				FOO(indices, oneArrayKK, kk_raw[ksq0][ksq1]);
+		{
+			std::pair<ptrdiff_t, int> indices[KKIndicesMax];
+			for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+					kkIndices(indices, ksq0, ksq1);
+					FOO(indices, oneArrayKK, kk_raw[ksq0][ksq1]);
+				}
 			}
 		}
 #undef FOO
@@ -152,8 +161,7 @@ public:
 private:
 	// 学習に使う棋譜から、手と手に対する補助的な情報を付けでデータ保持する。
 	// 50000局程度に対して10秒程度で終わるからシングルコアで良い。
-	template<typename T>
-	void setLearnMoves(Position& pos, T& dict, std::string& s0, std::string& s1) {
+	void setLearnMoves(Position& pos, std::set<std::pair<Key, Move> >& dict, std::string& s0, std::string& s1) {
 		bookMovesDatum_.push_back(std::vector<BookMoveData>());
 		BookMoveData bmdBase[ColorNum];
 		bmdBase[Black].move = bmdBase[White].move = Move::moveNone();

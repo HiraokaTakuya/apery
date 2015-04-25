@@ -284,6 +284,34 @@ namespace {
 			}
 		}
 	}
+
+	void initSquareDistance() {
+		for (Square sq0 = I9; sq0 < SquareNum; ++sq0) {
+			for (Square sq1 = I9; sq1 < SquareNum; ++sq1) {
+				switch (squareRelation(sq0, sq1)) {
+				case DirecMisc:
+					// DirecMisc な関係は全て距離 1 にしてもKPE学習には問題無いんだけれど。
+					SquareDistance[sq0][sq1] = 0;
+					if (knightAttack(Black, sq0).isSet(sq1) || knightAttack(White, sq0).isSet(sq1))
+						SquareDistance[sq0][sq1] = 1;
+					break;
+				case DirecFile:
+					SquareDistance[sq0][sq1] = abs(static_cast<int>(sq0 - sq1) / static_cast<int>(DeltaN));
+					break;
+				case DirecRank:
+					SquareDistance[sq0][sq1] = abs(static_cast<int>(sq0 - sq1) / static_cast<int>(DeltaE));
+					break;
+				case DirecDiagNESW:
+					SquareDistance[sq0][sq1] = abs(static_cast<int>(sq0 - sq1) / static_cast<int>(DeltaNE));
+					break;
+				case DirecDiagNWSE:
+					SquareDistance[sq0][sq1] = abs(static_cast<int>(sq0 - sq1) / static_cast<int>(DeltaNW));
+					break;
+				default: UNREACHABLE;
+				}
+			}
+		}
+	}
 }
 
 void initTable() {
@@ -299,6 +327,7 @@ void initTable() {
 	initAttackToEdge();
 	initBetweenBB();
 	initCheckTable();
+	initSquareDistance();
 
 	Book::init();
 	initSearchTable();

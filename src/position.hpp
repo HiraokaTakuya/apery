@@ -168,7 +168,7 @@ public:
 	// 利きの生成
 
 	// 任意の occupied に対する利きを生成する。
-	template <PieceType PT> Bitboard attacksFrom(const Color c, const Square sq, const Bitboard& occupied) const;
+	template <PieceType PT> static Bitboard attacksFrom(const Color c, const Square sq, const Bitboard& occupied);
 	// 任意の occupied に対する利きを生成する。
 	template <PieceType PT> Bitboard attacksFrom(const Square sq, const Bitboard& occupied) const {
 		static_assert(PT == Bishop || PT == Rook || PT == Horse || PT == Dragon, "");
@@ -186,7 +186,7 @@ public:
 		return attacksFrom<PT>(ColorNum, sq);
 	}
 	Bitboard attacksFrom(const PieceType pt, const Color c, const Square sq) const { return attacksFrom(pt, c, sq, occupiedBB()); }
-	Bitboard attacksFrom(const PieceType pt, const Color c, const Square sq, const Bitboard& occupied) const;
+	static Bitboard attacksFrom(const PieceType pt, const Color c, const Square sq, const Bitboard& occupied);
 
 	// 次の手番
 	Color turn() const { return turn_; }
@@ -380,11 +380,11 @@ private:
 	static Key zobExclusion_; // todo: これが必要か、要検討
 };
 
-template <> inline Bitboard Position::attacksFrom<Lance >(const Color c, const Square sq, const Bitboard& occupied) const { return  lanceAttack(c, sq, occupied); }
-template <> inline Bitboard Position::attacksFrom<Bishop>(const Color  , const Square sq, const Bitboard& occupied) const { return bishopAttack(   sq, occupied); }
-template <> inline Bitboard Position::attacksFrom<Rook  >(const Color  , const Square sq, const Bitboard& occupied) const { return   rookAttack(   sq, occupied); }
-template <> inline Bitboard Position::attacksFrom<Horse >(const Color  , const Square sq, const Bitboard& occupied) const { return  horseAttack(   sq, occupied); }
-template <> inline Bitboard Position::attacksFrom<Dragon>(const Color  , const Square sq, const Bitboard& occupied) const { return dragonAttack(   sq, occupied); }
+template <> inline Bitboard Position::attacksFrom<Lance >(const Color c, const Square sq, const Bitboard& occupied) { return  lanceAttack(c, sq, occupied); }
+template <> inline Bitboard Position::attacksFrom<Bishop>(const Color  , const Square sq, const Bitboard& occupied) { return bishopAttack(   sq, occupied); }
+template <> inline Bitboard Position::attacksFrom<Rook  >(const Color  , const Square sq, const Bitboard& occupied) { return   rookAttack(   sq, occupied); }
+template <> inline Bitboard Position::attacksFrom<Horse >(const Color  , const Square sq, const Bitboard& occupied) { return  horseAttack(   sq, occupied); }
+template <> inline Bitboard Position::attacksFrom<Dragon>(const Color  , const Square sq, const Bitboard& occupied) { return dragonAttack(   sq, occupied); }
 
 template <> inline Bitboard Position::attacksFrom<Pawn  >(const Color c, const Square sq) const { return   pawnAttack(c, sq              ); }
 template <> inline Bitboard Position::attacksFrom<Lance >(const Color c, const Square sq) const { return  lanceAttack(c, sq, occupiedBB()); }
