@@ -70,7 +70,7 @@ namespace {
 void OptionsMap::init(Searcher* s) {
 	(*this)["USI_Hash"]                    = USIOption(32, 1, 65536, onHashSize, s);
 	(*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
-	(*this)["Book_File"]                   = USIOption("../bin/book.bin");
+	(*this)["Book_File"]                   = USIOption("book.bin");
 	(*this)["Best_Book_Move"]              = USIOption(false);
 	(*this)["OwnBook"]                     = USIOption(true);
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
