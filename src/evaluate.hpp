@@ -909,8 +909,8 @@ extern const int kppHandArray[ColorNum][HandPieceNum];
 class Position;
 struct SearchStack;
 
-const size_t EvaluateTableSize = 0x1000000; // 134MB
-//const size_t EvaluateTableSize = 0x80000000; // 17GB
+//const size_t EvaluateTableSize = 0x1000000; // 134MB
+const size_t EvaluateTableSize = 0x80000000; // 17GB
 
 // 64bit 変数1つなのは理由があって、
 // データを取得している最中に他のスレッドから書き換えられることが無くなるから。
