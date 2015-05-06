@@ -70,13 +70,13 @@ namespace {
 void OptionsMap::init(Searcher* s) {
 	(*this)["USI_Hash"]                    = USIOption(32, 1, 65536, onHashSize, s);
 	(*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
-	(*this)["Book_File"]                   = USIOption("book.bin");
+	(*this)["Book_File"]                   = USIOption("book/20150503/book.bin");
 	(*this)["Best_Book_Move"]              = USIOption(false);
 	(*this)["OwnBook"]                     = USIOption(true);
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
-	(*this)["Eval_Dir"]                    = USIOption(".", onEvalDir);
+	(*this)["Eval_Dir"]                    = USIOption("20150501", onEvalDir);
 	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);

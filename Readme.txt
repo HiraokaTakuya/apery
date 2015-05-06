@@ -13,6 +13,7 @@ Apery は GNU General Public License version 3 またはそれ以降のバージ
 ・Copying.txt, GNU General Public License version 3 条文です。
 ・src/, Apery のソースコードのフォルダです。
 ・utils/, Apery 開発で使用する本体以外のソフトのソースコードのフォルダです。
+・bin/, 評価関数や定跡のバイナリです。ファイルサイズが巨大なので、リポジトリ自体は分けています。
 
 
 利用環境
@@ -23,6 +24,8 @@ Apery は GNU General Public License version 3 またはそれ以降のバージ
 
 使い方
 
+最初に、実行ファイルは apery/bin フォルダに置くことを想定しています。
+
 将棋所での使い方のみを説明します。
 将棋所を立ち上げます。
 
@@ -30,23 +33,33 @@ Windows の場合
 Shogidokoro.exe をダブルクリックして下さい。
 立ち上がらない場合は、.NET Framework が古い可能性が高いです。新しいものにして下さい。
 
+
 Linux の場合
 terminal を立ち上げ、mono Shogidokoro.exe とコマンドを打って下さい。
 立ち上がらない場合、mono のバージョンが低いか、mono のライブラリが足りない可能性が高いです。
 MonoDevelop 等をインストールすれば必要なライブラリは揃うと思います。
 例として、Ubuntu の場合は sudo apt-get install MonoDevelop とコマンドを打つとインストール出来ると思います。
+(最新の将棋所は Mono で動かない事もあるようです。古い将棋所を使うか、Mono を可能な限り最新にすることで動作するかも知れません。
+ また、将棋所を使って人間が指した時など、駒音が鳴るときに将棋所が落ちる事があるようです。音が鳴る設定を切ってお使い下さい。)
 
-将棋所のエンジン登録で Windows の場合は apery/bin/apery.exe (Linux の場合は apery/bin/apery.exe) を登録して下さい。
+
+評価関数のフォルダに、*_synthesized.bin (* には色々な文字が入ります)というファイルが無い場合、起動に非常に時間が掛かります。
+まずは *_synthesized.bin を生成する必要があります。
+Windows の場合は apery/bin/make_synthesized_eval.bat をダブルクリックして下さい。
+Linux の場合は apery/bin/make_synthesized_eval.sh を実行して下さい。
+これで数分掛かると思いますが、*_synthesized.bin が生成されます。
+次回起動時には Apery を高速に起動することが出来ます。
+
+
+将棋所のエンジン登録で Windows の場合は apery/bin/apery.exe (Linux の場合は apery/bin/apery) を登録して下さい。
 一度、「これは USI エンジンではありません。」といったポップアップが表示されるかも知れません。
 タイムアウトして登録に失敗している可能性があるので、もう一度エンジン登録してみて下さい。
 それでも登録に失敗するなら、Apery が正しく動作していない可能性があります。
 apery/bin/apery (Windows の場合は apery/bin/apery.exe) をダブルクリックして、usi とコマンドを打ってみて下さい。
 usiok が表示されない場合は、ご利用の PC では Apery が動作しないようです。
 
+
 将棋所に登録出来ましたら、後は将棋所の使い方を参照して下さい。
-注意点として、apery の実行ファイルは基本的に bin フォルダから移動させないで下さい。
-評価関数ファイルの読み込みに失敗する可能性があります。
-(どうしても移動させたい場合は、bin フォルダごと移動させて下さい。それならおそらく正しく動作します。)
 
 
 開発者向け注意点
