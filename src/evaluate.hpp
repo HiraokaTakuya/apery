@@ -726,15 +726,18 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		read(dirName);
 		setEvaluate();
 	}
+#define ALL_SYNTHESIZED_EVAL {									\
+		FOO(KPP);												\
+		FOO(KKP);												\
+		FOO(KK);												\
+	}
 	static bool readSynthesized(const std::string& dirName) {
 #define FOO(x) {														\
 			std::ifstream ifs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
 			if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));	\
 			else     return false;										\
 		}
-		FOO(KPP);
-		FOO(KKP);
-		FOO(KK);
+		ALL_SYNTHESIZED_EVAL;
 #undef FOO
 		return true;
 	}
@@ -743,51 +746,52 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 			std::ofstream ofs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
 			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
-		FOO(KPP);
-		FOO(KKP);
-		FOO(KK);
+		ALL_SYNTHESIZED_EVAL;
 #undef FOO
+	}
+#undef ALL_SYNTHESIZED_EVAL
+#define ALL_BASE_EVAL {							\
+		FOO(kpp);								\
+		FOO(r_kpp_bb);							\
+		FOO(r_kpp_hb);							\
+		FOO(xpp);								\
+		FOO(ypp);								\
+		FOO(pp);								\
+		FOO(r_pp_bb);							\
+		FOO(r_pp_hb);							\
+		FOO(kpe);								\
+		FOO(r_kpe_b);							\
+		FOO(r_kpe_h);							\
+		FOO(r_kee);								\
+		FOO(xpe);								\
+		FOO(xee);								\
+		FOO(ype);								\
+		FOO(yee);								\
+		FOO(pe);								\
+		FOO(ee);								\
+		FOO(r_pe_b);							\
+		FOO(r_pe_h);							\
+		FOO(r_ee);								\
+		FOO(kkp);								\
+		FOO(kp);								\
+		FOO(r_kkp_b);							\
+		FOO(r_kkp_h);							\
+		FOO(r_kp_b);							\
+		FOO(r_kp_h);							\
+		FOO(kke);								\
+		FOO(ke);								\
+		FOO(r_kke);								\
+		FOO(r_ke);								\
+		FOO(kk);								\
+		FOO(k);									\
+		FOO(r_kk);								\
 	}
 	void read(const std::string& dirName) {
 #define FOO(x) {														\
 			std::ifstream ifs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
 			ifs.read(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
-
-		FOO(kpp);
-		FOO(r_kpp_bb);
-		FOO(r_kpp_hb);
-		FOO(xpp);
-		FOO(ypp);
-		FOO(pp);
-		FOO(r_pp_bb);
-		FOO(r_pp_hb);
-		FOO(kpe);
-		FOO(r_kpe_b);
-		FOO(r_kpe_h);
-		FOO(r_kee);
-		FOO(xpe);
-		FOO(xee);
-		FOO(ype);
-		FOO(yee);
-		FOO(pe);
-		FOO(ee);
-		FOO(r_pe_b);
-		FOO(r_pe_h);
-		FOO(r_ee);
-		FOO(kkp);
-		FOO(kp);
-		FOO(r_kkp_b);
-		FOO(r_kkp_h);
-		FOO(r_kp_b);
-		FOO(r_kp_h);
-		FOO(kke);
-		FOO(ke);
-		FOO(r_kke);
-		FOO(r_ke);
-		FOO(kk);
-		FOO(k);
-		FOO(r_kk);
+		ALL_BASE_EVAL;
 #undef FOO
 	}
 	void write(const std::string& dirName) {
@@ -795,43 +799,10 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 			std::ofstream ofs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
 			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
-
-		FOO(kpp);
-		FOO(r_kpp_bb);
-		FOO(r_kpp_hb);
-		FOO(xpp);
-		FOO(ypp);
-		FOO(pp);
-		FOO(r_pp_bb);
-		FOO(r_pp_hb);
-		FOO(kpe);
-		FOO(r_kpe_b);
-		FOO(r_kpe_h);
-		FOO(r_kee);
-		FOO(xpe);
-		FOO(xee);
-		FOO(ype);
-		FOO(yee);
-		FOO(pe);
-		FOO(ee);
-		FOO(r_pe_b);
-		FOO(r_pe_h);
-		FOO(r_ee);
-		FOO(kkp);
-		FOO(kp);
-		FOO(r_kkp_b);
-		FOO(r_kkp_h);
-		FOO(r_kp_b);
-		FOO(r_kp_h);
-		FOO(kke);
-		FOO(ke);
-		FOO(r_kke);
-		FOO(r_ke);
-		FOO(kk);
-		FOO(k);
-		FOO(r_kk);
+		ALL_BASE_EVAL;
 #undef FOO
 	}
+#undef ALL_BASE_EVAL
 	void setEvaluate() {
 #define FOO(indices, oneArray, sum)										\
 		for (auto indexAndWeight : indices) {							\
