@@ -38,6 +38,9 @@ TranspositionTable Searcher::tt;
 #if defined INANIWA_SHIFT
 InaniwaFlag Searcher::inaniwaFlag;
 #endif
+#if defined BISHOP_IN_DANGER
+BishopInDangerFlag Searcher::bishopInDangerFlag;
+#endif
 Position Searcher::rootPosition(nullptr);
 ThreadPool Searcher::threads;
 OptionsMap Searcher::options;
@@ -698,6 +701,24 @@ void Searcher::detectInaniwa(const Position& pos) {
 	}
 }
 #endif
+#if defined BISHOP_IN_DANGER
+void Searcher::detectBishopInDanger(const Position& pos) {
+	if (bishopInDangerFlag == NotBishopInDanger && pos.gamePly() <= 40) {
+		const Color them = oppositeColor(pos.turn());
+		if (pos.bbOf(Silver, them).isSet(inverseIfWhite(them, H3))
+			&& (pos.bbOf(King  , them).isSet(inverseIfWhite(them, F2))
+				|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, F3)))
+			&& pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, G3))
+			&& pos.piece(inverseIfWhite(them, H2)) == Empty
+			&& pos.piece(inverseIfWhite(them, G2)) == Empty
+			&& pos.piece(inverseIfWhite(them, G1)) == Empty)
+		{
+			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDanger : WhiteBishopInDanger);
+			//tt.clear();
+		}
+	}
+}
+#endif
 template <bool DO> void Position::doNullMove(StateInfo& backUpSt) {
 	assert(!inCheck());
 
@@ -1249,6 +1270,13 @@ split_point_start:
 			if (isPVMove || alpha < score) {
 				// PV move or new best move
 				rm.score_ = score;
+#if defined BISHOP_IN_DANGER
+				if ((bishopInDangerFlag == BlackBishopInDanger && move.toCSA() == "0082KA")
+					|| (bishopInDangerFlag == WhiteBishopInDanger && move.toCSA() == "0028KA"))
+				{
+					rm.score_ -= 300;
+				}
+#endif
 				rm.extractPvFromTT(pos);
 
 				if (!isPVMove) {
@@ -1523,6 +1551,9 @@ void Searcher::think() {
 
 #if defined INANIWA_SHIFT
 	detectInaniwa(pos);
+#endif
+#if defined BISHOP_IN_DANGER
+	detectBishopInDanger(pos);
 #endif
 	idLoop(pos);
 

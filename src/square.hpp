@@ -97,7 +97,7 @@ inline bool isInSquare(const Square s) { return (0 <= s) && (s < SquareNum); }
 inline bool isInSquare(const File f, const Rank r) { return isInFile(f) && isInRank(r); }
 
 // 速度が必要な場面で使用するなら、テーブル引きの方が有効だと思う。
-inline Square makeSquare(const File f, const Rank r) {
+inline constexpr Square makeSquare(const File f, const Rank r) {
 	return static_cast<Square>(static_cast<int>(f) * 9 + static_cast<int>(r));
 }
 
@@ -205,13 +205,15 @@ inline File charUSIToFile(const char c) { return static_cast<File>(c - '1'); }
 inline Rank charUSIToRank(const char c) { return static_cast<Rank>(c - 'a'); }
 
 // 後手の位置を先手の位置へ変換
-inline Square inverse(const Square sq) { return SquareNum - 1 - sq; }
+inline constexpr Square inverse(const Square sq) { return SquareNum - 1 - sq; }
 // 左右変換
-inline File inverse(const File f) { return FileNum - 1 - f; }
+inline constexpr File inverse(const File f) { return FileNum - 1 - f; }
 // 上下変換
-inline Rank inverse(const Rank r) { return RankNum - 1 - r; }
+inline constexpr Rank inverse(const Rank r) { return RankNum - 1 - r; }
 // Square の左右だけ変換
 inline Square inverseFile(const Square sq) { return makeSquare(inverse(makeFile(sq)), makeRank(sq)); }
+
+inline constexpr Square inverseIfWhite(const Color c, const Square sq) { return (c == Black ? sq : inverse(sq)); }
 
 inline bool canPromote(const Color c, const Rank fromOrToRank) {
 #if 1

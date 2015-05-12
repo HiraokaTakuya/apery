@@ -46,6 +46,11 @@
 #endif
 
 #if 0
+// △２八角を打たないように点数を補正する。
+#define BISHOP_IN_DANGER
+#endif
+
+#if 0
 // 入玉を24点法にする。
 #define LAW_24
 #endif

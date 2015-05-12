@@ -453,6 +453,9 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 #if defined INANIWA_SHIFT
 			inaniwaFlag = NotInaniwa;
 #endif
+#if defined BISHOP_IN_DANGER
+			bishopInDangerFlag = NotBishopInDanger;
+#endif
 			for (int i = 0; i < 100; ++i) g_randomTimeSeed(); // 最初は乱数に偏りがあるかも。少し回しておく。
 		}
 		else if (token == "usi"      ) { SYNCCOUT << "id name " << MyName
