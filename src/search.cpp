@@ -1274,7 +1274,7 @@ split_point_start:
 				if ((bishopInDangerFlag == BlackBishopInDanger && move.toCSA() == "0082KA")
 					|| (bishopInDangerFlag == WhiteBishopInDanger && move.toCSA() == "0028KA"))
 				{
-					rm.score_ -= 300;
+					rm.score_ -= 500;
 				}
 #endif
 				rm.extractPvFromTT(pos);
