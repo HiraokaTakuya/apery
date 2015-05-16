@@ -13,12 +13,12 @@ Apery は GNU General Public License version 3 またはそれ以降のバージ
 ・Copying.txt, GNU General Public License version 3 条文です。
 ・src/, Apery のソースコードのフォルダです。
 ・utils/, Apery 開発で使用する本体以外のソフトのソースコードのフォルダです。
-・bin/, 評価関数や定跡のバイナリです。ファイルサイズが巨大なので、リポジトリ自体は分けています。
+・bin/, 評価関数や定跡のバイナリのフォルダです。ファイルサイズが巨大なので、リポジトリ自体は分けています。
 
 
 利用環境
 
-メモリに 600 MB 程度空きがあること。
+メモリに最低でも 600 MB 程度空きがあること。
 64bit OS であること。
 
 
