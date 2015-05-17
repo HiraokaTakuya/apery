@@ -1,0 +1,15 @@
+#+TITLE: Apery
+#+AUTHOR: 平岡 拓也
+#+EMAIL: hiraoka64@gmail.com
+@<center>@<h3>the strongest open source shogi engine@</h3>@</center>
+* Engine Binaries (for Windows)
+- [[https://drive.google.com/open?id=0B0d3atdVgIH2YVpEejBzeGpmenM&authuser=0][WCSC25 version]]
+
+* Source Code
+- [[https://github.com/HiraokaTakuya/apery][GitHub on Apery]]
+
+* Old versions
+- [[https://drive.google.com/open?id=0B0d3atdVgIH2ckQ2eDk1TjgwRGM&authuser=0][20150327 version]]
+- [[https://github.com/HiraokaTakuya/apery_binaries/archive/master.zip][denousen final version]]
+
+@<br>
