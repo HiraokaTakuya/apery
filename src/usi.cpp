@@ -169,6 +169,7 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 			if (limits.moveTime != 0) { limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"]; }
 		}
 		else if (token == "depth"   ) { ssCmd >> limits.depth; }
+		else if (token == "nodes"   ) { ssCmd >> limits.nodes; }
 	}
 	pos.searcher()->searchMoves = moves;
 	pos.searcher()->threads.startThinking(pos, limits, moves);

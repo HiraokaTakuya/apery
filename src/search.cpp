@@ -1622,7 +1622,7 @@ void Searcher::checkTime() {
 
 	if ((limits.useTimeManagement() && noMoreTime)
 		|| (limits.moveTime != 0 && limits.moveTime < e)
-		|| (limits.nodes != 0 && nodes <= limits.nodes))
+		|| (limits.nodes != 0 && limits.nodes < nodes))
 	{
 		signals.stop = true;
 	}
