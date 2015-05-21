@@ -159,6 +159,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			// e は Effect の頭文字で利きを表す。(Control = 利き という説もあり。)
 			// todo: 玉の利きは全く無視しているけれど、それで良いのか？
 			KPPType kpe[SquareNum][fe_end][ColorNum][SquareNum];
+			KPPType kee[SquareNum][ColorNum][SquareNum][ColorNum][SquareNum];
 			KPPType r_kpe_b[PieceNone][17][17][ColorNum][17][17];
 			KPPType r_kpe_h[fe_hand_end][ColorNum][17][17];
 			KPPType r_kee[ColorNum][17][17][ColorNum][17][17];
@@ -200,7 +201,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	//       型によっては kkps_begin_index などの値が異なる。
 	//       ただ、end - begin のサイズは型によらず一定。
 	size_t kpps_begin_index() const { return &kpp[0][0][0] - &oneArrayKPP[0]; }
-	size_t kpps_end_index() const { return kpps_begin_index() + (sizeof(kpp)+sizeof(r_kpp_bb)+sizeof(r_kpp_hb)+sizeof(xpp)+sizeof(ypp)+sizeof(pp)+sizeof(r_pp_bb)+sizeof(r_pp_hb)+sizeof(kpe)+sizeof(r_kpe_b)+sizeof(r_kpe_h)+sizeof(r_kee)+sizeof(xpe)+sizeof(xee)+sizeof(ype)+sizeof(yee)+sizeof(pe)+sizeof(ee)+sizeof(r_pe_b)+sizeof(r_pe_h)+sizeof(r_ee))/sizeof(KPPType); }
+	size_t kpps_end_index() const { return kpps_begin_index() + (sizeof(kpp)+sizeof(r_kpp_bb)+sizeof(r_kpp_hb)+sizeof(xpp)+sizeof(ypp)+sizeof(pp)+sizeof(r_pp_bb)+sizeof(r_pp_hb)+sizeof(kpe)+sizeof(kee)+sizeof(r_kpe_b)+sizeof(r_kpe_h)+sizeof(r_kee)+sizeof(xpe)+sizeof(xee)+sizeof(ype)+sizeof(yee)+sizeof(pe)+sizeof(ee)+sizeof(r_pe_b)+sizeof(r_pe_h)+sizeof(r_ee))/sizeof(KPPType); }
 	size_t kkps_begin_index() const { return &kkp[0][0][0] - &oneArrayKKP[0]; }
 	size_t kkps_end_index() const { return kkps_begin_index() + (sizeof(kkp)+sizeof(kp)+sizeof(r_kkp_b)+sizeof(r_kkp_h)+sizeof(r_kp_b)+sizeof(r_kp_h)+sizeof(kke)+sizeof(ke)+sizeof(r_kke)+sizeof(r_ke))/sizeof(KKPType); }
 	size_t kks_begin_index() const { return &kk[0][0] - &oneArrayKK[0]; }
@@ -473,6 +474,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 							}
 							else if (icolor == jcolor && jto_tmp < ito_tmp)
 								std::swap(ito_tmp, jto_tmp);
+							ret[retIdx++] = std::make_pair(&kee[ksq][icolor][ito_tmp][jcolor][jto_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+2));
 							ret[retIdx++] = std::make_pair(&xee[kfile][icolor][ito_tmp][jcolor][jto_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+2));
 							File diff_file_kito = kfile - makeFile(ito_tmp);
 							bool kfile_itofile_is_inversed = false;
@@ -760,6 +762,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		FOO(r_pp_bb);							\
 		FOO(r_pp_hb);							\
 		FOO(kpe);								\
+		FOO(kee);								\
 		FOO(r_kpe_b);							\
 		FOO(r_kpe_h);							\
 		FOO(r_kee);								\
