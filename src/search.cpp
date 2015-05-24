@@ -538,6 +538,19 @@ void Searcher::idLoop(Position& pos) {
 		return;
 	}
 
+#if defined BISHOP_IN_DANGER
+	if ((bishopInDangerFlag == BlackBishopInDanger
+		 && std::find_if(std::begin(rootMoves), std::end(rootMoves),
+						 [](const RootMove rm) { return rm.pv_[0].toCSA() == "0082KA"; }) != std::end(rootMoves))
+		|| (bishopInDangerFlag == WhiteBishopInDanger
+			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
+							[](const RootMove rm) { return rm.pv_[0].toCSA() == "0028KA"; }) != std::end(rootMoves)))
+	{
+		if (rootMoves.size() != 1)
+			pvSize = std::max<size_t>(pvSize, 2);
+	}
+#endif
+
 	// 反復深化で探索を行う。
 	while (++depth <= MaxPly && !signals.stop && (!limits.depth || depth <= limits.depth)) {
 		// 前回の iteration の結果を全てコピー
@@ -703,11 +716,13 @@ void Searcher::detectInaniwa(const Position& pos) {
 #endif
 #if defined BISHOP_IN_DANGER
 void Searcher::detectBishopInDanger(const Position& pos) {
-	if (bishopInDangerFlag == NotBishopInDanger && pos.gamePly() <= 40) {
+	if (bishopInDangerFlag == NotBishopInDanger && pos.gamePly() <= 50) {
 		const Color them = oppositeColor(pos.turn());
-		if (pos.bbOf(Silver, them).isSet(inverseIfWhite(them, H3))
+		if (pos.hand(pos.turn()).exists<HBishop>()
+			&& pos.bbOf(Silver, them).isSet(inverseIfWhite(them, H3))
 			&& (pos.bbOf(King  , them).isSet(inverseIfWhite(them, F2))
-				|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, F3)))
+				|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, F3))
+				|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, E1)))
 			&& pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, G3))
 			&& pos.piece(inverseIfWhite(them, H2)) == Empty
 			&& pos.piece(inverseIfWhite(them, G2)) == Empty
