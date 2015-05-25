@@ -541,10 +541,10 @@ void Searcher::idLoop(Position& pos) {
 #if defined BISHOP_IN_DANGER
 	if ((bishopInDangerFlag == BlackBishopInDanger
 		 && std::find_if(std::begin(rootMoves), std::end(rootMoves),
-						 [](const RootMove rm) { return rm.pv_[0].toCSA() == "0082KA"; }) != std::end(rootMoves))
+						 [](const RootMove& rm) { return rm.pv_[0].toCSA() == "0082KA"; }) != std::end(rootMoves))
 		|| (bishopInDangerFlag == WhiteBishopInDanger
 			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
-							[](const RootMove rm) { return rm.pv_[0].toCSA() == "0028KA"; }) != std::end(rootMoves)))
+							[](const RootMove& rm) { return rm.pv_[0].toCSA() == "0028KA"; }) != std::end(rootMoves)))
 	{
 		if (rootMoves.size() != 1)
 			pvSize = std::max<size_t>(pvSize, 2);
