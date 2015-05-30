@@ -296,7 +296,7 @@ std::string Searcher::pvInfoToUSI(Position& pos, const Ply depth, const Score al
 			ss << " " << rootMoves[i].pv_[j].toUSI();
 		}
 
-		ss << std::endl;
+		// ss << std::endl;
 	}
 	return ss.str();
 }
