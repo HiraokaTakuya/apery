@@ -1,0 +1,153 @@
+# オプションで _ で下付き、^ で上付きの文字を普通に表示するようにする。
+#+OPTIONS: ^:{}
+#+OPTIONS: H:3 toc:3 \n:t
+#+TITLE: Aperyの使い方
+
+Apery のダウンロードから対局開始までを写真付きで説明していきます。
+なお、説明に使った PC は Windows 8.1 64bit 版です。
+
+* PC のチェック
+Apery は Windows 64bit 版 で動作します。
+Windows には 32bit 版と 64bit 版があるので、まずは確認してみましょう。
+
+「PC」を右クリックして「プロパティ」を左クリックします。
+#+ATTR_HTML: alt"画像が表示されていません" width="1080"
+[[file:pictures/pc_property.png]]
+
+
+「システムの種類：  64ビット オペレーティングシステム」と書いてあれば OK です。
+「システムの種類：  32ビット オペレーティングシステム」と書いてあれば、残念ながら Apery を動かす事は出来ません。
+新しい PC を買うか、32ビット オペレーティングシステムで動くように改造した人がいらっしゃるようなので、Google 検索してみて下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="1080"
+[[file:pictures/64bit.png]]
+
+* 「将棋所」のダウンロード
+Apery を使うには、「将棋所」などのソフトに Apery を登録する必要があります。
+まずは将棋所をダウンロードして下さい。
+
+「将棋所」を Google 検索すれば見つかります。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/googling_shogidokoro.png]]
+
+「将棋所」のウェブサイトのトップページです。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/shogidokoro_website.png]]
+
+下の方に「ダウンロード」という項目があるので、そこを左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/shogidokoro_download_link.png]]
+
+写真では「将棋所3.3.0をダウンロード」と書いてあります。
+そこを左クリックして下さい。
+(今後、将棋所のバージョンが上がって、3.3.0 が他の数字になっているかも知れませんが、特に気にしなくて大丈夫です。)
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/shogidokoro_download_link_explain.png]]
+
+「ファイルを保存する」にチェックが入った状態で、「OK」 を左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="400"
+[[file:pictures/shogidokoro_download_yesno.png]]
+
+* Apery の最新版のダウンロード
+
+[[http://hiraokatakuya.github.io/apery/][Apery ウェブサイトのトップページ]] に戻り、
+「Engine Binaries」のところのリンクを左クリックして下さい。
+写真では「WCSC25 version (for Windows 64bit)」となっています。
+(今後バージョンアップでバージョン名は変わるかも知れません。)
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/apery_website.png]]
+
+上部中央の↓マークの部分を左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/apery_download.png]]
+
+Google からの警告が出ていますが、そのまま「ダウンロード」を左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/apery_download_warning.png]]
+
+「ファイルを保存する」にチェックが入った状態で、「OK」 を左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="400"
+[[file:pictures/apery_download_yesno.png]]
+
+* 将棋所、Apery の解凍
+ダウンロードした 2 つのファイルを、左ダブルクリックして解凍して下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/explorer_download.png]]
+
+解凍先を指定して Enter を押して下さい。
+(写真ではそのままにし、ダウンロードしたファイルと同じフォルダに解凍しました。)
+#+ATTR_HTML: alt"画像が表示されていません" width="400"
+[[file:pictures/shogidokoro_unzip.png]]
+
+解凍出来ると、 2 つのフォルダが出来ます。
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/unzipped.png]]
+
+* 将棋所の設定
+将棋所のフォルダを左ダブルクリックして、「Shogidokoro.exe」を左ダブルクリックして下さい。
+(Shogidokoro.exe は、PC の設定によっては Shogidokoro と表示されますが、気にしなくて大丈夫です。)
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/explorer_shogidokoro.png]]
+
+将棋所の画面が表示されます。
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/shogidokoro_top.png]]
+
+将棋所の「対局」を左クリックし、次に「エンジン管理」を左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/shogidokoro_engine_manage.png]]
+
+エンジン管理画面で、「追加」を左クリックします。
+#+ATTR_HTML: alt"画像が表示されていません" width="400"
+[[file:pictures/shogidokoro_engine_add_active.png]]
+
+追加する思考エンジンとして、Apery を選択します。
+先程解凍した Apery のフォルダ(写真では apery_wcsc25)を左ダブルクリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/engine_add_explorer_download.png]]
+
+「bin」 フォルダを左ダブルクリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/engine_add_explorer_apery.png]]
+
+複数の apery の実行ファイルがありますが、とりあえずは「sse2」と書いてあるものなら動作しますので、
+それをダブルクリックして下さい。
+(写真では apery_wcsc25_sse2.exe となっています。)
+(bmi2, sse42, sse41, sse2 と書かれた複数の Apery がありますが、
+ 左に書いたもの程、高速に動作しますが、
+ 左に書いたもの程、新しい CPU でないと動作しません。
+ また、bmi2 と sse2 の速度差は数 % であり、棋力に大きな影響はありません。)
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/engine_add_explorer_bin.png]]
+
+次に、「対局」を左クリックして、その中の「対局」を左クリックします。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/taikyoku.png]]
+
+Apery を後手に設定してみます。
+後手の設定を「人間」から「エンジン」に設定して下さい。
+(エンジンを選択する必要もあるのですが、Apery しか登録していなければ、写真のように既に Apery が設定されています。)
+また、今回は「秒読み」を 60 秒に設定してみます。(お好きな時間に設定して下さい。)
+#+ATTR_HTML: alt"画像が表示されていません" width="400"
+[[file:pictures/taikyoku_mode_engine_set.png]]
+
+対局の棋譜を残すなら、「棋譜自動保存」チェックボックスを左クリックして下さい。
+すると、棋譜の保存先が選択出来ます。
+#+ATTR_HTML: alt"画像が表示されていません" width="1000"
+[[file:pictures/kifu_save.png]]
+
+設定が出来たので、「OK」を左クリックして下さい。
+#+ATTR_HTML: alt"画像が表示されていません" width="400"
+[[file:pictures/finish_set.png]]
+
+お疲れ様です。対局が出来ました。
+Apery の読み筋は下に表示されます。(隠すことも出来ます。)
+#+ATTR_HTML: alt"画像が表示されていません" width="700"
+[[file:pictures/taikyoku_thinking.png]]
+
+
+将棋所では、Apery 以外にも沢山の将棋ソフトを登録することが出来ます。(市販の物はPonaXを除き、出来ない事が多いです。)
+棋譜を読み込ませて Apery に解析させることも出来ますし、コンピュータ同士で対局を行う事も出来ます。
+
+色々な使い方をして将棋を楽しんで下さい。
+
+@<br>

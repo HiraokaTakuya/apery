@@ -8,7 +8,10 @@
 * Source Code
 - [[https://github.com/HiraokaTakuya/apery][Apery on GitHub]]
 
-* Old Versions
+* 使い方
+- [[./howtouse.html][Aperyの使い方]]
+
+* Previous Versions
 - [[https://drive.google.com/open?id=0B0d3atdVgIH2ckQ2eDk1TjgwRGM&authuser=0][20150327 version (for Windows 64bit)]]
 - [[https://github.com/HiraokaTakuya/apery_binaries/archive/master.zip][denousen final version (for Windows 64bit)]]
 
