@@ -36,7 +36,7 @@ namespace {
 	inline int cpuCoreCount() {
         // todo: boost::thread::physical_concurrency() を使うこと。
 		// std::thread::hardware_concurrency() は 0 を返す可能性がある。
-		return std::max(static_cast<int>(std::thread::hardware_concurrency()), 1);
+		return std::max(static_cast<int>(std::thread::hardware_concurrency()/2), 1);
 	}
 
 	class StringToPieceTypeCSA : public std::map<std::string, PieceType> {
@@ -91,7 +91,7 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Minimum_Thinking_Time"]       = USIOption(1500, 0, INT_MAX);
 	(*this)["Max_Threads_per_Split_Point"] = USIOption(5, 4, 8, onThreads, s);
 	(*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
-	(*this)["Use_Sleeping_Threads"]        = USIOption(true);
+	(*this)["Use_Sleeping_Threads"]        = USIOption(false);
 }
 
 USIOption::USIOption(const char* v, Fn* f, Searcher* s) :
