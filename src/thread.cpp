@@ -3,8 +3,22 @@
 #include "thread.hpp"
 #include "usi.hpp"
 
+namespace {
+	template <typename T> T* newThread(Searcher* s) {
+		T* th = new T(s);
+		th->handle = std::thread(&Thread::idleLoop, th); // move constructor
+		return th;
+	}
+	void deleteThread(Thread* th) {
+		th->exit = true;
+		th->notifyOne();
+		th->handle.join(); // Wait for thread termination
+		delete th;
+	}
+}
+
 Thread::Thread(Searcher* s) /*: splitPoints()*/ {
-    searcher = s;
+	searcher = s;
 	exit = false;
 	searching = false;
 	splitPointsSize = 0;
@@ -12,16 +26,6 @@ Thread::Thread(Searcher* s) /*: splitPoints()*/ {
 	activeSplitPoint = nullptr;
 	activePosition = nullptr;
 	idx = s->threads.size();
-
-	// move constructor
-	handle = std::thread(&Thread::idleLoop, this);
-}
-
-Thread::~Thread() {
-	exit = true;
-	notifyOne();
-
-	handle.join(); // Wait for thread termination
 }
 
 void TimerThread::idleLoop() {
@@ -93,18 +97,17 @@ void Thread::waitFor(volatile const bool& b) {
 
 void ThreadPool::init(Searcher* s) {
 	sleepWhileIdle_ = true;
-	timer_ = new TimerThread(s);
-	push_back(new MainThread(s));
+	timer_ = newThread<TimerThread>(s);
+	push_back(newThread<MainThread>(s));
 	readUSIOptions(s);
 }
 
-ThreadPool::~ThreadPool() {
+void ThreadPool::exit() {
 	// checkTime() がデータにアクセスしないよう、先に timer_ を delete
-	delete timer_;
+	deleteThread(timer_);
 
-	for (auto elem : *this) {
-		delete elem;
-	}
+	for (auto elem : *this)
+		deleteThread(elem);
 }
 
 void ThreadPool::readUSIOptions(Searcher* s) {
@@ -115,11 +118,11 @@ void ThreadPool::readUSIOptions(Searcher* s) {
 	assert(0 < requested);
 
 	while (size() < requested) {
-		push_back(new Thread(s));
+		push_back(newThread<Thread>(s));
 	}
 
 	while (requested < size()) {
-		delete back();
+		deleteThread(back());
 		pop_back();
 	}
 }

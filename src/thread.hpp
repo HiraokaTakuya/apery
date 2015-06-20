@@ -57,7 +57,7 @@ struct SplitPoint {
 
 struct Thread {
 	explicit Thread(Searcher* s);
-	virtual ~Thread();
+	virtual ~Thread() {};
 
 	virtual void idleLoop();
 	void notifyOne();
@@ -99,7 +99,7 @@ struct TimerThread : public Thread {
 class ThreadPool : public std::vector<Thread*> {
 public:
 	void init(Searcher* s);
-	~ThreadPool();
+	void exit();
 
 	MainThread* mainThread() { return static_cast<MainThread*>((*this)[0]); }
 	Depth minSplitDepth() const { return minimumSplitDepth_; }
