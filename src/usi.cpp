@@ -76,7 +76,7 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
-	(*this)["Eval_Dir"]                    = USIOption("20150501", onEvalDir);
+	(*this)["Eval_Dir"]                    = USIOption(".", onEvalDir);
 	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
@@ -461,7 +461,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		}
 		else if (token == "usi"      ) { SYNCCOUT << "id name " << MyName
 												  << "\nid author Hiraoka Takuya"
-												  << "\n" << options
+												  << options
 												  << "\nusiok" << SYNCENDL; }
 		else if (token == "go"       ) { go(pos, ssCmd); }
 		else if (token == "isready"  ) { SYNCCOUT << "readyok" << SYNCENDL; }
