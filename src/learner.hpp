@@ -273,7 +273,7 @@ private:
 
 					const auto recordPVSize = bmd.pvBuffer.size();
 
-					if (abs(recordScore) < ScoreMateInMaxPly) {
+					if (abs(recordScore) < ScoreMaxEvaluate) {
 						for (auto it = recordIt - 1;
 							 it >= std::begin(pos.searcher()->rootMoves) && FVWindow > (it->score_ - recordScore);
 							 --it)
