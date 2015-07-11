@@ -498,7 +498,7 @@ private:
 	std::vector<Parse2Data> parse2Datum_;
 	Evaluater eval_;
 
-	static const Score FVWindow = static_cast<Score>(200);
+	static const Score FVWindow = static_cast<Score>(256);
 };
 
 #endif
