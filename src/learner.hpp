@@ -129,13 +129,24 @@ class Learner {
 public:
 	void learn(Position& pos, std::istringstream& ssCmd) {
 		eval_.init(pos.searcher()->options["Eval_Dir"], false);
-		readBook(pos, ssCmd);
+		s64 gameNum;
+		std::string recordFileName;
 		size_t threadNum;
+		ssCmd >> recordFileName;
+		ssCmd >> gameNum;
 		ssCmd >> threadNum;
 		ssCmd >> minDepth_;
 		ssCmd >> maxDepth_;
-		std::cout << "thread_num: " << threadNum
-				  << "\nsearch depth min, max: " << minDepth_ << ", " << maxDepth_ << std::endl;
+		ssCmd >> stepNum_;
+		ssCmd >> gameNumForIteration_;
+		std::cout << "record_file: " << recordFileName
+				  << "\nread games: " << (gameNum == 0 ? "all" : std::to_string(gameNum))
+				  << "\nthread_num: " << threadNum
+				  << "\nsearch_depth min, max: " << minDepth_ << ", " << maxDepth_
+				  << "\nstep_num: " << stepNum_
+				  << "\ngame_num_for_iteration: " << gameNumForIteration_
+				  << std::endl;
+		readBook(pos, recordFileName, gameNum);
 		// 既に 1 つのSearcher, Positionが立ち上がっているので、指定した数 - 1 の Searcher, Position を立ち上げる。
 		threadNum = std::max<size_t>(0, threadNum - 1);
 		std::vector<Searcher> searchers(threadNum);
@@ -202,34 +213,25 @@ private:
 			pos.doMove(move, setUpStates->top());
 		}
 	}
-	void readBook(Position& pos, std::istringstream& ssCmd) {
-		std::string fileName;
-		ssCmd >> fileName;
-		std::cout << "book_file: " << fileName << std::endl;
-		std::ifstream ifs(fileName.c_str(), std::ios::binary);
+	void readBook(Position& pos, const std::string& recordFileName, const s64 gameNum) {
+		std::ifstream ifs(recordFileName.c_str(), std::ios::binary);
 		if (!ifs) {
-			std::cout << "I cannot read " << fileName << std::endl;
+			std::cout << "I cannot read " << recordFileName << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		std::set<std::pair<Key, Move> > dict;
 		std::string s0;
 		std::string s1;
-		int gameNum;
-		ssCmd >> gameNum;
-		if (gameNum == 0) {
-			// 0 なら全部の棋譜を読む
-			gameNum = std::numeric_limits<int>::max();
-			std::cout << "read games: all" << std::endl;
-		}
-		else
-			std::cout << "read games: " << gameNum << std::endl;
-
-		for (int i = 0; i < gameNum; ++i) {
+		// 0 なら全部の棋譜を読む
+		s64 tmpGameNum = (gameNum == 0 ? std::numeric_limits<s64>::max() : gameNum);
+		for (s64 i = 0; i < tmpGameNum; ++i) {
 			std::getline(ifs, s0);
 			std::getline(ifs, s1);
 			if (!ifs) break;
 			setLearnMoves(pos, dict, s0, s1);
 		}
+		std::cout << "games existed: " << bookMovesDatum_.size() << std::endl;
+		gameNumForIteration_ = std::min(gameNumForIteration_, bookMovesDatum_.size());
 	}
 	void setLearnOptions(Searcher& s) {
 		std::string options[] = {"name Threads value 1",
@@ -252,9 +254,8 @@ private:
 	}
 	void learnParse1Body(Position& pos, std::mt19937& mt) {
 		std::uniform_int_distribution<Ply> dist(minDepth_, maxDepth_);
-		const size_t endNum = bookMovesDatum_.size();
 		pos.searcher()->tt.clear();
-		for (size_t i = lockingIndexIncrement<true>(); i < endNum; i = lockingIndexIncrement<true>()) {
+		for (size_t i = lockingIndexIncrement<true>(); i < gameNumForIteration_; i = lockingIndexIncrement<true>()) {
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
 			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
 			auto& gameMoves = bookMovesDatum_[i];
@@ -297,6 +298,9 @@ private:
 	}
 	void learnParse1(Position& pos) {
 		Time t = Time::currentTime();
+		// 棋譜をシャッフルすることで、先頭 gameNum_ 個の学習に使うデータをランダムに選ぶ。
+		std::shuffle(std::begin(bookMovesDatum_), std::end(bookMovesDatum_), mt_);
+		std::cout << "shuffle elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 		index_ = 0;
 		std::vector<std::thread> threads(positions_.size());
 		for (size_t i = 0; i < positions_.size(); ++i)
@@ -376,9 +380,8 @@ private:
 	}
 	void learnParse2Body(Position& pos, Parse2Data& parse2Data) {
 		parse2Data.clear();
-		const size_t endNum = bookMovesDatum_.size();
 		SearchStack ss[2];
-		for (size_t i = lockingIndexIncrement<false>(); i < endNum; i = lockingIndexIncrement<false>()) {
+		for (size_t i = lockingIndexIncrement<false>(); i < gameNumForIteration_; i = lockingIndexIncrement<false>()) {
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
 			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
 			auto& gameMoves = bookMovesDatum_[i];
@@ -451,10 +454,9 @@ private:
 	}
 	void learnParse2(Position& pos) {
 		Time t;
-		const int MaxStep = 32;
-		for (int step = 1; step <= MaxStep; ++step) {
+		for (int step = 1; step <= stepNum_; ++step) {
 			t.restart();
-			std::cout << "step " << step << "/" << MaxStep << " " << std::flush;
+			std::cout << "step " << step << "/" << stepNum_ << " " << std::flush;
 			index_ = 0;
 			std::vector<std::thread> threads(positions_.size());
 			for (size_t i = 0; i < positions_.size(); ++i)
@@ -497,6 +499,8 @@ private:
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
 	Evaluater eval_;
+	int stepNum_;
+	size_t gameNumForIteration_;
 
 	static const Score FVWindow = static_cast<Score>(256);
 };
