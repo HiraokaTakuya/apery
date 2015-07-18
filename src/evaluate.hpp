@@ -804,6 +804,9 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 	}
 #undef ALL_BASE_EVAL
 	void setEvaluate() {
+#if !defined LEARN
+		SYNCCOUT << "info string start setting eval table" << SYNCENDL;
+#endif
 #define FOO(indices, oneArray, sum)										\
 		for (auto indexAndWeight : indices) {							\
 			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
@@ -870,6 +873,10 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 			}
 		}
 #undef FOO
+
+#if !defined LEARN
+		SYNCCOUT << "info string end setting eval table" << SYNCENDL;
+#endif
 	}
 };
 
