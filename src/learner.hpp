@@ -310,20 +310,24 @@ private:
 			thread.join();
 		auto total_move = [this] {
 			u64 count = 0;
-			for (auto& bmds : bookMovesDatum_)
+			for (size_t i = 0; i < gameNumForIteration_; ++i) {
+				auto& bmds = bookMovesDatum_[i];
 				for (auto& bmd : bmds)
 					if (bmd.useLearning)
 						++count;
+			}
 			return count;
 		};
 		auto prediction = [this] (const int i) {
 			std::vector<u64> count(i, 0);
-			for (auto& bmds : bookMovesDatum_)
+			for (size_t ii = 0; ii < gameNumForIteration_; ++ii) {
+				auto& bmds = bookMovesDatum_[ii];
 				for (auto& bmd : bmds)
 					if (bmd.useLearning)
 						for (int j = 0; j < i; ++j)
 							if (bmd.recordIsNth <= j)
 								++count[j];
+			}
 			return count;
 		};
 		const auto total = total_move();
