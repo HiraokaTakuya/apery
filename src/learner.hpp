@@ -362,8 +362,10 @@ private:
 		for (size_t i = eval_.kks_begin_index(), j = parse2Data_.params.kks_begin_index(); i < eval_.kks_end_index(); ++i, ++j)
 			updateFV(eval_.oneArrayKK[i], parse2Data_.params.oneArrayKK[j]);
 
-		eval_.setEvaluate();
+		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
+		// updateFV()で学習しないパラメータに入ったノイズを無くす。
 		eval_.write(dirName);
+		eval_.init(dirName, false);
 		g_evalTable.clear();
 	}
 	double sigmoid(const double x) const {
