@@ -132,6 +132,7 @@ public:
 		s64 gameNum;
 		std::string recordFileName;
 		size_t threadNum;
+		s64 updateMax;
 		ssCmd >> recordFileName;
 		ssCmd >> gameNum;
 		ssCmd >> threadNum;
@@ -139,13 +140,20 @@ public:
 		ssCmd >> maxDepth_;
 		ssCmd >> stepNum_;
 		ssCmd >> gameNumForIteration_;
+		ssCmd >> updateMax;
+		if (updateMax < 0 || 32 < updateMax) {
+			updateMax = 32; // 乱数が 32 bit なので、bit count 方式だと 32 が上限。
+			std::cout << "you can set update_max [1, 32]" << std::endl;
+		}
 		std::cout << "record_file: " << recordFileName
 				  << "\nread games: " << (gameNum == 0 ? "all" : std::to_string(gameNum))
 				  << "\nthread_num: " << threadNum
 				  << "\nsearch_depth min, max: " << minDepth_ << ", " << maxDepth_
 				  << "\nstep_num: " << stepNum_
 				  << "\ngame_num_for_iteration: " << gameNumForIteration_
+				  << "\nupdate_max: " << updateMax
 				  << std::endl;
+		updateMaxMask_ = (UINT64_C(1) << updateMax) - 1;
 		readBook(pos, recordFileName, gameNum);
 		// 既に 1 つのSearcher, Positionが立ち上がっているので、指定した数 - 1 の Searcher, Position を立ち上げる。
 		threadNum = std::max<size_t>(0, threadNum - 1);
@@ -343,7 +351,7 @@ private:
 	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
 	template <typename T>
 	void updateFV(T& v, float dv) {
-		const int step = count1s(mt_() & 3); // 0~2 の間で、正規分布に近い形にする。
+		const int step = count1s(mt_() & updateMaxMask_);
 		if      (0 < v) dv -= static_cast<float>(FVPenalty());
 		else if (v < 0) dv += static_cast<float>(FVPenalty());
 
@@ -507,6 +515,7 @@ private:
 	Evaluater eval_;
 	int stepNum_;
 	size_t gameNumForIteration_;
+	u64 updateMaxMask_;
 
 	static const Score FVWindow = static_cast<Score>(256);
 };
