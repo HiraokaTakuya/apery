@@ -329,22 +329,6 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				ret[retIdx++] = std::make_pair(&r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + irank - jrank] - &oneArrayKPP[0], MaxWeight());
 			}
 
-			if (ifile == FileE) {
-				// ppに関してiが5筋なのでjだけ左右反転しても構わない。
-				j = inverseFileIndexIfLefterThanMiddle(j);
-				if (j < i) std::swap(i, j);
-			}
-			else if ((E1 < isq)
-					 || (ibegin == jbegin && inverseFile(jsq) < isq))
-			{
-				// ppに関してiを左右反転するのでjも左右反転する。
-				i = inverseFileIndexOnBoard(i);
-				j = inverseFileIndexOnBoard(j);
-				if (j < i) std::swap(i, j);
-			}
-			ret[retIdx++] = std::make_pair(&pp[i][j] - &oneArrayKPP[0], MaxWeight());
-			ret[retIdx++] = std::make_pair(&ypp[krank][i][j] - &oneArrayKPP[0], MaxWeight());
-
 			auto func = [this, &retIdx, &ret](Square ksq, int ij, int ji) {
 				const Rank krank = makeRank(ksq);
 				const File kfile = makeFile(ksq);
@@ -523,6 +507,22 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				}
 			};
 			ee_func(ksq, i, j);
+
+			if (ifile == FileE) {
+				// ppに関してiが5筋なのでjだけ左右反転しても構わない。
+				j = inverseFileIndexIfLefterThanMiddle(j);
+				if (j < i) std::swap(i, j);
+			}
+			else if ((E1 < isq)
+					 || (ibegin == jbegin && inverseFile(jsq) < isq))
+			{
+				// ppに関してiを左右反転するのでjも左右反転する。
+				i = inverseFileIndexOnBoard(i);
+				j = inverseFileIndexOnBoard(j);
+				if (j < i) std::swap(i, j);
+			}
+			ret[retIdx++] = std::make_pair(&pp[i][j] - &oneArrayKPP[0], MaxWeight());
+			ret[retIdx++] = std::make_pair(&ypp[krank][i][j] - &oneArrayKPP[0], MaxWeight());
 		}
 
 		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
