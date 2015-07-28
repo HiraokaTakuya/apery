@@ -128,41 +128,6 @@ namespace {
 		return false;
 	}
 
-	// 1 ply前の first move によって second move が合法手にするか。
-	bool allows(const Position& pos, const Move first, const Move second) {
-		const Square m1to   = first.to();
-		const Square m1from = first.from();
-		const Square m2from = second.from();
-		const Square m2to   = second.to();
-		if (m1to == m2from || m2to == m1from) {
-			return true;
-		}
-
-		if (second.isDrop() && first.isDrop()) {
-			return false;
-		}
-
-		if (!second.isDrop() && !first.isDrop()) {
-			if (betweenBB(m2from, m2to).isSet(m1from)) {
-				return true;
-			}
-		}
-
-		const PieceType m1pt = first.pieceTypeFromOrDropped();
-		const Color us = pos.turn();
-		const Bitboard occ = (second.isDrop() ? pos.occupiedBB() : pos.occupiedBB() ^ setMaskBB(m2from));
-		const Bitboard m1att = pos.attacksFrom(m1pt, us, m1to, occ);
-		if (m1att.isSet(m2to)) {
-			return true;
-		}
-
-		if (m1att.isSet(pos.kingSquare(us))) {
-			return true;
-		}
-
-		return false;
-	}
-
 	Score scoreToTT(const Score s, const Ply ply) {
 		assert(s != ScoreNone);
 
@@ -176,67 +141,6 @@ namespace {
 				: ScoreMateInMaxPly <= s ? s - static_cast<Score>(ply)
 				: s <= ScoreMatedInMaxPly ? s + static_cast<Score>(ply)
 				: s);
-	}
-
-	// fitst move によって、first move の相手側の second move を違法手にするか。
-	bool refutes(const Position& pos, const Move first, const Move second) {
-		assert(pos.isOK());
-
-		const Square m2to = second.to();
-		const Square m1from = first.from(); // 駒打でも今回はこれで良い。
-
-		if (m1from == m2to) {
-			return true;
-		}
-
-		const PieceType m2ptFrom = second.pieceTypeFrom();
-		if (second.isCaptureOrPromotion()
-			&& ((pos.pieceScore(second.cap()) <= pos.pieceScore(m2ptFrom))
-				|| m2ptFrom == King))
-		{
-			// first により、新たに m2to に当たりになる駒があるなら true
-			assert(!second.isDrop());
-
-			const Color us = pos.turn();
-			const Square m1to = first.to();
-			const Square m2from = second.from();
-			Bitboard occ = pos.occupiedBB() ^ setMaskBB(m2from) ^ setMaskBB(m1to);
-			PieceType m1ptTo;
-
-			if (first.isDrop()) {
-				m1ptTo = first.pieceTypeDropped();
-			}
-			else {
-				m1ptTo = first.pieceTypeTo();
-				occ ^= setMaskBB(m1from);
-			}
-
-			if (pos.attacksFrom(m1ptTo, us, m1to, occ).isSet(m2to)) {
-				return true;
-			}
-
-			const Color them = oppositeColor(us);
-			// first で動いた後、sq へ当たりになっている遠隔駒
-			const Bitboard xray =
-				(pos.attacksFrom<Lance>(them, m2to, occ) & pos.bbOf(Lance, us))
-				| (pos.attacksFrom<Rook  >(m2to, occ) & pos.bbOf(Rook, Dragon, us))
-				| (pos.attacksFrom<Bishop>(m2to, occ) & pos.bbOf(Bishop, Horse, us));
-
-			// sq へ当たりになっている駒のうち、first で動くことによって新たに当たりになったものがあるなら true
-			if (xray.isNot0() && (xray ^ (xray & queenAttack(m2to, pos.occupiedBB()))).isNot0()) {
-				return true;
-			}
-		}
-
-		if (!second.isDrop()
-			&& isSlider(m2ptFrom)
-			&& betweenBB(second.from(), m2to).isSet(first.to())
-			&& ScoreZero <= pos.seeSign(first))
-		{
-			return true;
-		}
-
-		return false;
 	}
 
 	std::string scoreToUSI(const Score score, const Score alpha, const Score beta) {
@@ -1003,13 +907,6 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 		else {
 			// fail low
 			threatMove = (ss+1)->currentMove;
-			if (depth < 5 * OnePly
-				&& (ss-1)->reduction != Depth0
-				&& !threatMove.isNone()
-				&& allows(pos, (ss-1)->currentMove, threatMove))
-			{
-				return beta - 1;
-			}
 		}
 	}
 
@@ -1165,7 +1062,7 @@ split_point_start:
 			// move count based pruning
 			if (depth < 16 * OnePly
 				&& FutilityMoveCounts[depth] <= moveCount
-				&& (threatMove.isNone() || !refutes(pos, move, threatMove)))
+				&& threatMove.isNone())
 			{
 				if (SPNode) {
 					splitPoint->mutex.lock();
