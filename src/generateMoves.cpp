@@ -2,23 +2,6 @@
 #include "usi.hpp"
 
 namespace {
-	// 馬, 龍の場合
-	template <MoveType MT, PieceType PT, Color US>
-	FORCE_INLINE MoveStack* generateHorseOrDragonMoves(MoveStack* moveStackList, const Position& pos,
-													   const Bitboard& target, const Square /*ksq*/)
-	{
-		Bitboard fromBB = pos.bbOf(PT, US);
-		while (fromBB.isNot0()) {
-			const Square from = fromBB.firstOneFromI9();
-			Bitboard toBB = pos.attacksFrom<PT>(US, from) & target;
-			while (toBB.isNot0()) {
-				const Square to = toBB.firstOneFromI9();
-				(*moveStackList++).move = makeNonPromoteMove<MT>(PT, from, to, pos);
-			}
-		}
-		return moveStackList;
-	}
-
 	// 角, 飛車の場合
 	template <MoveType MT, PieceType PT, Color US, bool ALL>
 	FORCE_INLINE MoveStack* generateBishopOrRookMoves(MoveStack* moveStackList, const Position& pos,
@@ -200,15 +183,14 @@ namespace {
 	// 金, 成り金をまとめて指し手生成
 	template <MoveType MT, PieceType PT, Color US, bool ALL> struct GeneratePieceMoves {
 		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
-			static_assert(PT == Gold || PT == ProPawn || PT == ProLance || PT == ProKnight || PT == ProSilver, "");
-			// 金、成金のbitboardをまとめて扱う。
-			// todo: 金、成金 をまとめたbitboardをPositionクラスが持つべきか検討すること。
-			Bitboard fromBB = pos.goldsBB(US);
+			static_assert(PT == GoldHorseDragon, "");
+			// 金、成金、馬、竜のbitboardをまとめて扱う。
+			Bitboard fromBB = (pos.goldsBB() | pos.bbOf(Horse, Dragon)) & pos.bbOf(US);
 			while (fromBB.isNot0()) {
 				const Square from = fromBB.firstOneFromI9();
-				Bitboard toBB = pos.attacksFrom<Gold>(US, from) & target;
 				// from にある駒の種類を判別
 				const PieceType pt = pieceToPieceType(pos.piece(from));
+				Bitboard toBB = pos.attacksFrom(pt, US, from) & target;
 				while (toBB.isNot0()) {
 					const Square to = toBB.firstOneFromI9();
 					(*moveStackList++).move = makeNonPromoteMove<MT>(pt, from, to, pos);
@@ -388,16 +370,6 @@ namespace {
 			return generateBishopOrRookMoves<MT, Rook, US, ALL>(moveStackList, pos, target, ksq);
 		}
 	};
-	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Horse, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
-			return generateHorseOrDragonMoves<MT, Horse, US>(moveStackList, pos, target, ksq);
-		}
-	};
-	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Dragon, US, ALL> {
-		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square ksq) {
-			return generateHorseOrDragonMoves<MT, Dragon, US>(moveStackList, pos, target, ksq);
-		}
-	};
 	// 玉の場合
 	// 必ず盤上に 1 枚だけあることを前提にすることで、while ループを 1 つ無くして高速化している。
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, King, US, ALL> {
@@ -472,19 +444,17 @@ namespace {
 
 			const Square ksq = pos.kingSquare(oppositeColor(US));
 
-			moveStackList = GeneratePieceMoves<MT, Pawn,   US, ALL>()(moveStackList, pos, target2, ksq);
+			moveStackList = GeneratePieceMoves<MT, Pawn           , US, ALL>()(moveStackList, pos, target2, ksq);
 			// 香車が駒を取らずに、敵陣3段目に不成で入ってくることはほぼあり得ない。(詰絡みなら厳密にはあり得ると思う。)
 			// よって、target3 ではなく、target2 を引数にすることで、3段目への移動を省く。
 			// 桂馬の場合は普通にあり得るので、省かない。
-			moveStackList = GeneratePieceMoves<MT, Lance,  US, ALL>()(moveStackList, pos, (ALL ? target3 : target2), ksq);
-			moveStackList = GeneratePieceMoves<MT, Knight, US, ALL>()(moveStackList, pos, target3, ksq);
-			moveStackList = GeneratePieceMoves<MT, Silver, US, ALL>()(moveStackList, pos, target1, ksq);
-			moveStackList = GeneratePieceMoves<MT, Bishop, US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<MT, Rook,   US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<MT, Gold,   US, ALL>()(moveStackList, pos, target1, ksq);
-			moveStackList = GeneratePieceMoves<MT, King,   US, ALL>()(moveStackList, pos, target1, ksq);
-			moveStackList = GeneratePieceMoves<MT, Horse,  US, ALL>()(moveStackList, pos, target1, ksq);
-			moveStackList = GeneratePieceMoves<MT, Dragon, US, ALL>()(moveStackList, pos, target1, ksq);
+			moveStackList = GeneratePieceMoves<MT, Lance          , US, ALL>()(moveStackList, pos, (ALL ? target3 : target2), ksq);
+			moveStackList = GeneratePieceMoves<MT, Knight         , US, ALL>()(moveStackList, pos, target3, ksq);
+			moveStackList = GeneratePieceMoves<MT, Silver         , US, ALL>()(moveStackList, pos, target1, ksq);
+			moveStackList = GeneratePieceMoves<MT, Bishop         , US, ALL>()(moveStackList, pos, target2, ksq);
+			moveStackList = GeneratePieceMoves<MT, Rook           , US, ALL>()(moveStackList, pos, target2, ksq);
+			moveStackList = GeneratePieceMoves<MT, GoldHorseDragon, US, ALL>()(moveStackList, pos, target1, ksq);
+			moveStackList = GeneratePieceMoves<MT, King           , US, ALL>()(moveStackList, pos, target1, ksq);
 
 			return moveStackList;
 		}
@@ -615,9 +585,9 @@ namespace {
 			moveStackList = GeneratePieceMoves<Evasion, Silver, US, ALL>()(moveStackList, pos, target2, ksq);
 			moveStackList = GeneratePieceMoves<Evasion, Bishop, US, ALL>()(moveStackList, pos, target2, ksq);
 			moveStackList = GeneratePieceMoves<Evasion, Rook,   US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<Evasion, Gold,   US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<Evasion, Horse,  US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<Evasion, Dragon, US, ALL>()(moveStackList, pos, target2, ksq);
+			moveStackList = GeneratePieceMoves<Evasion, GoldHorseDragon,   US, ALL>()(moveStackList, pos, target2, ksq);
+			//moveStackList = GeneratePieceMoves<Evasion, Horse,  US, ALL>()(moveStackList, pos, target2, ksq);
+			//moveStackList = GeneratePieceMoves<Evasion, Dragon, US, ALL>()(moveStackList, pos, target2, ksq);
 
 			if (target1.isNot0()) {
 				moveStackList = generateDropMoves<US>(moveStackList, pos, target1);
@@ -639,16 +609,14 @@ namespace {
 			target |= pos.bbOf(oppositeColor(US));
 			const Square ksq = pos.kingSquare(oppositeColor(US));
 
-			moveStackList = GeneratePieceMoves<NonEvasion, Pawn,   US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Lance,  US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Knight, US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Silver, US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Bishop, US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Rook,   US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Gold,   US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, King,   US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Horse,  US, false>()(moveStackList, pos, target, ksq);
-			moveStackList = GeneratePieceMoves<NonEvasion, Dragon, US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, Pawn           , US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, Lance          , US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, Knight         , US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, Silver         , US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, Bishop         , US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, Rook           , US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, GoldHorseDragon, US, false>()(moveStackList, pos, target, ksq);
+			moveStackList = GeneratePieceMoves<NonEvasion, King           , US, false>()(moveStackList, pos, target, ksq);
 
 			return moveStackList;
 		}

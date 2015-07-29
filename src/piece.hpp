@@ -14,7 +14,9 @@ enum PieceType {
 	Occupied = 0, // 各 PieceType の or をとったもの。
 	Pawn, Lance, Knight, Silver, Bishop, Rook, Gold, King,
 	ProPawn, ProLance, ProKnight, ProSilver, Horse, Dragon,
-	PieceTypeNum
+	PieceTypeNum,
+
+	GoldHorseDragon // 単にtemnplate引数として使用
 };
 OverloadEnumOperators(PieceType);
 
