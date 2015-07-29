@@ -324,7 +324,7 @@ private:
 
 			// pin する遠隔駒と玉の間にある駒が1つで、かつ、引数の色のとき、その駒は(を) pin されて(して)いる。
 			if (between.isNot0()
-				&& between.isOneBit()
+				&& between.isOneBit<false>()
 				&& between.andIsNot0(bbOf(BetweenIsUs ? us : them)))
 			{
 				result |= between;

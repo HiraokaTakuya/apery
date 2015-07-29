@@ -117,7 +117,9 @@ namespace {
 		for (Color c = Black; c < ColorNum; ++c) {
 			for (Square sq = I9; sq < SquareNum; ++sq) {
 				const Bitboard blockMask = lanceBlockMask(sq);
-				const int num1s = blockMask.popCount(); // 常に 7
+				//const int num1s = blockMask.popCount(); // 常に 7
+				const int num1s = 7;
+				assert(num1s == blockMask.popCount());
 				for (int i = 0; i < (1 << num1s); ++i) {
 					Bitboard occupied = indexToOccupied(i, num1s, blockMask);
 					LanceAttack[c][sq][i] = lanceAttackCalc(c, sq, occupied);

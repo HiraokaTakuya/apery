@@ -175,15 +175,15 @@ public:
 		return constFirstOneLeftFromB9();
 	}
 	// Bitboard の 1 の bit を数える。
-	int popCount() const {
-		int count = count1s(this->p(0));
-		count += count1s(this->p(1));
-		return count;
-	}
+	// Crossover は、merge() すると 1 である bit が重なる可能性があるなら true
+	template <bool Crossover = true>
+	int popCount() const { return (Crossover ? count1s(p(0)) + count1s(p(1)) : count1s(merge())); }
 	// bit が 1 つだけ立っているかどうかを判定する。
+	// Crossover は、merge() すると 1 である bit が重なる可能性があるなら true
+	template <bool Crossover = true>
 	bool isOneBit() const {
 #if defined (HAVE_SSE42)
-		return (this->popCount() == 1);
+		return (this->popCount<Crossover>() == 1);
 #else
 		if (!this->isNot0()) {
 			return false;
