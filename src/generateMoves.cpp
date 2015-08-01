@@ -8,67 +8,22 @@ namespace {
 													  const Bitboard& target, const Square /*ksq*/)
 	{
 		Bitboard fromBB = pos.bbOf(PT, US);
-
-		// Txxx は先手、後手の情報を吸収した変数。数字は先手に合わせている。
-		const Rank TRank6 = (US == Black ? Rank6 : Rank4);
-		const Bitboard TRank789BB = inFrontMask<US, TRank6>();
-
-		if (MT == NonCaptureMinusPro) {
-			fromBB.andEqualNot(TRank789BB);
-		}
-		else {
-			Bitboard fromOn789BB = fromBB & TRank789BB;
-			// from が 1,2,3 段目にある。NonEvasion, ALL 以外は必ず成る。
-			if (fromOn789BB.isNot0()) {
-				const Bitboard target_tmp =
-					(MT == Capture       ) ? pos.bbOf(oppositeColor(US)) :
-					(MT == NonCapture    ) ? pos.emptyBB()               :
-					(MT == CapturePlusPro) ? ~pos.bbOf(US)               :
-					(MT == NonEvasion    ) ? ~pos.bbOf(US)               :
-					(MT == Evasion       ) ? target                      :
-					allOneBB(); // error
-				assert(target_tmp != allOneBB());
-
-				fromBB.andEqualNot(TRank789BB);
-				do {
-					const Square from = fromOn789BB.firstOneFromI9();
-					Bitboard toBB = pos.attacksFrom<PT>(US, from) & target_tmp;
-					while (toBB.isNot0()) {
-						const Square to = toBB.firstOneFromI9();
-						(*moveStackList++).move = makePromoteMove<MT>(PT, from, to, pos);
-						if (MT == NonEvasion || ALL) {
-							(*moveStackList++).move = makeNonPromoteMove<MT>(PT, from, to, pos);
-						}
-					}
-				} while (fromOn789BB.isNot0());
-			}
-		}
-
-		// from が 1,2,3 段目以外にある。 to が 1,2,3 段目ならば成る。
 		while (fromBB.isNot0()) {
 			const Square from = fromBB.firstOneFromI9();
+			const bool fromCanPromote = canPromote(US, makeRank(from));
 			Bitboard toBB = pos.attacksFrom<PT>(US, from) & target;
-			if (MT != NonCaptureMinusPro) {
-				Bitboard toOn789BB = toBB & TRank789BB;
-				// 成り
-				if (toOn789BB.isNot0()) {
-					toBB.andEqualNot(TRank789BB);
-					do {
-						const Square to = toOn789BB.firstOneFromI9();
-						(*moveStackList++).move = makePromoteMove<MT>(PT, from, to, pos);
-						if (MT == NonEvasion) {
-							(*moveStackList++).move = makeNonPromoteMove<MT>(PT, from, to, pos);
-						}
-					} while (toOn789BB.isNot0());
-				}
-			}
-			// 不成
 			while (toBB.isNot0()) {
 				const Square to = toBB.firstOneFromI9();
-				(*moveStackList++).move = makeNonPromoteMove<MT>(PT, from, to, pos);
+				const bool toCanPromote = canPromote(US, makeRank(to));
+				if (fromCanPromote | toCanPromote) {
+					(*moveStackList++).move = makePromoteMove<MT>(PT, from, to, pos);
+					if (MT == NonEvasion || ALL)
+						(*moveStackList++).move = makeNonPromoteMove<MT>(PT, from, to, pos);
+				}
+				else // 角、飛車は成れるなら成り、不成は生成しない。
+					(*moveStackList++).move = makeNonPromoteMove<MT>(PT, from, to, pos);
 			}
 		}
-
 		return moveStackList;
 	}
 
@@ -180,7 +135,7 @@ namespace {
 		return moveStackList;
 	}
 
-	// 金, 成り金をまとめて指し手生成
+	// 金, 成り金、馬、竜の指し手生成
 	template <MoveType MT, PieceType PT, Color US, bool ALL> struct GeneratePieceMoves {
 		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			static_assert(PT == GoldHorseDragon, "");
@@ -245,55 +200,31 @@ namespace {
 	template <MoveType MT, Color US, bool ALL> struct GeneratePieceMoves<MT, Lance, US, ALL> {
 		FORCE_INLINE MoveStack* operator () (MoveStack* moveStackList, const Position& pos, const Bitboard& target, const Square /*ksq*/) {
 			Bitboard fromBB = pos.bbOf(Lance, US);
-
-			// bitboard のレイアウトが縦になっているので、from と to が同じ 64bit 変数に収まる。
-			// それを利用して、片方の 64bit 変数のみにアクセスするようにしている。
-			// 本当は、attacks を Bitboard 型で生成せずに、u64 で生成するようにした方が速度的には良い。
-			Square from;
-			foreachBB(fromBB, from, [&](const int part) {
-					Bitboard toBB;
-					toBB.set(part, pos.attacksFrom<Lance>(US, from).p(part) & target.p(part));
-					while (toBB.p(part)) {
-						// インライン化されれば、三項演算は最適化で消えるはず。
-						const Square to = (part == 0 ? toBB.firstOneRightFromI9() : toBB.firstOneLeftFromB9());
-						if (MT == Capture || MT == NonCapture || MT == NonEvasion || MT == Evasion || MT == CapturePlusPro) {
-							const Rank toRank = makeRank(to);
-							if (isInFrontOf<US, Rank7, Rank3>(toRank)) {
-								// 1, 2 段目は成りのみを生成する。
-								(*moveStackList++).move = makePromoteMove<MT>(Lance, from, to, pos);
-								if (MT == NonEvasion || ALL) {
-									// 1段目でなければ
-									if (!isInFrontOf<US, Rank8, Rank2>(toRank)) {
-										(*moveStackList++).move = makeNonPromoteMove<MT>(Lance, from, to, pos);
-									}
-								}
-							}
-							else if (isInFrontOf<US, Rank6, Rank4>(toRank)) {
-								// 3 段目は成りと不成を生成する。
-								(*moveStackList++).move = makePromoteMove<MT>(Lance, from, to, pos);
-								if (MT == CapturePlusPro) {
-									if (pos.piece(to) != Empty) {
-										(*moveStackList++).move = makeNonPromoteMove<MT>(Lance, from, to, pos);
-									}
-								}
-								else {
+			while (fromBB.isNot0()) {
+				const Square from = fromBB.firstOneFromI9();
+				Bitboard toBB = pos.attacksFrom<Lance>(US, from) & target;
+				do {
+					if (toBB.isNot0()) {
+						// 駒取り対象は必ず一つ以下なので、toBB のビットを 0 にする必要がない。
+						const Square to = (MT == Capture || MT == CapturePlusPro ? toBB.constFirstOneFromI9() : toBB.firstOneFromI9());
+						const bool toCanPromote = canPromote(US, makeRank(to));
+						if (toCanPromote) {
+							(*moveStackList++).move = makePromoteMove<MT>(Lance, from, to, pos);
+							if (MT == NonEvasion || ALL) {
+								if (isBehind<US, Rank9, Rank1>(makeRank(to))) // 1段目の不成は省く
 									(*moveStackList++).move = makeNonPromoteMove<MT>(Lance, from, to, pos);
-								}
 							}
-							else {
-								// それ以外は不成のみを生成する。
-								(*moveStackList++).move = makeNonPromoteMove<MT>(Lance, from, to, pos);
+							else if (MT != NonCapture && MT != NonCaptureMinusPro) { // 駒を取らない3段目の不成を省く
+								if (isBehind<US, Rank8, Rank2>(makeRank(to))) // 2段目の不成を省く
+									(*moveStackList++).move = makeNonPromoteMove<MT>(Lance, from, to, pos);
 							}
 						}
-						else if (MT == NonCaptureMinusPro) {
-							// 常に不成。
+						else
 							(*moveStackList++).move = makeNonPromoteMove<MT>(Lance, from, to, pos);
-						}
-						else {
-							UNREACHABLE;
-						}
 					}
-				});
+					// 駒取り対象は必ず一つ以下なので、loop は不要。最適化で do while が無くなると良い。
+				} while (!(MT == Capture || MT == CapturePlusPro) && toBB.isNot0());
+			}
 			return moveStackList;
 		}
 	};
@@ -306,36 +237,14 @@ namespace {
 				Bitboard toBB = pos.attacksFrom<Knight>(US, from) & target;
 				while (toBB.isNot0()) {
 					const Square to = toBB.firstOneFromI9();
-					if (MT == Capture || MT == NonCapture || MT == NonEvasion || MT == Evasion || MT == CapturePlusPro) {
-						const Rank toRank = makeRank(to);
-						if (isInFrontOf<US, Rank7, Rank3>(toRank)) {
-							// 1, 2 段目は成りのみを生成する。
-							(*moveStackList++).move = makePromoteMove<MT>(Knight, from, to, pos);
-						}
-						else if (isInFrontOf<US, Rank6, Rank4>(toRank)) {
-							// 3 段目は成りと不成を生成する。
-							(*moveStackList++).move = makePromoteMove<MT>(Knight, from, to, pos);
-							if (MT == CapturePlusPro) {
-								if (pos.piece(to) != Empty) {
-									(*moveStackList++).move = makeNonPromoteMove<MT>(Knight, from, to, pos);
-								}
-							}
-							else {
-								(*moveStackList++).move = makeNonPromoteMove<MT>(Knight, from, to, pos);
-							}
-						}
-						else {
-							// それ以外は不成のみを生成する。
+					const bool toCanPromote = canPromote(US, makeRank(to));
+					if (toCanPromote) {
+						(*moveStackList++).move = makePromoteMove<MT>(Knight, from, to, pos);
+						if (isBehind<US, Rank8, Rank2>(makeRank(to))) // 1, 2段目の不成は省く
 							(*moveStackList++).move = makeNonPromoteMove<MT>(Knight, from, to, pos);
-						}
 					}
-					else if (MT == NonCaptureMinusPro) {
-						// 常に不成。
+					else
 						(*moveStackList++).move = makeNonPromoteMove<MT>(Knight, from, to, pos);
-					}
-					else {
-						UNREACHABLE;
-					}
 				}
 			}
 			return moveStackList;
@@ -419,42 +328,29 @@ namespace {
 			const Bitboard TRank789BB = inFrontMask<US, TRank6>();
 			const Bitboard TRank1_6BB = inFrontMask<oppositeColor(US), TRank7>();
 			const Bitboard TRank1_7BB = inFrontMask<oppositeColor(US), TRank8>();
-			// promoted, king, silver, 
-			const Bitboard target1 =
+
+			const Bitboard targetPawn =
+				(MT == Capture           ) ? pos.bbOf(oppositeColor(US))                                             :
+				(MT == NonCapture        ) ? pos.emptyBB()                                                           :
+				(MT == CapturePlusPro    ) ? pos.bbOf(oppositeColor(US)) | (pos.occupiedBB().notThisAnd(TRank789BB)) :
+				(MT == NonCaptureMinusPro) ? pos.occupiedBB().notThisAnd(TRank1_6BB)                                 :
+				allOneBB(); // error
+			const Bitboard targetOther =
 				(MT == Capture           ) ? pos.bbOf(oppositeColor(US)) :
 				(MT == NonCapture        ) ? pos.emptyBB()               :
 				(MT == CapturePlusPro    ) ? pos.bbOf(oppositeColor(US)) :
 				(MT == NonCaptureMinusPro) ? pos.emptyBB()               :
 				allOneBB(); // error
-
-			// pawn, knight, lance, rook, bishop
-			const Bitboard target2 =
-				(MT == Capture           ) ? target1                                                        :
-				(MT == NonCapture        ) ? target1                                                        :
-				(MT == CapturePlusPro    ) ? pos.bbOf(oppositeColor(US)) | (pos.nOccupiedBB() & TRank789BB) :
-				(MT == NonCaptureMinusPro) ? pos.nOccupiedBB() & TRank1_6BB                                 :
-				allOneBB(); // error
-
-			const Bitboard target3 =
-				(MT == Capture           ) ? target2                        :
-				(MT == NonCapture        ) ? target2                        :
-				(MT == CapturePlusPro    ) ? target2                        :
-				(MT == NonCaptureMinusPro) ? pos.nOccupiedBB() & TRank1_7BB :
-				allOneBB(); // error
-
 			const Square ksq = pos.kingSquare(oppositeColor(US));
 
-			moveStackList = GeneratePieceMoves<MT, Pawn           , US, ALL>()(moveStackList, pos, target2, ksq);
-			// 香車が駒を取らずに、敵陣3段目に不成で入ってくることはほぼあり得ない。(詰絡みなら厳密にはあり得ると思う。)
-			// よって、target3 ではなく、target2 を引数にすることで、3段目への移動を省く。
-			// 桂馬の場合は普通にあり得るので、省かない。
-			moveStackList = GeneratePieceMoves<MT, Lance          , US, ALL>()(moveStackList, pos, (ALL ? target3 : target2), ksq);
-			moveStackList = GeneratePieceMoves<MT, Knight         , US, ALL>()(moveStackList, pos, target3, ksq);
-			moveStackList = GeneratePieceMoves<MT, Silver         , US, ALL>()(moveStackList, pos, target1, ksq);
-			moveStackList = GeneratePieceMoves<MT, Bishop         , US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<MT, Rook           , US, ALL>()(moveStackList, pos, target2, ksq);
-			moveStackList = GeneratePieceMoves<MT, GoldHorseDragon, US, ALL>()(moveStackList, pos, target1, ksq);
-			moveStackList = GeneratePieceMoves<MT, King           , US, ALL>()(moveStackList, pos, target1, ksq);
+			moveStackList = GeneratePieceMoves<MT, Pawn           , US, ALL>()(moveStackList, pos, targetPawn, ksq);
+			moveStackList = GeneratePieceMoves<MT, Lance          , US, ALL>()(moveStackList, pos, targetOther, ksq);
+			moveStackList = GeneratePieceMoves<MT, Knight         , US, ALL>()(moveStackList, pos, targetOther, ksq);
+			moveStackList = GeneratePieceMoves<MT, Silver         , US, ALL>()(moveStackList, pos, targetOther, ksq);
+			moveStackList = GeneratePieceMoves<MT, Bishop         , US, ALL>()(moveStackList, pos, targetOther, ksq);
+			moveStackList = GeneratePieceMoves<MT, Rook           , US, ALL>()(moveStackList, pos, targetOther, ksq);
+			moveStackList = GeneratePieceMoves<MT, GoldHorseDragon, US, ALL>()(moveStackList, pos, targetOther, ksq);
+			moveStackList = GeneratePieceMoves<MT, King           , US, ALL>()(moveStackList, pos, targetOther, ksq);
 
 			return moveStackList;
 		}
@@ -557,16 +453,9 @@ namespace {
 			bb = bannedKingToBB.notThisAnd(pos.bbOf(US).notThisAnd(kingAttack(ksq)));
 			while (bb.isNot0()) {
 				const Square to = bb.firstOneFromI9();
-#if 0
-				// 移動先に相手駒の利きがあればそれを省く。
-				if (!pos.attackersToIsNot0(Them, to)) {
-					(*moveStackList++).move = makeNonPromoteMove<Capture>(King, ksq, to, pos);
-				}
-#else
 				// 移動先に相手駒の利きがあるか調べずに指し手を生成する。
 				// attackersTo() が重いので、movePicker か search で合法手か調べる。
 				(*moveStackList++).move = makeNonPromoteMove<Capture>(King, ksq, to, pos);
-#endif
 			}
 
 			// 両王手なら、玉を移動するしか回避方法は無い。
@@ -586,8 +475,6 @@ namespace {
 			moveStackList = GeneratePieceMoves<Evasion, Bishop, US, ALL>()(moveStackList, pos, target2, ksq);
 			moveStackList = GeneratePieceMoves<Evasion, Rook,   US, ALL>()(moveStackList, pos, target2, ksq);
 			moveStackList = GeneratePieceMoves<Evasion, GoldHorseDragon,   US, ALL>()(moveStackList, pos, target2, ksq);
-			//moveStackList = GeneratePieceMoves<Evasion, Horse,  US, ALL>()(moveStackList, pos, target2, ksq);
-			//moveStackList = GeneratePieceMoves<Evasion, Dragon, US, ALL>()(moveStackList, pos, target2, ksq);
 
 			if (target1.isNot0()) {
 				moveStackList = generateDropMoves<US>(moveStackList, pos, target1);
