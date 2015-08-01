@@ -56,6 +56,7 @@ public:
 	bool isCapture() const { return (value() & 0xf00000) ? true : false; }
 	// 0xf04000 は 取られる駒と成のマスク
 	bool isCaptureOrPromotion() const { return (value() & 0xf04000) ? true : false; }
+	bool isCaptureOrPawnPromotion() const { return isCapture() || (isPromotion() && pieceTypeFrom() == Pawn); }
 	// 打つ駒の種類
 	PieceType pieceTypeDropped() const { return static_cast<PieceType>(this->from() - SquareNum + 1); }
 	PieceType pieceTypeFromOrDropped() const { return (isDrop() ? pieceTypeDropped() : pieceTypeFrom()); }

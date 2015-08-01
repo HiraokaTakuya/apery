@@ -48,7 +48,7 @@ MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const H
 	// todo: ここで Stockfish は qcheck がある。
 	else if (DepthQRecaptures < depth) {
 		phase_ = QSearch;
-		if (!ttm.isNone() && !ttm.isCaptureOrPromotion()) {
+		if (!ttm.isNone() && !ttm.isCaptureOrPawnPromotion()) {
 			ttm = Move::moveNone();
 		}
 	}
