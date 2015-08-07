@@ -210,7 +210,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 
 	static const int KPPIndicesMax = 3000;
 	static const int KKPIndicesMax = 130;
-	static const int KKIndicesMax = 5;
+	static const int KKIndicesMax = 7;
 	// KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
 	// 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
 	// 0 の時だけは正負が不明だが、0 は歩の持ち駒 0 枚を意味していて無効な値なので問題なし。
@@ -667,35 +667,39 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		ret[retIdx++] = std::make_pair(&k[std::min(ksq0, inverseFile(ksq0))] - &oneArrayKK[0], MaxWeight());
 		ret[retIdx++] = std::make_pair(-(&k[std::min(inverse(ksq1), inverseFile(inverse(ksq1)))] - &oneArrayKK[0]), MaxWeight());
 
-		if (std::min(inverseFile(ksq0), inverse(inverseFile(ksq1))) < std::min(ksq0, inverse(ksq1))) {
-			// inverseFile する。
-			ksq0 = inverseFile(ksq0);
-			ksq1 = inverseFile(ksq1);
-		}
-		if (ksq0 < inverse(ksq1)) {
-			const File kfile0 = makeFile(ksq0);
-			const Rank krank0 = makeRank(ksq0);
-			const File kfile1 = makeFile(ksq1);
-			const Rank krank1 = makeRank(ksq1);
-			ret[retIdx++] = std::make_pair(&kk[ksq0][ksq1] - &oneArrayKK[0], MaxWeight());
-			ret[retIdx++] = std::make_pair(&r_kk[R_Mid + kfile0 - kfile1][R_Mid + krank0 - krank1] - &oneArrayKK[0], MaxWeight());
-			assert(ksq0 <= E1);
-			assert(kfile0 - kfile1 <= 0);
-		}
-		else {
-			// 常に ksq0 < ksq1 となるテーブルにアクセスする為、
-			// ksq0, ksq1 を入れ替えて inverse する。
-			const Square ksqInv0 = inverse(ksq1);
-			const Square ksqInv1 = inverse(ksq0);
-			const File kfileInv0 = makeFile(ksqInv0);
-			const Rank krankInv0 = makeRank(ksqInv0);
-			const File kfileInv1 = makeFile(ksqInv1);
-			const Rank krankInv1 = makeRank(ksqInv1);
-			ret[retIdx++] = std::make_pair(-(&kk[ksqInv0][ksqInv1] - &oneArrayKK[0]), MaxWeight());
-			ret[retIdx++] = std::make_pair(-(&r_kk[R_Mid + kfileInv0 - kfileInv1][R_Mid + krankInv0 - krankInv1] - &oneArrayKK[0]), MaxWeight());
-			assert(ksqInv0 <= E1);
-			assert(kfileInv0 - kfileInv1 <= 0);
-		}
+		auto kk_func = [this, &retIdx, &ret](Square ksq0, Square ksq1, int sign) {
+			if (std::min(inverseFile(ksq0), inverse(inverseFile(ksq1))) < std::min(ksq0, inverse(ksq1))) {
+				// inverseFile する。
+				ksq0 = inverseFile(ksq0);
+				ksq1 = inverseFile(ksq1);
+			}
+			if (ksq0 < inverse(ksq1)) {
+				const File kfile0 = makeFile(ksq0);
+				const Rank krank0 = makeRank(ksq0);
+				const File kfile1 = makeFile(ksq1);
+				const Rank krank1 = makeRank(ksq1);
+				ret[retIdx++] = std::make_pair(sign*(&kk[ksq0][ksq1] - &oneArrayKK[0]), MaxWeight());
+				ret[retIdx++] = std::make_pair(sign*(&r_kk[R_Mid + kfile0 - kfile1][R_Mid + krank0 - krank1] - &oneArrayKK[0]), MaxWeight());
+				assert(ksq0 <= E1);
+				assert(kfile0 - kfile1 <= 0);
+			}
+			else {
+				// 常に ksq0 < ksq1 となるテーブルにアクセスする為、
+				// ksq0, ksq1 を入れ替えて inverse する。
+				const Square ksqInv0 = inverse(ksq1);
+				const Square ksqInv1 = inverse(ksq0);
+				const File kfileInv0 = makeFile(ksqInv0);
+				const Rank krankInv0 = makeRank(ksqInv0);
+				const File kfileInv1 = makeFile(ksqInv1);
+				const Rank krankInv1 = makeRank(ksqInv1);
+				ret[retIdx++] = std::make_pair(-sign*(&kk[ksqInv0][ksqInv1] - &oneArrayKK[0]), MaxWeight());
+				ret[retIdx++] = std::make_pair(-sign*(&r_kk[R_Mid + kfileInv0 - kfileInv1][R_Mid + krankInv0 - krankInv1] - &oneArrayKK[0]), MaxWeight());
+				assert(ksqInv0 <= E1);
+				assert(kfileInv0 - kfileInv1 <= 0);
+			}
+		};
+		kk_func(ksq0         , ksq1         ,  1);
+		kk_func(inverse(ksq1), inverse(ksq0), -1);
 		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
 		assert(retIdx <= KKIndicesMax);
 	}
