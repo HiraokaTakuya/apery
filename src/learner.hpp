@@ -42,8 +42,8 @@ struct LearnEvaluater : public EvaluaterBase<float, float, float> {
 #define FOO(indices, oneArray, sum)										\
 		for (auto indexAndWeight : indices) {							\
 			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-			if (0 <= indexAndWeight.first) oneArray[ indexAndWeight.first] += sum; \
-			else                           oneArray[-indexAndWeight.first] -= sum; \
+			if (0 <= indexAndWeight.first) oneArray[ indexAndWeight.first] += sum * indexAndWeight.second / MaxWeight(); \
+			else                           oneArray[-indexAndWeight.first] -= sum * indexAndWeight.second / MaxWeight(); \
 		}
 
 		// KPP
