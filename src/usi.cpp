@@ -159,17 +159,21 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 	std::string token;
 
 	while (ssCmd >> token) {
-		if      (token == "ponder"  ) { limits.ponder = true; }
-		else if (token == "btime"   ) { ssCmd >> limits.time[Black]; }
-		else if (token == "wtime"   ) { ssCmd >> limits.time[White]; }
-		else if (token == "infinite") { limits.infinite = true; }
+		if      (token == "ponder"     ) { limits.ponder = true; }
+		else if (token == "btime"      ) { ssCmd >> limits.time[Black]; }
+		else if (token == "wtime"      ) { ssCmd >> limits.time[White]; }
+		else if (token == "infinite"   ) { limits.infinite = true; }
 		else if (token == "byoyomi" || token == "movetime") {
 			// btime wtime の後に byoyomi が来る前提になっているので良くない。
 			ssCmd >> limits.moveTime;
 			if (limits.moveTime != 0) { limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"]; }
 		}
-		else if (token == "depth"   ) { ssCmd >> limits.depth; }
-		else if (token == "nodes"   ) { ssCmd >> limits.nodes; }
+		else if (token == "depth"      ) { ssCmd >> limits.depth; }
+		else if (token == "nodes"      ) { ssCmd >> limits.nodes; }
+		else if (token == "searchmoves") {
+			while (ssCmd >> token)
+				moves.push_back(usiToMove(pos, token));
+		}
 	}
 	pos.searcher()->searchMoves = moves;
 	pos.searcher()->threads.startThinking(pos, limits, moves);
