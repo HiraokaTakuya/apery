@@ -112,8 +112,8 @@ template <> Move MovePicker::nextMove<false>() {
 		case PH_Killers:
 			move = (currMove_++)->move;
 			if (!move.isNone()
-				&& pos().moveIsPseudoLegal(move, true)
 				&& move != ttMove_
+				&& pos().moveIsPseudoLegal(move, true)
 				&& pos().piece(move.to()) == Empty)
 			{
 				return move;
