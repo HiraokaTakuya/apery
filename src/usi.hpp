@@ -53,6 +53,9 @@ public:
 };
 
 void go(const Position& pos, std::istringstream& ssCmd);
+#if defined LEARN
+void go(const Position& pos, const Ply depth);
+#endif
 void setPosition(Position& pos, std::istringstream& ssCmd);
 Move csaToMove(const Position& pos, const std::string& moveStr);
 Move usiToMove(const Position& pos, const std::string& moveStr);

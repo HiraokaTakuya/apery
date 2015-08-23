@@ -269,9 +269,7 @@ private:
 			auto& gameMoves = bookMovesDatum_[i];
 			for (auto& bmd : gameMoves) {
 				if (bmd.useLearning) {
-					std::istringstream ssCmd("depth " + std::to_string(dist(mt)));
-					go(pos, ssCmd);
-					pos.searcher()->threads.waitForThinkFinished();
+					go(pos, dist(mt));
 					const auto recordIt = std::find_if(std::begin(pos.searcher()->rootMoves),
 													   std::end(pos.searcher()->rootMoves),
 													   [&](const RootMove& rm) { return rm.pv_[0] == bmd.move; });

@@ -1555,12 +1555,17 @@ void Searcher::think() {
 	const Ply book_ply = dist(g_randomTimeSeed);
 
 	bool nyugyokuWin = false;
+#if defined LEARN
+#else
 	if (nyugyoku(pos)) {
 		nyugyokuWin = true;
 		goto finalize;
 	}
+#endif
 	pos.setNodesSearched(0);
 
+#if defined LEARN
+#else
 	tt.setSize(options["USI_Hash"]); // operator int() 呼び出し。
 
 	SYNCCOUT << "info string book_ply " << book_ply << SYNCENDL;
@@ -1596,8 +1601,11 @@ void Searcher::think() {
 #if defined BISHOP_IN_DANGER
 	detectBishopInDanger(pos);
 #endif
+#endif
 	idLoop(pos);
 
+#if defined LEARN
+#else
 	threads.timerThread()->msec = 0; // timer を止める。
 	threads.sleep();
 
@@ -1622,6 +1630,7 @@ finalize:
 				 << " ponder " << rootMoves[0].pv_[1].toUSI()
 				 << SYNCENDL;
 	}
+#endif
 }
 
 void Searcher::checkTime() {

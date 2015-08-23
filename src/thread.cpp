@@ -97,14 +97,20 @@ void Thread::waitFor(volatile const bool& b) {
 
 void ThreadPool::init(Searcher* s) {
 	sleepWhileIdle_ = true;
+#if defined LEARN
+#else
 	timer_ = newThread<TimerThread>(s);
+#endif
 	push_back(newThread<MainThread>(s));
 	readUSIOptions(s);
 }
 
 void ThreadPool::exit() {
+#if defined LEARN
+#else
 	// checkTime() がデータにアクセスしないよう、先に timer_ を delete
 	deleteThread(timer_);
+#endif
 
 	for (auto elem : *this)
 		deleteThread(elem);
@@ -150,7 +156,10 @@ void ThreadPool::waitForThinkFinished() {
 void ThreadPool::startThinking(const Position& pos, const LimitsType& limits,
 							   const std::vector<Move>& searchMoves)
 {
+#if defined LEARN
+#else
 	waitForThinkFinished();
+#endif
 	pos.searcher()->searchTimer.restart();
 
 	pos.searcher()->signals.stopOnPonderHit = pos.searcher()->signals.firstRootMove = false;
@@ -174,8 +183,12 @@ void ThreadPool::startThinking(const Position& pos, const LimitsType& limits,
 		}
 	}
 
+#if defined LEARN
+	pos.searcher()->think();
+#else
 	mainThread()->thinking = true;
 	mainThread()->notifyOne();
+#endif
 }
 
 template <bool Fake>

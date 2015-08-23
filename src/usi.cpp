@@ -182,6 +182,16 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 	pos.searcher()->threads.startThinking(pos, limits, moves);
 }
 
+#if defined LEARN
+// 学習用。通常の go 呼び出しは文字列を扱って高コストなので、大量に探索の開始、終了を行う学習では別の呼び出し方にする。
+void go(const Position& pos, const Ply depth) {
+	LimitsType limits;
+	std::vector<Move> moves;
+	limits.depth = depth;
+	pos.searcher()->threads.startThinking(pos, limits, moves);
+}
+#endif
+
 Move usiToMoveBody(const Position& pos, const std::string& moveStr) {
 	Move move;
 	if (g_charToPieceUSI.isLegalChar(moveStr[0])) {
