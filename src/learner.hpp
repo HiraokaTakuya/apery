@@ -133,6 +133,7 @@ public:
 		std::string recordFileName;
 		size_t threadNum;
 		s64 updateMax;
+		s64 updateMin;
 		ssCmd >> recordFileName;
 		ssCmd >> gameNum;
 		ssCmd >> threadNum;
@@ -141,9 +142,14 @@ public:
 		ssCmd >> stepNum_;
 		ssCmd >> gameNumForIteration_;
 		ssCmd >> updateMax;
+		ssCmd >> updateMin;
 		if (updateMax < 0 || 32 < updateMax) {
 			updateMax = 32; // 乱数が 32 bit なので、bit count 方式だと 32 が上限。
 			std::cout << "you can set update_max [1, 32]" << std::endl;
+		}
+		if (updateMin < 0 || updateMax < updateMin) {
+			updateMin = updateMax;
+			std::cout << "you can set update_min [1, " << updateMax << "]" << std::endl;
 		}
 		std::cout << "record_file: " << recordFileName
 				  << "\nread games: " << (gameNum == 0 ? "all" : std::to_string(gameNum))
@@ -152,8 +158,11 @@ public:
 				  << "\nstep_num: " << stepNum_
 				  << "\ngame_num_for_iteration: " << gameNumForIteration_
 				  << "\nupdate_max: " << updateMax
+				  << "\nupdate_min: " << updateMin
 				  << std::endl;
 		updateMaxMask_ = (UINT64_C(1) << updateMax) - 1;
+		updateMinMask_ = (UINT64_C(1) << updateMin) - 1;
+		setUpdateMask(stepNum_);
 		readBook(pos, recordFileName, gameNum);
 		// 既に 1 つのSearcher, Positionが立ち上がっているので、指定した数 - 1 の Searcher, Position を立ち上げる。
 		threadNum = std::max<size_t>(0, threadNum - 1);
@@ -349,7 +358,7 @@ private:
 	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
 	template <typename T>
 	void updateFV(T& v, float dv) {
-		const int step = count1s(mt_() & updateMaxMask_);
+		const int step = count1s(mt_() & updateMask_);
 		if      (0 < v) dv -= static_cast<float>(FVPenalty());
 		else if (v < 0) dv += static_cast<float>(FVPenalty());
 
@@ -389,6 +398,12 @@ private:
 		// 定数掛けない方を使う。
 		return sigmoid(x) * (1 - sigmoid(x));
 #endif
+	}
+	void setUpdateMask(const int step) {
+		const int stepMax = stepNum_;
+		const int max = count1s(updateMaxMask_);
+		const int min = count1s(updateMinMask_);
+		updateMask_ = max - (((max - min)*step+(stepMax>>1))/stepMax);
 	}
 	void learnParse2Body(Position& pos, Parse2Data& parse2Data) {
 		parse2Data.clear();
@@ -481,6 +496,7 @@ private:
 				parse2Data_.params += parse2.params;
 			}
 			parse2Data_.params.lowerDimension();
+			setUpdateMask(step);
 			std::cout << "update eval ... " << std::flush;
 			updateEval(pos.searcher()->options["Eval_Dir"]);
 			std::cout << "done" << std::endl;
@@ -514,6 +530,8 @@ private:
 	int stepNum_;
 	size_t gameNumForIteration_;
 	u64 updateMaxMask_;
+	u64 updateMinMask_;
+	u64 updateMask_;
 
 	static const Score FVWindow = static_cast<Score>(256);
 };
