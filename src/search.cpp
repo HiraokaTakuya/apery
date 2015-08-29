@@ -539,12 +539,18 @@ void Searcher::idLoop(Position& pos) {
 	}
 
 #if defined BISHOP_IN_DANGER
-	if ((bishopInDangerFlag == BlackBishopInDanger
+	if ((bishopInDangerFlag == BlackBishopInDangerIn28
 		 && std::find_if(std::begin(rootMoves), std::end(rootMoves),
 						 [](const RootMove& rm) { return rm.pv_[0].toCSA() == "0082KA"; }) != std::end(rootMoves))
-		|| (bishopInDangerFlag == WhiteBishopInDanger
+		|| (bishopInDangerFlag == WhiteBishopInDangerIn28
 			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
-							[](const RootMove& rm) { return rm.pv_[0].toCSA() == "0028KA"; }) != std::end(rootMoves)))
+							[](const RootMove& rm) { return rm.pv_[0].toCSA() == "0028KA"; }) != std::end(rootMoves))
+		|| (bishopInDangerFlag == BlackBishopInDangerIn78
+			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
+						 [](const RootMove& rm) { return rm.pv_[0].toCSA() == "0032KA"; }) != std::end(rootMoves))
+		|| (bishopInDangerFlag == WhiteBishopInDangerIn78
+			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
+							[](const RootMove& rm) { return rm.pv_[0].toCSA() == "0078KA"; }) != std::end(rootMoves)))
 	{
 		if (rootMoves.size() != 1)
 			pvSize = std::max<size_t>(pvSize, 2);
@@ -728,7 +734,25 @@ void Searcher::detectBishopInDanger(const Position& pos) {
 			&& pos.piece(inverseIfWhite(them, G2)) == Empty
 			&& pos.piece(inverseIfWhite(them, G1)) == Empty)
 		{
-			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDanger : WhiteBishopInDanger);
+			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn28 : WhiteBishopInDangerIn28);
+			//tt.clear();
+		}
+		else if (pos.hand(pos.turn()).exists<HBishop>()
+				 && pos.hand(them).exists<HBishop>()
+				 && pos.piece(inverseIfWhite(them, C2)) == Empty
+				 && pos.piece(inverseIfWhite(them, C1)) == Empty
+				 && pos.piece(inverseIfWhite(them, D2)) == Empty
+				 && pos.piece(inverseIfWhite(them, D1)) == Empty
+				 && pos.piece(inverseIfWhite(them, A2)) == Empty
+				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Silver
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, B2))) == Silver)
+				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Knight
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, B1))) == Knight)
+				 && ((pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
+					  && pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King)
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
+		{
+			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn78 : WhiteBishopInDangerIn78);
 			//tt.clear();
 		}
 	}
@@ -1286,10 +1310,12 @@ split_point_start:
 				// PV move or new best move
 				rm.score_ = score;
 #if defined BISHOP_IN_DANGER
-				if ((bishopInDangerFlag == BlackBishopInDanger && move.toCSA() == "0082KA")
-					|| (bishopInDangerFlag == WhiteBishopInDanger && move.toCSA() == "0028KA"))
+				if ((bishopInDangerFlag == BlackBishopInDangerIn28 && move.toCSA() == "0082KA")
+					|| (bishopInDangerFlag == WhiteBishopInDangerIn28 && move.toCSA() == "0028KA")
+					|| (bishopInDangerFlag == BlackBishopInDangerIn78 && move.toCSA() == "0032KA")
+					|| (bishopInDangerFlag == WhiteBishopInDangerIn78 && move.toCSA() == "0078KA"))
 				{
-					rm.score_ -= 500;
+					rm.score_ -= options["Danger_Demerit_Score"];
 				}
 #endif
 				rm.extractPvFromTT(pos);

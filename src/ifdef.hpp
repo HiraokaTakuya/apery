@@ -46,7 +46,7 @@
 #endif
 
 #if 0
-// △２八角を打たないように点数を補正する。
+// △２八角、△７八角 を打たないように点数を補正する。
 #define BISHOP_IN_DANGER
 #endif
 
