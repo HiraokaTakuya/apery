@@ -142,70 +142,67 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	constexpr int MaxWeight() const { return 1 << 20; } // KPE自体が1/8の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚だから 1/128**2)
 														// それだけで 1 << 18 は必要。更に重みを下げる場合、MaxWeightを更に大きくしておく必要がある。
 														// なぜか clang で static const int MaxWeight を使っても Undefined symbols for architecture x86_64 と言われる。
-	union {
-		// 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
-		// 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
-		// ただし、kkp に関する項目 (kkp, r_kkp_b, r_kkp_h) のみ、p は味方の駒として扱うので、k0 < k1 となるとは限らない。
-		struct {
-			KPPType kpp[SquareNum][fe_end][fe_end];
-			// 相対位置は[file][rank]の順
-			KPPType r_kpp_bb[PieceNone][17][17][PieceNone][17][17];
-			KPPType r_kpp_hb[fe_hand_end][PieceNone][17][17];
-			KPPType xpp[FileNum][fe_end][fe_end];
-			KPPType ypp[RankNum][fe_end][fe_end];
-			KPPType pp[fe_end][fe_end];
-			KPPType r_pp_bb[PieceNone][PieceNone][17][17];
-			KPPType r_pp_hb[fe_hand_end][PieceNone];
+	// 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
+	// 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
+	// ただし、kkp に関する項目 (kkp, r_kkp_b, r_kkp_h) のみ、p は味方の駒として扱うので、k0 < k1 となるとは限らない。
+	KPPType kpp[SquareNum][fe_end][fe_end];
+	// 相対位置は[file][rank]の順
+	KPPType r_kpp_bb[PieceNone][17][17][PieceNone][17][17];
+	KPPType r_kpp_hb[fe_hand_end][PieceNone][17][17];
+	KPPType xpp[FileNum][fe_end][fe_end];
+	KPPType ypp[RankNum][fe_end][fe_end];
+	KPPType pp[fe_end][fe_end];
+	KPPType r_pp_bb[PieceNone][PieceNone][17][17];
+	KPPType r_pp_hb[fe_hand_end][PieceNone];
 
-			// e は Effect の頭文字で利きを表す。(Control = 利き という説もあり。)
-			// todo: 玉の利きは全く無視しているけれど、それで良いのか？
-			KPPType kpe[SquareNum][fe_end][ColorNum][SquareNum];
-			KPPType kee[SquareNum][ColorNum][SquareNum][ColorNum][SquareNum];
-			KPPType r_kpe_b[PieceNone][17][17][ColorNum][17][17];
-			KPPType r_kpe_h[fe_hand_end][ColorNum][17][17];
-			KPPType r_kee[ColorNum][17][17][ColorNum][17][17];
-			KPPType xpe[FileNum][fe_end][ColorNum][SquareNum];
-			KPPType xee[FileNum][ColorNum][SquareNum][ColorNum][SquareNum];
-			KPPType ype[RankNum][fe_end][ColorNum][SquareNum];
-			KPPType yee[RankNum][ColorNum][SquareNum][ColorNum][SquareNum];
-			KPPType pe[fe_end][ColorNum][SquareNum];
-			KPPType ee[ColorNum][SquareNum][ColorNum][SquareNum];
-			KPPType r_pe_b[PieceNone][ColorNum][17][17];
-			KPPType r_pe_h[fe_hand_end][ColorNum];
-			KPPType r_ee[ColorNum][ColorNum][17][17];
+	// e は Effect の頭文字で利きを表す。(Control = 利き という説もあり。)
+	// todo: 玉の利きは全く無視しているけれど、それで良いのか？
+	KPPType kpe[SquareNum][fe_end][ColorNum][SquareNum];
+	KPPType kee[SquareNum][ColorNum][SquareNum][ColorNum][SquareNum];
+	KPPType r_kpe_b[PieceNone][17][17][ColorNum][17][17];
+	KPPType r_kpe_h[fe_hand_end][ColorNum][17][17];
+	KPPType r_kee[ColorNum][17][17][ColorNum][17][17];
+	KPPType xpe[FileNum][fe_end][ColorNum][SquareNum];
+	KPPType xee[FileNum][ColorNum][SquareNum][ColorNum][SquareNum];
+	KPPType ype[RankNum][fe_end][ColorNum][SquareNum];
+	KPPType yee[RankNum][ColorNum][SquareNum][ColorNum][SquareNum];
+	KPPType pe[fe_end][ColorNum][SquareNum];
+	KPPType ee[ColorNum][SquareNum][ColorNum][SquareNum];
+	KPPType r_pe_b[PieceNone][ColorNum][17][17];
+	KPPType r_pe_h[fe_hand_end][ColorNum];
+	KPPType r_ee[ColorNum][ColorNum][17][17];
 
-			KKPType kkp[SquareNum][SquareNum][fe_end];
-			KKPType kp[SquareNum][fe_end];
-			KKPType r_kkp_b[17][17][PieceNone][17][17];
-			KKPType r_kkp_h[17][17][fe_hand_end];
-			KKPType r_kp_b[PieceNone][17][17];
-			KKPType r_kp_h[fe_hand_end];
+	KKPType kkp[SquareNum][SquareNum][fe_end];
+	KKPType kp[SquareNum][fe_end];
+	KKPType r_kkp_b[17][17][PieceNone][17][17];
+	KKPType r_kkp_h[17][17][fe_hand_end];
+	KKPType r_kp_b[PieceNone][17][17];
+	KKPType r_kp_h[fe_hand_end];
 
-			KKPType kke[SquareNum][SquareNum][ColorNum][SquareNum];
-			KKPType ke[SquareNum][ColorNum][SquareNum];
-			KKPType r_kke[17][17][ColorNum][17][17];
-			KKPType r_ke[ColorNum][17][17];
+	KKPType kke[SquareNum][SquareNum][ColorNum][SquareNum];
+	KKPType ke[SquareNum][ColorNum][SquareNum];
+	KKPType r_kke[17][17][ColorNum][17][17];
+	KKPType r_ke[ColorNum][17][17];
 
-			KKType kk[SquareNum][SquareNum];
-			KKType k[SquareNum];
-			KKType r_kk[17][17];
-		};
-		// これらは↑のstructに配列としてアクセスする為のもの。
-		// 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
-		// 先頭さえ分かれば良いので要素数1で良い。
-		KPPType oneArrayKPP[1];
-		KKPType oneArrayKKP[1];
-		KKType oneArrayKK[1];
-	};
+	KKType kk[SquareNum][SquareNum];
+	KKType k[SquareNum];
+	KKType r_kk[17][17];
+
+	// これらは↑のメンバ変数に一次元配列としてアクセスする為のもの。
+	// 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
+	// 先頭さえ分かれば良いので要素数1で良い。
+	KPPType* oneArrayKPP(const u64 i) { return reinterpret_cast<KPPType*>(this) + i; }
+	KKPType* oneArrayKKP(const u64 i) { return reinterpret_cast<KKPType*>(this) + i; }
+	KKType* oneArrayKK(const u64 i) { return reinterpret_cast<KKType*>(this) + i; }
 
 	// todo: これらややこしいし汚いので使わないようにする。
 	//       型によっては kkps_begin_index などの値が異なる。
 	//       ただ、end - begin のサイズは型によらず一定。
-	size_t kpps_begin_index() const { return &kpp[0][0][0] - &oneArrayKPP[0]; }
+	size_t kpps_begin_index() const { return &kpp[0][0][0] - oneArrayKPP(0); }
 	size_t kpps_end_index() const { return kpps_begin_index() + (sizeof(kpp)+sizeof(r_kpp_bb)+sizeof(r_kpp_hb)+sizeof(xpp)+sizeof(ypp)+sizeof(pp)+sizeof(r_pp_bb)+sizeof(r_pp_hb)+sizeof(kpe)+sizeof(kee)+sizeof(r_kpe_b)+sizeof(r_kpe_h)+sizeof(r_kee)+sizeof(xpe)+sizeof(xee)+sizeof(ype)+sizeof(yee)+sizeof(pe)+sizeof(ee)+sizeof(r_pe_b)+sizeof(r_pe_h)+sizeof(r_ee))/sizeof(KPPType); }
-	size_t kkps_begin_index() const { return &kkp[0][0][0] - &oneArrayKKP[0]; }
+	size_t kkps_begin_index() const { return &kkp[0][0][0] - oneArrayKKP(0); }
 	size_t kkps_end_index() const { return kkps_begin_index() + (sizeof(kkp)+sizeof(kp)+sizeof(r_kkp_b)+sizeof(r_kkp_h)+sizeof(r_kp_b)+sizeof(r_kp_h)+sizeof(kke)+sizeof(ke)+sizeof(r_kke)+sizeof(r_ke))/sizeof(KKPType); }
-	size_t kks_begin_index() const { return &kk[0][0] - &oneArrayKK[0]; }
+	size_t kks_begin_index() const { return &kk[0][0] - oneArrayKK(0); }
 	size_t kks_end_index() const { return kks_begin_index() + (sizeof(kk)+sizeof(k)+sizeof(r_kk))/sizeof(KKType); }
 
 	static const int KPPIndicesMax = 3000;
@@ -247,15 +244,15 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		}
 		if (j < i) std::swap(i, j);
 
-		ret[retIdx++] = std::make_pair(&kpp[ksq][i][j] - &oneArrayKPP[0], MaxWeight());
-		ret[retIdx++] = std::make_pair(&xpp[makeFile(ksq)][i][j] - &oneArrayKPP[0], MaxWeight());
+		ret[retIdx++] = std::make_pair(&kpp[ksq][i][j] - oneArrayKPP(0), MaxWeight());
+		ret[retIdx++] = std::make_pair(&xpp[makeFile(ksq)][i][j] - oneArrayKPP(0), MaxWeight());
 
 		assert(i < j);
 		if (j < fe_hand_end) {
 			// i, j 共に持ち駒
 			// 相対位置無し。
-			ret[retIdx++] = std::make_pair(&pp[i][j] - &oneArrayKPP[0], MaxWeight());
-			ret[retIdx++] = std::make_pair(&ypp[makeRank(ksq)][i][j] - &oneArrayKPP[0], MaxWeight());
+			ret[retIdx++] = std::make_pair(&pp[i][j] - oneArrayKPP(0), MaxWeight());
+			ret[retIdx++] = std::make_pair(&ypp[makeRank(ksq)][i][j] - oneArrayKPP(0), MaxWeight());
 		}
 		else if (i < fe_hand_end) {
 			// i 持ち駒、 j 盤上
@@ -266,11 +263,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const File kfile = makeFile(ksq);
 			const Rank jrank = makeRank(jsq);
 			const File jfile = makeFile(jsq);
-			ret[retIdx++] = std::make_pair(&r_kpp_hb[i][jpiece][R_Mid + -abs(kfile - jfile)][R_Mid + krank - jrank] - &oneArrayKPP[0], MaxWeight());
-			ret[retIdx++] = std::make_pair(&r_pp_hb[i][jpiece] - &oneArrayKPP[0], MaxWeight());
+			ret[retIdx++] = std::make_pair(&r_kpp_hb[i][jpiece][R_Mid + -abs(kfile - jfile)][R_Mid + krank - jrank] - oneArrayKPP(0), MaxWeight());
+			ret[retIdx++] = std::make_pair(&r_pp_hb[i][jpiece] - oneArrayKPP(0), MaxWeight());
 
-			ret[retIdx++] = std::make_pair(&pp[i][inverseFileIndexIfLefterThanMiddle(j)] - &oneArrayKPP[0], MaxWeight());
-			ret[retIdx++] = std::make_pair(&ypp[krank][i][inverseFileIndexIfLefterThanMiddle(j)] - &oneArrayKPP[0], MaxWeight());
+			ret[retIdx++] = std::make_pair(&pp[i][inverseFileIndexIfLefterThanMiddle(j)] - oneArrayKPP(0), MaxWeight());
+			ret[retIdx++] = std::make_pair(&ypp[krank][i][inverseFileIndexIfLefterThanMiddle(j)] - oneArrayKPP(0), MaxWeight());
 
 			const Color jcolor = pieceToColor(jpiece);
 			const PieceType jpt = pieceToPieceType(jpiece);
@@ -281,16 +278,16 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					jto = inverseFile(jto);
 				const int distance = squareDistance(jsq, jto);
 				// distance == 1 で 1/8 で 3bit シフトにする程度の寄与にする。
-				ret[retIdx++] = std::make_pair(&kpe[ksq][i][jcolor][jto] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-				ret[retIdx++] = std::make_pair(&xpe[kfile][i][jcolor][jto] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(&kpe[ksq][i][jcolor][jto] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(&xpe[kfile][i][jcolor][jto] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 				const Rank jtorank = makeRank(jto);
 				const File jtofile = makeFile(jto);
-				ret[retIdx++] = std::make_pair(&r_kpe_h[i][jcolor][R_Mid + -abs(kfile - jtofile)][R_Mid + krank - jtorank] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-				ret[retIdx++] = std::make_pair(&r_pe_h[i][jcolor] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-				ret[retIdx++] = std::make_pair(&pe[i][jcolor][jto] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(&r_kpe_h[i][jcolor][R_Mid + -abs(kfile - jtofile)][R_Mid + krank - jtorank] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(&r_pe_h[i][jcolor] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(&pe[i][jcolor][jto] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 				if (E1 < jto)
 					jto = inverseFile(jto);
-				ret[retIdx++] = std::make_pair(&ype[krank][i][jcolor][jto] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(&ype[krank][i][jcolor][jto] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 			}
 		}
 		else {
@@ -318,15 +315,15 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 								  kfile_ifile_is_inversed              ? jfile - kfile       : kfile - jfile);
 			if (ipiece == jpiece) {
 				if (diff_file_kj < diff_file_ki || (diff_file_kj == diff_file_ki && -jrank < -irank))
-					ret[retIdx++] = std::make_pair(&r_kpp_bb[jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank][ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank] - &oneArrayKPP[0], MaxWeight());
+					ret[retIdx++] = std::make_pair(&r_kpp_bb[jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank][ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank] - oneArrayKPP(0), MaxWeight());
 				else
-					ret[retIdx++] = std::make_pair(&r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - &oneArrayKPP[0], MaxWeight());
+					ret[retIdx++] = std::make_pair(&r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - oneArrayKPP(0), MaxWeight());
 				// 同じ駒の種類の時は、2駒の相対関係は上下がどちらになっても同じ点数であるべき。
-				ret[retIdx++] = std::make_pair(&r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + -abs(irank - jrank)] - &oneArrayKPP[0], MaxWeight());
+				ret[retIdx++] = std::make_pair(&r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + -abs(irank - jrank)] - oneArrayKPP(0), MaxWeight());
 			}
 			else {
-				ret[retIdx++] = std::make_pair(&r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - &oneArrayKPP[0], MaxWeight());
-				ret[retIdx++] = std::make_pair(&r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + irank - jrank] - &oneArrayKPP[0], MaxWeight());
+				ret[retIdx++] = std::make_pair(&r_kpp_bb[ipiece][R_Mid + diff_file_ki][R_Mid + krank - irank][jpiece][R_Mid + diff_file_kj][R_Mid + krank - jrank] - oneArrayKPP(0), MaxWeight());
+				ret[retIdx++] = std::make_pair(&r_pp_bb[ipiece][jpiece][R_Mid + -abs(ifile - jfile)][R_Mid + irank - jrank] - oneArrayKPP(0), MaxWeight());
 			}
 
 			auto func = [this, &retIdx, &ret](Square ksq, int ij, int ji) {
@@ -359,8 +356,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					const Rank ijrank = makeRank(ijsq_tmp);
 					const File ijfile = makeFile(ijsq_tmp);
 					const int distance = squareDistance(jisq, jito);
-					ret[retIdx++] = std::make_pair(&kpe[ksq][ij][jicolor][jito] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-					ret[retIdx++] = std::make_pair(&xpe[makeFile(ksq)][ij][jicolor][jito] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+					ret[retIdx++] = std::make_pair(&kpe[ksq][ij][jicolor][jito] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+					ret[retIdx++] = std::make_pair(&xpe[makeFile(ksq)][ij][jicolor][jito] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 					const Rank jitorank = makeRank(jito);
 					const File jitofile = makeFile(jito);
 					{
@@ -373,7 +370,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 						else if (FileE == ijfile && FileE < jitofile)
 							jito_tmp = inverseFile(jito);
 
-						ret[retIdx++] = std::make_pair(&ype[makeRank(ksq)][ij_tmp][jicolor][jito_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(&ype[makeRank(ksq)][ij_tmp][jicolor][jito_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 					}
 
 					File diff_file_kij = kfile - ijfile;
@@ -385,8 +382,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					const File diff_file_kjito =
 						static_cast<File>(diff_file_kij == static_cast<File>(0) ? -abs(kfile - jitofile) :
 										  kfile_ijfile_is_inversed              ? jitofile - kfile       : kfile - jitofile);
-					ret[retIdx++] = std::make_pair(&r_kpe_b[ijpiece][R_Mid + diff_file_kij][R_Mid + krank - ijrank][jicolor][R_Mid + diff_file_kjito][R_Mid + krank - jitorank] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-					ret[retIdx++] = std::make_pair(&r_pe_b[ijpiece][jicolor][R_Mid + -abs(ijfile - jitofile)][R_Mid + ijrank - jitorank] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+					ret[retIdx++] = std::make_pair(&r_kpe_b[ijpiece][R_Mid + diff_file_kij][R_Mid + krank - ijrank][jicolor][R_Mid + diff_file_kjito][R_Mid + krank - jitorank] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+					ret[retIdx++] = std::make_pair(&r_pe_b[ijpiece][jicolor][R_Mid + -abs(ijfile - jitofile)][R_Mid + ijrank - jitorank] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 
 					int ij_tmp = ij;
 					if (FileE < ijfile) {
@@ -396,7 +393,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					else if (FileE == ijfile && E1 < jito) {
 						jito = inverseFile(jito);
 					}
-					ret[retIdx++] = std::make_pair(&pe[ij_tmp][jicolor][jito] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+					ret[retIdx++] = std::make_pair(&pe[ij_tmp][jicolor][jito] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 				}
 			};
 			func(ksq, i, j);
@@ -459,8 +456,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 							}
 							else if (icolor == jcolor && jto_tmp < ito_tmp)
 								std::swap(ito_tmp, jto_tmp);
-							ret[retIdx++] = std::make_pair(&kee[ksq][icolor][ito_tmp][jcolor][jto_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-							ret[retIdx++] = std::make_pair(&xee[kfile][icolor][ito_tmp][jcolor][jto_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+							ret[retIdx++] = std::make_pair(&kee[ksq][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+							ret[retIdx++] = std::make_pair(&xee[kfile][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 							File diff_file_kito = kfile - makeFile(ito_tmp);
 							bool kfile_itofile_is_inversed = false;
 							if (0 < diff_file_kito) {
@@ -476,7 +473,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 							std::tuple<Color, File, Rank> jtuple = std::make_tuple(jcolor, diff_file_kjto, diff_rank_kjto);
 							if (jtuple < ituple)
 								std::swap(ituple, jtuple);
-							ret[retIdx++] = std::make_pair(&r_kee[std::get<0>(ituple)][R_Mid + std::get<1>(ituple)][R_Mid + std::get<2>(ituple)][std::get<0>(jtuple)][R_Mid + std::get<1>(jtuple)][R_Mid + std::get<2>(jtuple)] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+							ret[retIdx++] = std::make_pair(&r_kee[std::get<0>(ituple)][R_Mid + std::get<1>(ituple)][R_Mid + std::get<2>(ituple)][std::get<0>(jtuple)][R_Mid + std::get<1>(jtuple)][R_Mid + std::get<2>(jtuple)] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 						}
 						Square ito_tmp = ito;
 						Square jto_tmp = jto;
@@ -496,13 +493,13 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 							else if (makeFile(ito_tmp) == FileE && E1 < jto_tmp)
 								jto_tmp = inverseFile(jto_tmp);
 						}
-						ret[retIdx++] = std::make_pair(&ee[icolor][ito_tmp][jcolor][jto_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
-						ret[retIdx++] = std::make_pair(&yee[krank][icolor][ito_tmp][jcolor][jto_tmp] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(&ee[icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(&yee[krank][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 						const File itofile = makeFile(ito_tmp);
 						const Rank itorank = makeRank(ito_tmp);
 						const File jtofile = makeFile(jto_tmp);
 						const Rank jtorank = makeRank(jto_tmp);
-						ret[retIdx++] = std::make_pair(&r_ee[icolor][jcolor][R_Mid + abs(-itofile - jtofile)][R_Mid + itorank - jtorank] - &oneArrayKPP[0], MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(&r_ee[icolor][jcolor][R_Mid + abs(-itofile - jtofile)][R_Mid + itorank - jtorank] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 					}
 				}
 			};
@@ -521,8 +518,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				j = inverseFileIndexOnBoard(j);
 				if (j < i) std::swap(i, j);
 			}
-			ret[retIdx++] = std::make_pair(&pp[i][j] - &oneArrayKPP[0], MaxWeight());
-			ret[retIdx++] = std::make_pair(&ypp[krank][i][j] - &oneArrayKPP[0], MaxWeight());
+			ret[retIdx++] = std::make_pair(&pp[i][j] - oneArrayKPP(0), MaxWeight());
+			ret[retIdx++] = std::make_pair(&ypp[krank][i][j] - oneArrayKPP(0), MaxWeight());
 		}
 
 		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
@@ -542,16 +539,16 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			}
 			else if (makeFile(ksq) == FileE)
 				i = inverseFileIndexIfLefterThanMiddle(i);
-			ret[retIdx++] = std::make_pair(sign*(&kp[ksq][i] - &oneArrayKKP[0]), MaxWeight());
+			ret[retIdx++] = std::make_pair(sign*(&kp[ksq][i] - oneArrayKKP(0)), MaxWeight());
 			auto r_kp_func = [this, &retIdx, &ret](Square ksq, int i, int sign) {
 				if (i < fe_hand_end) {
-					ret[retIdx++] = std::make_pair(sign*(&r_kp_h[i] - &oneArrayKKP[0]), MaxWeight());
+					ret[retIdx++] = std::make_pair(sign*(&r_kp_h[i] - oneArrayKKP(0)), MaxWeight());
 				}
 				else {
 					const int ibegin = kppIndexBegin(i);
 					const Square isq = static_cast<Square>(i - ibegin);
 					const Piece ipiece = g_kppBoardIndexStartToPiece.value(ibegin);
-					ret[retIdx++] = std::make_pair(sign*(&r_kp_b[ipiece][R_Mid + -abs(makeFile(ksq) - makeFile(isq))][R_Mid + makeRank(ksq) - makeRank(isq)] - &oneArrayKKP[0]), MaxWeight());
+					ret[retIdx++] = std::make_pair(sign*(&r_kp_b[ipiece][R_Mid + -abs(makeFile(ksq) - makeFile(isq))][R_Mid + makeRank(ksq) - makeRank(isq)] - oneArrayKKP(0)), MaxWeight());
 
 					const PieceType ipt = pieceToPieceType(ipiece);
 					const Color icolor = pieceToColor(ipiece);
@@ -559,7 +556,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					while (itoBB.isNot0()) {
 						Square ito = itoBB.firstOneFromI9();
 						const int distance = squareDistance(isq, ito);
-						ret[retIdx++] = std::make_pair(sign*(&r_ke[icolor][R_Mid + -abs(makeFile(ksq) - makeFile(ito))][R_Mid + makeRank(ksq) - makeRank(ito)] - &oneArrayKKP[0]), MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(sign*(&r_ke[icolor][R_Mid + -abs(makeFile(ksq) - makeFile(ito))][R_Mid + makeRank(ksq) - makeRank(ito)] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
 					}
 				}
 			};
@@ -577,7 +574,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					const int distance = squareDistance(isq, ito);
 					if (makeFile(ksq) == FileE && E1 < ito)
 						ito = inverseFile(ito);
-					ret[retIdx++] = std::make_pair(sign*(&ke[ksq][icolor][ito] - &oneArrayKKP[0]), MaxWeight() >> (distance+4));
+					ret[retIdx++] = std::make_pair(sign*(&ke[ksq][icolor][ito] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
 				}
 			}
 		};
@@ -612,14 +609,14 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		else if (makeFile(ksq0) == FileE && makeFile(ksq1) == FileE) {
 			i = inverseFileIndexIfLefterThanMiddle(i);
 		}
-		ret[retIdx++] = std::make_pair(sign*(&kkp[ksq0][ksq1][i] - &oneArrayKKP[0]), MaxWeight());
+		ret[retIdx++] = std::make_pair(sign*(&kkp[ksq0][ksq1][i] - oneArrayKKP(0)), MaxWeight());
 
 		const Rank diff_rank_k0k1 = makeRank(ksq0) - makeRank(ksq1);
 		File diff_file_k0k1 = makeFile(ksq0) - makeFile(ksq1);
 		if (i < fe_hand_end) {
 			if (0 < diff_file_k0k1)
 				diff_file_k0k1 = -diff_file_k0k1;
-			ret[retIdx++] = std::make_pair(sign*(&r_kkp_h[R_Mid + diff_file_k0k1][R_Mid + diff_rank_k0k1][i] - &oneArrayKKP[0]), MaxWeight());
+			ret[retIdx++] = std::make_pair(sign*(&r_kkp_h[R_Mid + diff_file_k0k1][R_Mid + diff_rank_k0k1][i] - oneArrayKKP(0)), MaxWeight());
 		}
 		else {
 			const int ibegin = kppIndexBegin(i);
@@ -637,7 +634,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				const int distance = squareDistance(isq, ito);
 				if (makeFile(ksq0) == FileE && makeFile(ksq1) == FileE && E1 < ito)
 					ito = inverseFile(ito);
-				ret[retIdx++] = std::make_pair(sign*(&kke[ksq0][ksq1][icolor][ito] - &oneArrayKKP[0]), MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(sign*(&kke[ksq0][ksq1][icolor][ito] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
 				File diff_file_k0k1_tmp = diff_file_k0k1;
 				File diff_file_k0ito = makeFile(ksq0) - makeFile(ito);
 				Rank diff_rank_k0ito = makeRank(ksq0) - makeRank(ito);
@@ -647,7 +644,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				}
 				else if (0 == diff_file_k0k1_tmp && 0 < diff_file_k0ito)
 					diff_file_k0ito = -diff_file_k0ito;
-				ret[retIdx++] = std::make_pair(sign*(&r_kke[R_Mid + diff_file_k0k1_tmp][R_Mid + diff_rank_k0k1][icolor][R_Mid + diff_file_k0ito][R_Mid + diff_rank_k0ito] - &oneArrayKKP[0]), MaxWeight() >> (distance+4));
+				ret[retIdx++] = std::make_pair(sign*(&r_kke[R_Mid + diff_file_k0k1_tmp][R_Mid + diff_rank_k0k1][icolor][R_Mid + diff_file_k0ito][R_Mid + diff_rank_k0ito] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
 			}
 
 			if (0 < diff_file_k0k1) {
@@ -657,15 +654,15 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			else if (0 == diff_file_k0k1 && 0 < diff_file_k0i) {
 				diff_file_k0i = -diff_file_k0i;
 			}
-			ret[retIdx++] = std::make_pair(sign*(&r_kkp_b[R_Mid + diff_file_k0k1][R_Mid + diff_rank_k0k1][ipiece][R_Mid + diff_file_k0i][R_Mid + diff_rank_k0i] - &oneArrayKKP[0]), MaxWeight());
+			ret[retIdx++] = std::make_pair(sign*(&r_kkp_b[R_Mid + diff_file_k0k1][R_Mid + diff_rank_k0k1][ipiece][R_Mid + diff_file_k0i][R_Mid + diff_rank_k0i] - oneArrayKKP(0)), MaxWeight());
 		}
 		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
 		assert(retIdx <= KKPIndicesMax);
 	}
 	void kkIndices(std::pair<ptrdiff_t, int> ret[KKIndicesMax], Square ksq0, Square ksq1) {
 		int retIdx = 0;
-		ret[retIdx++] = std::make_pair(&k[std::min(ksq0, inverseFile(ksq0))] - &oneArrayKK[0], MaxWeight());
-		ret[retIdx++] = std::make_pair(-(&k[std::min(inverse(ksq1), inverseFile(inverse(ksq1)))] - &oneArrayKK[0]), MaxWeight());
+		ret[retIdx++] = std::make_pair(&k[std::min(ksq0, inverseFile(ksq0))] - oneArrayKK(0), MaxWeight());
+		ret[retIdx++] = std::make_pair(-(&k[std::min(inverse(ksq1), inverseFile(inverse(ksq1)))] - oneArrayKK(0)), MaxWeight());
 
 		auto kk_func = [this, &retIdx, &ret](Square ksq0, Square ksq1, int sign) {
 			{
@@ -694,8 +691,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const Rank krank0 = makeRank(ksq0);
 			const File kfile1 = makeFile(ksq1);
 			const Rank krank1 = makeRank(ksq1);
-			ret[retIdx++] = std::make_pair(sign*(&kk[ksq0][ksq1] - &oneArrayKK[0]), MaxWeight());
-			ret[retIdx++] = std::make_pair(sign*(&r_kk[R_Mid + kfile0 - kfile1][R_Mid + krank0 - krank1] - &oneArrayKK[0]), MaxWeight());
+			ret[retIdx++] = std::make_pair(sign*(&kk[ksq0][ksq1] - oneArrayKK(0)), MaxWeight());
+			ret[retIdx++] = std::make_pair(sign*(&r_kk[R_Mid + kfile0 - kfile1][R_Mid + krank0 - krank1] - oneArrayKK(0)), MaxWeight());
 			assert(ksq0 <= E1);
 			assert(kfile0 - kfile1 <= 0);
 		};
@@ -835,8 +832,8 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 #define FOO(indices, oneArray, sum)										\
 		for (auto indexAndWeight : indices) {							\
 			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-			if (0 <= indexAndWeight.first) sum += static_cast<s64>(oneArray[ indexAndWeight.first]) * indexAndWeight.second; \
-			else                           sum -= static_cast<s64>(oneArray[-indexAndWeight.first]) * indexAndWeight.second; \
+			if (0 <= indexAndWeight.first) sum += static_cast<s64>(*oneArray( indexAndWeight.first)) * indexAndWeight.second; \
+			else                           sum -= static_cast<s64>(*oneArray(-indexAndWeight.first)) * indexAndWeight.second; \
 		}																\
 		sum /= MaxWeight();
 
