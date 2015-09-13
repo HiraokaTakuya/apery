@@ -758,42 +758,58 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 #undef FOO
 	}
 #undef ALL_SYNTHESIZED_EVAL
-#define ALL_BASE_EVAL {							\
-		FOO(kpp);								\
-		FOO(r_kpp_bb);							\
-		FOO(r_kpp_hb);							\
-		FOO(xpp);								\
-		FOO(ypp);								\
-		FOO(pp);								\
-		FOO(r_pp_bb);							\
-		FOO(r_pp_hb);							\
-		FOO(kpe);								\
+#define BASE_PHASE1 {							\
 		FOO(kee);								\
 		FOO(r_kpe_b);							\
 		FOO(r_kpe_h);							\
 		FOO(r_kee);								\
-		FOO(xpe);								\
 		FOO(xee);								\
-		FOO(ype);								\
 		FOO(yee);								\
 		FOO(pe);								\
 		FOO(ee);								\
 		FOO(r_pe_b);							\
 		FOO(r_pe_h);							\
 		FOO(r_ee);								\
-		FOO(kkp);								\
-		FOO(kp);								\
-		FOO(r_kkp_b);							\
-		FOO(r_kkp_h);							\
-		FOO(r_kp_b);							\
-		FOO(r_kp_h);							\
-		FOO(kke);								\
 		FOO(ke);								\
 		FOO(r_kke);								\
 		FOO(r_ke);								\
-		FOO(kk);								\
+	}
+
+#define BASE_PHASE2 {							\
+		FOO(r_pp_bb);							\
+		FOO(r_pp_hb);							\
+		FOO(r_kp_b);							\
+		FOO(r_kp_h);							\
 		FOO(k);									\
 		FOO(r_kk);								\
+	}
+
+#define BASE_PHASE3 {							\
+		FOO(r_kpp_bb);							\
+		FOO(r_kpp_hb);							\
+		FOO(pp);								\
+		FOO(kpe);								\
+		FOO(xpe);								\
+		FOO(ype);								\
+		FOO(kp);								\
+		FOO(r_kkp_b);							\
+		FOO(r_kkp_h);							\
+		FOO(kke);								\
+		FOO(kk);								\
+	}
+
+#define BASE_PHASE4 {							\
+		FOO(kpp);								\
+		FOO(xpp);								\
+		FOO(ypp);								\
+		FOO(kkp);								\
+	}
+
+#define ALL_BASE_EVAL {							\
+		BASE_PHASE1;							\
+		BASE_PHASE2;							\
+		BASE_PHASE3;							\
+		BASE_PHASE4;							\
 	}
 	void read(const std::string& dirName) {
 #define FOO(x) {														\
