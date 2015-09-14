@@ -370,12 +370,12 @@ private:
 		else if (dv <= 0.0 && std::numeric_limits<T>::min() + step <= v) v -= step;
 	}
 	void updateEval(const std::string& dirName) {
-		for (size_t i = eval_.kpps_begin_index(), j = parse2Data_.params.kpps_begin_index(); i < eval_.kpps_end_index(); ++i, ++j)
-			updateFV(eval_.oneArrayKPP[i], parse2Data_.params.oneArrayKPP[j]);
-		for (size_t i = eval_.kkps_begin_index(), j = parse2Data_.params.kkps_begin_index(); i < eval_.kkps_end_index(); ++i, ++j)
-			updateFV(eval_.oneArrayKKP[i], parse2Data_.params.oneArrayKKP[j]);
-		for (size_t i = eval_.kks_begin_index(), j = parse2Data_.params.kks_begin_index(); i < eval_.kks_end_index(); ++i, ++j)
-			updateFV(eval_.oneArrayKK[i], parse2Data_.params.oneArrayKK[j]);
+		for (size_t i = 0; i < eval_.kpps_end_index(); ++i)
+			updateFV(eval_.oneArrayKPP[i], parse2Data_.params.oneArrayKPP[i]);
+		for (size_t i = 0; i < eval_.kkps_end_index(); ++i)
+			updateFV(eval_.oneArrayKKP[i], parse2Data_.params.oneArrayKKP[i]);
+		for (size_t i = 0; i < eval_.kks_end_index(); ++i)
+			updateFV(eval_.oneArrayKK[i], parse2Data_.params.oneArrayKK[i]);
 
 		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
 		// updateFV()で学習しないパラメータに入ったノイズを無くす。

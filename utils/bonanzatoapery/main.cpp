@@ -495,28 +495,28 @@ void convert(int argc, char* argv[]) {
 	std::string dir = argv[2];
 	if (dir.back() != '/') dir += "/";
 
-	const std::string oKPPFile = dir + "kpp.bin";
+	const std::string oKPPFile = dir + "kpps.kpp.bin";
 	std::ofstream ofs_kpp(oKPPFile.c_str(), std::ios::binary);
 	if (!ofs_kpp) {
 		std::cout << "I cannot write " << oKPPFile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	ofs_kpp.write(reinterpret_cast<char*>(&KPP[0][0][0]), sizeof(KPP));
-	const std::string oKKPFile = dir + "kkp.bin";
+	const std::string oKKPFile = dir + "kkps.kkp.bin";
 	std::ofstream ofs_kkp(oKKPFile.c_str(), std::ios::binary);
 	if (!ofs_kkp) {
 		std::cout << "I cannot write " << oKKPFile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	ofs_kkp.write(reinterpret_cast<char*>(&KKP[0][0][0]), sizeof(KKP));
-	const std::string oKKFile = dir + "kk.bin";
+	const std::string oKKFile = dir + "kks.kk.bin";
 	std::ofstream ofs_kk(oKKFile.c_str(), std::ios::binary);
 	if (!ofs_kk) {
 		std::cout << "I cannot write " << oKKFile << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	ofs_kk.write(reinterpret_cast<char*>(&KK[0][0]    ), sizeof(KK ));
-	const std::string oKPFile = dir + "kp.bin";
+	const std::string oKPFile = dir + "kkps.kp.bin";
 	std::ofstream ofs_kp(oKPFile.c_str(), std::ios::binary);
 	if (!ofs_kp) {
 		std::cout << "I cannot write " << oKPFile << std::endl;
