@@ -815,12 +815,25 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		BASE_PHASE3;							\
 		BASE_PHASE4;							\
 	}
+#define READ_BASE_EVAL {						\
+		BASE_PHASE1;							\
+		BASE_PHASE2;							\
+		BASE_PHASE3;							\
+		BASE_PHASE4;							\
+	}
+#define WRITE_BASE_EVAL {						\
+		BASE_PHASE1;							\
+		BASE_PHASE2;							\
+		BASE_PHASE3;							\
+		BASE_PHASE4;							\
+	}
+#undef ALL_BASE_EVAL
 	void read(const std::string& dirName) {
 #define FOO(x) {														\
 			std::ifstream ifs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
 			ifs.read(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
-		ALL_BASE_EVAL;
+		READ_BASE_EVAL;
 #undef FOO
 	}
 	void write(const std::string& dirName) {
@@ -828,10 +841,12 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 			std::ofstream ofs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
 			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
-		ALL_BASE_EVAL;
+		WRITE_BASE_EVAL;
 #undef FOO
 	}
 #undef ALL_BASE_EVAL
+#undef READ_BASE_EVAL
+#undef WRITE_BASE_EVAL
 	void setEvaluate() {
 #if !defined LEARN
 		SYNCCOUT << "info string start setting eval table" << SYNCENDL;
