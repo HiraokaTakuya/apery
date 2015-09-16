@@ -737,6 +737,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 				return;
 		}
 		clear();
+		readSomeSynthesized(dirName);
 		read(dirName);
 		setEvaluate();
 	}
@@ -759,6 +760,23 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 	static void writeSynthesized(const std::string& dirName) {
 #define FOO(x) {														\
 			std::ofstream ofs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
+			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
+		}
+		ALL_SYNTHESIZED_EVAL;
+#undef FOO
+	}
+	static void readSomeSynthesized(const std::string& dirName) {
+#define FOO(x) {														\
+			std::ifstream ifs((addSlashIfNone(dirName) + #x "_some_synthesized.bin").c_str(), std::ios::binary); \
+			if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));	\
+			else     memset(x, 0, sizeof(x));							\
+		}
+		ALL_SYNTHESIZED_EVAL;
+#undef FOO
+	}
+	static void writeSomeSynthesized(const std::string& dirName) {
+#define FOO(x) {														\
+			std::ofstream ofs((addSlashIfNone(dirName) + #x "_some_synthesized.bin").c_str(), std::ios::binary); \
 			ofs.write(reinterpret_cast<char*>(x), sizeof(x));			\
 		}
 		ALL_SYNTHESIZED_EVAL;
@@ -876,7 +894,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 						kppIndices(indices, static_cast<Square>(ksq), i, j);
 						s64 sum = 0;
 						FOO(indices, oneArrayKPP, sum);
-						KPP[ksq][i][j] = sum;
+						KPP[ksq][i][j] += sum;
 					}
 				}
 			}
@@ -893,7 +911,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 						kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
 						s64 sum = 0;
 						FOO(indices, oneArrayKKP, sum);
-						KKP[ksq0][ksq1][i] = sum;
+						KKP[ksq0][ksq1][i] += sum;
 					}
 				}
 			}
@@ -909,7 +927,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 					kkIndices(indices, static_cast<Square>(ksq0), ksq1);
 					s64 sum = 0;
 					FOO(indices, oneArrayKK, sum);
-					KK[ksq0][ksq1] = sum / 2;
+					KK[ksq0][ksq1] += sum / 2;
 #if defined USE_K_FIX_OFFSET
 					KK[ksq0][ksq1] += K_Fix_Offset[ksq0] - K_Fix_Offset[inverse(ksq1)];
 #endif
