@@ -745,7 +745,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	}
 	void kkIndices(std::pair<ptrdiff_t, int> ret[KKIndicesMax], Square ksq0, Square ksq1) {
 		int retIdx = 0;
-#if defined EVAL_PHASE2
+#if defined EVAL_PHASE1
 		ret[retIdx++] = std::make_pair(&kks.k[std::min(ksq0, inverseFile(ksq0))] - oneArrayKK(0), MaxWeight());
 		ret[retIdx++] = std::make_pair(-(&kks.k[std::min(inverse(ksq1), inverseFile(inverse(ksq1)))] - oneArrayKK(0)), MaxWeight());
 #endif
@@ -880,13 +880,13 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 		FOO(kkps.ke);								\
 		FOO(kkps.r_kke);							\
 		FOO(kkps.r_ke);								\
+		FOO(kks.k);									\
 	}
 #define BASE_PHASE2 {								\
 		FOO(kpps.r_pp_bb);							\
 		FOO(kpps.r_pp_hb);							\
 		FOO(kkps.r_kp_b);							\
 		FOO(kkps.r_kp_h);							\
-		FOO(kks.k);									\
 		FOO(kks.r_kk);								\
 	}
 #define BASE_PHASE3 {								\
