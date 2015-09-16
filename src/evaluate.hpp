@@ -139,8 +139,8 @@ extern KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
 template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterBase {
 	static const int R_Mid = 8; // 相対位置の中心のindex
-	constexpr int MaxWeight() const { return 1 << 20; } // KPE自体が1/8の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚だから 1/128**2)
-														// それだけで 1 << 18 は必要。更に重みを下げる場合、MaxWeightを更に大きくしておく必要がある。
+	constexpr int MaxWeight() const { return 1 << 22; } // KPE自体が1/32の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚)
+														// 更に重みを下げる場合、MaxWeightを更に大きくしておく必要がある。
 														// なぜか clang で static const int MaxWeight を使っても Undefined symbols for architecture x86_64 と言われる。
 	// 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
 	// 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
@@ -505,8 +505,9 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 							else if (icolor == jcolor && jto_tmp < ito_tmp)
 								std::swap(ito_tmp, jto_tmp);
 #if defined EVAL_PHASE1
-							ret[retIdx++] = std::make_pair(&kpps.kee[ksq][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
-							ret[retIdx++] = std::make_pair(&kpps.xee[kfile][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+							// ee は数が多くなる為、重みを更に小さくする。
+							ret[retIdx++] = std::make_pair(&kpps.kee[ksq][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+6));
+							ret[retIdx++] = std::make_pair(&kpps.xee[kfile][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+6));
 #endif
 							File diff_file_kito = kfile - makeFile(ito_tmp);
 							bool kfile_itofile_is_inversed = false;
@@ -524,7 +525,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 							if (jtuple < ituple)
 								std::swap(ituple, jtuple);
 #if defined EVAL_PHASE1
-							ret[retIdx++] = std::make_pair(&kpps.r_kee[std::get<0>(ituple)][R_Mid + std::get<1>(ituple)][R_Mid + std::get<2>(ituple)][std::get<0>(jtuple)][R_Mid + std::get<1>(jtuple)][R_Mid + std::get<2>(jtuple)] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+							ret[retIdx++] = std::make_pair(&kpps.r_kee[std::get<0>(ituple)][R_Mid + std::get<1>(ituple)][R_Mid + std::get<2>(ituple)][std::get<0>(jtuple)][R_Mid + std::get<1>(jtuple)][R_Mid + std::get<2>(jtuple)] - oneArrayKPP(0), MaxWeight() >> (distance+6));
 #endif
 						}
 						Square ito_tmp = ito;
@@ -546,15 +547,15 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 								jto_tmp = inverseFile(jto_tmp);
 						}
 #if defined EVAL_PHASE1
-						ret[retIdx++] = std::make_pair(&kpps.ee[icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
-						ret[retIdx++] = std::make_pair(&kpps.yee[krank][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(&kpps.ee[icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+6));
+						ret[retIdx++] = std::make_pair(&kpps.yee[krank][icolor][ito_tmp][jcolor][jto_tmp] - oneArrayKPP(0), MaxWeight() >> (distance+6));
 #endif
 						const File itofile = makeFile(ito_tmp);
 						const Rank itorank = makeRank(ito_tmp);
 						const File jtofile = makeFile(jto_tmp);
 						const Rank jtorank = makeRank(jto_tmp);
 #if defined EVAL_PHASE1
-						ret[retIdx++] = std::make_pair(&kpps.r_ee[icolor][jcolor][R_Mid + abs(-itofile - jtofile)][R_Mid + itorank - jtorank] - oneArrayKPP(0), MaxWeight() >> (distance+4));
+						ret[retIdx++] = std::make_pair(&kpps.r_ee[icolor][jcolor][R_Mid + abs(-itofile - jtofile)][R_Mid + itorank - jtorank] - oneArrayKPP(0), MaxWeight() >> (distance+6));
 #endif
 					}
 				}
