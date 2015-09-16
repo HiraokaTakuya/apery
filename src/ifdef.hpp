@@ -11,6 +11,11 @@
 #endif
 #endif
 
+#define EVAL_PHASE1
+#define EVAL_PHASE2
+#define EVAL_PHASE3
+#define EVAL_PHASE4
+
 #if 1 && !defined LEARN
 // 対局時は1つの局面に対してしか探索を実行しないので、置換表などのデータをグローバルに置いて高速化する。
 // 機械学習を行う時は、複数の局面に対して同時に探索を実行する為に、
