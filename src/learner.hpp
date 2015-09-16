@@ -42,8 +42,8 @@ struct LearnEvaluater : public EvaluaterBase<float, float, float> {
 #define FOO(indices, oneArray, sum)										\
 		for (auto indexAndWeight : indices) {							\
 			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-			if (0 <= indexAndWeight.first) oneArray[ indexAndWeight.first] += sum * indexAndWeight.second / MaxWeight(); \
-			else                           oneArray[-indexAndWeight.first] -= sum * indexAndWeight.second / MaxWeight(); \
+			if (0 <= indexAndWeight.first) *oneArray( indexAndWeight.first) += sum * indexAndWeight.second / MaxWeight(); \
+			else                           *oneArray(-indexAndWeight.first) -= sum * indexAndWeight.second / MaxWeight(); \
 		}
 
 		// KPP
@@ -371,11 +371,11 @@ private:
 	}
 	void updateEval(const std::string& dirName) {
 		for (size_t i = 0; i < eval_.kpps_end_index(); ++i)
-			updateFV(eval_.oneArrayKPP[i], parse2Data_.params.oneArrayKPP[i]);
+			updateFV(*eval_.oneArrayKPP(i), *parse2Data_.params.oneArrayKPP(i));
 		for (size_t i = 0; i < eval_.kkps_end_index(); ++i)
-			updateFV(eval_.oneArrayKKP[i], parse2Data_.params.oneArrayKKP[i]);
+			updateFV(*eval_.oneArrayKKP(i), *parse2Data_.params.oneArrayKKP(i));
 		for (size_t i = 0; i < eval_.kks_end_index(); ++i)
-			updateFV(eval_.oneArrayKK[i], parse2Data_.params.oneArrayKK[i]);
+			updateFV(*eval_.oneArrayKK(i), *parse2Data_.params.oneArrayKK(i));
 
 		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
 		// updateFV()で学習しないパラメータに入ったノイズを無くす。
