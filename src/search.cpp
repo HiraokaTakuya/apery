@@ -1565,6 +1565,7 @@ void Searcher::think() {
 	pos.setNodesSearched(0);
 
 #if defined LEARN
+	threads[0]->searching = true;
 #else
 	tt.setSize(options["USI_Hash"]); // operator int() 呼び出し。
 
