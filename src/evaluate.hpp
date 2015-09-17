@@ -211,7 +211,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	//       型によっては kkps_begin_index などの値が異なる。
 	//       ただ、end - begin のサイズは型によらず一定。
 	constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(KPPType); }
-	constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(KPPType); }
+	constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(KKPType); }
 	constexpr size_t kks_end_index() const { return sizeof(kks)/sizeof(KKType); }
 
 	static const int KPPIndicesMax = 3000;
