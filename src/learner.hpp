@@ -143,13 +143,13 @@ public:
 		ssCmd >> gameNumForIteration_;
 		ssCmd >> updateMax;
 		ssCmd >> updateMin;
-		if (updateMax < 0 || 32 < updateMax) {
-			updateMax = 32; // 乱数が 32 bit なので、bit count 方式だと 32 が上限。
-			std::cout << "you can set update_max [1, 32]" << std::endl;
+		if (updateMax < 0 || 64 < updateMax) {
+			updateMax = 64; // 乱数が 64 bit なので、bit count 方式だと 64 が上限。
+			std::cout << "you can set update_max [1, 64]" << std::endl;
 		}
 		if (updateMin < 0 || updateMax < updateMin) {
 			updateMin = updateMax;
-			std::cout << "you can set update_min [1, " << updateMax << "]" << std::endl;
+			std::cout << "you can set update_min [1, update_max]" << std::endl;
 		}
 		std::cout << "record_file: " << recordFileName
 				  << "\nread games: " << (gameNum == 0 ? "all" : std::to_string(gameNum))
@@ -178,6 +178,7 @@ public:
 		}
 		setLearnOptions(*pos.searcher());
 		mt_ = std::mt19937(std::chrono::system_clock::now().time_since_epoch().count());
+		mt64_ = std::mt19937_64(std::chrono::system_clock::now().time_since_epoch().count());
 		for (int i = 0; ; ++i) {
 			std::cout << "iteration " << i << std::endl;
 			std::cout << "parse1 start" << std::endl;
@@ -358,7 +359,7 @@ private:
 	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
 	template <typename T>
 	void updateFV(T& v, float dv) {
-		const int step = count1s(mt_() & updateMask_);
+		const int step = count1s(mt64_() & updateMask_);
 		if      (0 < v) dv -= static_cast<float>(FVPenalty());
 		else if (v < 0) dv += static_cast<float>(FVPenalty());
 
@@ -521,6 +522,7 @@ private:
 	Ply minDepth_;
 	Ply maxDepth_;
 	std::mt19937 mt_;
+	std::mt19937_64 mt64_;
 	std::vector<std::mt19937> mts_;
 	std::vector<Position> positions_;
 	std::vector<std::vector<BookMoveData> > bookMovesDatum_;
