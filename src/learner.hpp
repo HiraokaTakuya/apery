@@ -11,7 +11,7 @@
 #define PRINT_PV
 #endif
 
-struct LearnEvaluater : public EvaluaterBase<float, float, float> {
+struct RawEvaluater {
 	float kpp_raw[SquareNum][fe_end][fe_end];
 	float kkp_raw[SquareNum][SquareNum][fe_end];
 	float kk_raw[SquareNum][SquareNum];
@@ -37,56 +37,10 @@ struct LearnEvaluater : public EvaluaterBase<float, float, float> {
 		}
 	}
 
-	// kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
-	void lowerDimension() {
-#define FOO(indices, oneArray, sum)										\
-		for (auto indexAndWeight : indices) {							\
-			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-			if (0 <= indexAndWeight.first) *oneArray( indexAndWeight.first) += sum * indexAndWeight.second / MaxWeight(); \
-			else                           *oneArray(-indexAndWeight.first) -= sum * indexAndWeight.second / MaxWeight(); \
-		}
-
-		// KPP
-		{
-			std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
-			for (Square ksq = I9; ksq < SquareNum; ++ksq) {
-				for (int i = 0; i < fe_end; ++i) {
-					for (int j = 0; j < fe_end; ++j) {
-						kppIndices(indices, ksq, i, j);
-						FOO(indices, oneArrayKPP, kpp_raw[ksq][i][j]);
-					}
-				}
-			}
-		}
-		// KKP
-		{
-			std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
-			for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
-				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
-					for (int i = 0; i < fe_end; ++i) {
-						kkpIndices(indices, ksq0, ksq1, i);
-						FOO(indices, oneArrayKKP, kkp_raw[ksq0][ksq1][i]);
-					}
-				}
-			}
-		}
-		// KK
-		{
-			std::pair<ptrdiff_t, int> indices[KKIndicesMax];
-			for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
-				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
-					kkIndices(indices, ksq0, ksq1);
-					FOO(indices, oneArrayKK, kk_raw[ksq0][ksq1]);
-				}
-			}
-		}
-#undef FOO
-	}
-
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
-LearnEvaluater& operator += (LearnEvaluater& lhs, LearnEvaluater& rhs) {
+RawEvaluater& operator += (RawEvaluater& lhs, RawEvaluater& rhs) {
 	for (auto lit = &(***std::begin(lhs.kpp_raw)), rit = &(***std::begin(rhs.kpp_raw)); lit != &(***std::end(lhs.kpp_raw)); ++lit, ++rit)
 		*lit += *rit;
 	for (auto lit = &(***std::begin(lhs.kkp_raw)), rit = &(***std::begin(rhs.kkp_raw)); lit != &(***std::end(lhs.kkp_raw)); ++lit, ++rit)
@@ -97,8 +51,54 @@ LearnEvaluater& operator += (LearnEvaluater& lhs, LearnEvaluater& rhs) {
 	return lhs;
 }
 
+// kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
+inline void lowerDimension(EvaluaterBase<float, float, float>& base, const RawEvaluater& raw) {
+#define FOO(indices, oneArray, sum)										\
+	for (auto indexAndWeight : indices) {								\
+		if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
+		if (0 <= indexAndWeight.first) *oneArray( indexAndWeight.first) += sum * indexAndWeight.second / base.MaxWeight(); \
+		else                           *oneArray(-indexAndWeight.first) -= sum * indexAndWeight.second / base.MaxWeight(); \
+	}
+
+	// KPP
+	{
+		std::pair<ptrdiff_t, int> indices[base.KPPIndicesMax];
+		for (Square ksq = I9; ksq < SquareNum; ++ksq) {
+			for (int i = 0; i < fe_end; ++i) {
+				for (int j = 0; j < fe_end; ++j) {
+					base.kppIndices(indices, ksq, i, j);
+					FOO(indices, base.oneArrayKPP, raw.kpp_raw[ksq][i][j]);
+				}
+			}
+		}
+	}
+	// KKP
+	{
+		std::pair<ptrdiff_t, int> indices[base.KKPIndicesMax];
+		for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+				for (int i = 0; i < fe_end; ++i) {
+					base.kkpIndices(indices, ksq0, ksq1, i);
+					FOO(indices, base.oneArrayKKP, raw.kkp_raw[ksq0][ksq1][i]);
+				}
+			}
+		}
+	}
+	// KK
+	{
+		std::pair<ptrdiff_t, int> indices[base.KKIndicesMax];
+		for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+				base.kkIndices(indices, ksq0, ksq1);
+				FOO(indices, base.oneArrayKK, raw.kk_raw[ksq0][ksq1]);
+			}
+		}
+	}
+#undef FOO
+}
+
 struct Parse2Data {
-	LearnEvaluater params;
+	RawEvaluater params;
 
 	void clear() {
 		params.clear();
@@ -372,11 +372,11 @@ private:
 	}
 	void updateEval(const std::string& dirName) {
 		for (size_t i = 0; i < eval_.kpps_end_index(); ++i)
-			updateFV(*eval_.oneArrayKPP(i), *parse2Data_.params.oneArrayKPP(i));
+			updateFV(*eval_.oneArrayKPP(i), *parse2EvalBase_.oneArrayKPP(i));
 		for (size_t i = 0; i < eval_.kkps_end_index(); ++i)
-			updateFV(*eval_.oneArrayKKP(i), *parse2Data_.params.oneArrayKKP(i));
+			updateFV(*eval_.oneArrayKKP(i), *parse2EvalBase_.oneArrayKKP(i));
 		for (size_t i = 0; i < eval_.kks_end_index(); ++i)
-			updateFV(*eval_.oneArrayKK(i), *parse2Data_.params.oneArrayKK(i));
+			updateFV(*eval_.oneArrayKK(i), *parse2EvalBase_.oneArrayKK(i));
 
 		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
 		// updateFV()で学習しないパラメータに入ったノイズを無くす。
@@ -496,7 +496,8 @@ private:
 			for (auto& parse2 : parse2Datum_) {
 				parse2Data_.params += parse2.params;
 			}
-			parse2Data_.params.lowerDimension();
+			parse2EvalBase_.clear();
+			lowerDimension(parse2EvalBase_, parse2Data_.params);
 			setUpdateMask(step);
 			std::cout << "update eval ... " << std::flush;
 			updateEval(pos.searcher()->options["Eval_Dir"]);
@@ -528,6 +529,7 @@ private:
 	std::vector<std::vector<BookMoveData> > bookMovesDatum_;
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
+	EvaluaterBase<float, float, float> parse2EvalBase_;
 	Evaluater eval_;
 	int stepNum_;
 	size_t gameNumForIteration_;

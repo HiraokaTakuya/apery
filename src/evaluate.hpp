@@ -792,6 +792,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
 		assert(retIdx <= KKIndicesMax);
 	}
+	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
 struct Evaluater : public EvaluaterBase<s16, s32, s32> {
