@@ -31,6 +31,7 @@ enum Square {
 	B9,	B8, B7, B6, B5, B4, B3, B2, B1,
 	A9,	A8, A7, A6, A5, A4, A3, A2, A1,
 	SquareNum, // = 81
+	SquareNoLeftNum = D9,
 	B_hand_pawn   = SquareNum     + -1,
 	B_hand_lance  = B_hand_pawn   + 18,
 	B_hand_knight = B_hand_lance  +  4,
@@ -50,7 +51,8 @@ enum Square {
 OverloadEnumOperators(Square);
 
 enum File {
-	FileI, FileH, FileG, FileF, FileE, FileD, FileC, FileB, FileA, FileNum
+	FileI, FileH, FileG, FileF, FileE, FileD, FileC, FileB, FileA, FileNum,
+	FileNoLeftNum = FileD
 };
 OverloadEnumOperators(File);
 

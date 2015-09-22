@@ -147,11 +147,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	// ただし、kkp に関する項目 (kkp, r_kkp_b, r_kkp_h) のみ、p は味方の駒として扱うので、k0 < k1 となるとは限らない。
 	struct KPPElements {
 		KPPType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
-		KPPType kpp[SquareNum][fe_end][fe_end];
+		KPPType kpp[SquareNoLeftNum][fe_end][fe_end];
 		// 相対位置は[file][rank]の順
 		KPPType r_kpp_bb[PieceNone][17][17][PieceNone][17][17];
 		KPPType r_kpp_hb[fe_hand_end][PieceNone][17][17];
-		KPPType xpp[FileNum][fe_end][fe_end];
+		KPPType xpp[FileNoLeftNum][fe_end][fe_end];
 		KPPType ypp[RankNum][fe_end][fe_end];
 		KPPType pp[fe_end][fe_end];
 		KPPType r_pp_bb[PieceNone][PieceNone][17][17];
@@ -159,13 +159,13 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 
 		// e は Effect の頭文字で利きを表す。(Control = 利き という説もあり。)
 		// todo: 玉の利きは全く無視しているけれど、それで良いのか？
-		KPPType kpe[SquareNum][fe_end][ColorNum][SquareNum];
-		KPPType kee[SquareNum][ColorNum][SquareNum][ColorNum][SquareNum];
+		KPPType kpe[SquareNoLeftNum][fe_end][ColorNum][SquareNum];
+		KPPType kee[SquareNoLeftNum][ColorNum][SquareNum][ColorNum][SquareNum];
 		KPPType r_kpe_b[PieceNone][17][17][ColorNum][17][17];
 		KPPType r_kpe_h[fe_hand_end][ColorNum][17][17];
 		KPPType r_kee[ColorNum][17][17][ColorNum][17][17];
-		KPPType xpe[FileNum][fe_end][ColorNum][SquareNum];
-		KPPType xee[FileNum][ColorNum][SquareNum][ColorNum][SquareNum];
+		KPPType xpe[FileNoLeftNum][fe_end][ColorNum][SquareNum];
+		KPPType xee[FileNoLeftNum][ColorNum][SquareNum][ColorNum][SquareNum];
 		KPPType ype[RankNum][fe_end][ColorNum][SquareNum];
 		KPPType yee[RankNum][ColorNum][SquareNum][ColorNum][SquareNum];
 		KPPType pe[fe_end][ColorNum][SquareNum];
@@ -178,15 +178,15 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 
 	struct KKPElements {
 		KKPType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
-		KKPType kkp[SquareNum][SquareNum][fe_end];
-		KKPType kp[SquareNum][fe_end];
+		KKPType kkp[SquareNoLeftNum][SquareNum][fe_end];
+		KKPType kp[SquareNoLeftNum][fe_end];
 		KKPType r_kkp_b[17][17][PieceNone][17][17];
 		KKPType r_kkp_h[17][17][fe_hand_end];
 		KKPType r_kp_b[PieceNone][17][17];
 		KKPType r_kp_h[fe_hand_end];
 
-		KKPType kke[SquareNum][SquareNum][ColorNum][SquareNum];
-		KKPType ke[SquareNum][ColorNum][SquareNum];
+		KKPType kke[SquareNoLeftNum][SquareNum][ColorNum][SquareNum];
+		KKPType ke[SquareNoLeftNum][ColorNum][SquareNum];
 		KKPType r_kke[17][17][ColorNum][17][17];
 		KKPType r_ke[ColorNum][17][17];
 	};
@@ -194,8 +194,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 
 	struct KKElements {
 		KKType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
-		KKType kk[SquareNum][SquareNum];
-		KKType k[SquareNum];
+		KKType kk[SquareNoLeftNum][SquareNum];
+		KKType k[SquareNoLeftNum];
 		KKType r_kk[17][17];
 	};
 	KKElements kks;
