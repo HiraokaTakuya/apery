@@ -143,6 +143,7 @@ public:
 		ssCmd >> gameNumForIteration_;
 		ssCmd >> updateMax;
 		ssCmd >> updateMin;
+		ssCmd >> usePenalty_;
 		if (updateMax < 0 || 64 < updateMax) {
 			updateMax = 64; // 乱数が 64 bit なので、bit count 方式だと 64 が上限。
 			std::cout << "you can set update_max [1, 64]" << std::endl;
@@ -159,6 +160,7 @@ public:
 				  << "\ngame_num_for_iteration: " << gameNumForIteration_
 				  << "\nupdate_max: " << updateMax
 				  << "\nupdate_min: " << updateMin
+				  << "\nuse_penalty: " << usePenalty_
 				  << std::endl;
 		updateMaxMask_ = (UINT64_C(1) << updateMax) - 1;
 		updateMinMask_ = (UINT64_C(1) << updateMin) - 1;
@@ -357,11 +359,13 @@ private:
 		std::cout << "parse1 elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 	}
 	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
-	template <typename T>
+	template <bool UsePenalty, typename T>
 	void updateFV(T& v, float dv) {
 		const int step = count1s(mt64_() & updateMask_);
-		if      (0 < v) dv -= static_cast<float>(FVPenalty());
-		else if (v < 0) dv += static_cast<float>(FVPenalty());
+		if (UsePenalty) {
+			if      (0 < v) dv -= static_cast<float>(FVPenalty());
+			else if (v < 0) dv += static_cast<float>(FVPenalty());
+		}
 
 		// T が enum だと 0 になることがある。
 		// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
@@ -370,13 +374,14 @@ private:
 		if      (0.0 <= dv && v <= std::numeric_limits<T>::max() - step) v += step;
 		else if (dv <= 0.0 && std::numeric_limits<T>::min() + step <= v) v -= step;
 	}
+	template <bool UsePenalty>
 	void updateEval(const std::string& dirName) {
 		for (size_t i = 0; i < eval_.kpps_end_index(); ++i)
-			updateFV(*eval_.oneArrayKPP(i), *parse2EvalBase_.oneArrayKPP(i));
+			updateFV<UsePenalty>(*eval_.oneArrayKPP(i), *parse2EvalBase_.oneArrayKPP(i));
 		for (size_t i = 0; i < eval_.kkps_end_index(); ++i)
-			updateFV(*eval_.oneArrayKKP(i), *parse2EvalBase_.oneArrayKKP(i));
+			updateFV<UsePenalty>(*eval_.oneArrayKKP(i), *parse2EvalBase_.oneArrayKKP(i));
 		for (size_t i = 0; i < eval_.kks_end_index(); ++i)
-			updateFV(*eval_.oneArrayKK(i), *parse2EvalBase_.oneArrayKK(i));
+			updateFV<UsePenalty>(*eval_.oneArrayKK(i), *parse2EvalBase_.oneArrayKK(i));
 
 		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
 		// updateFV()で学習しないパラメータに入ったノイズを無くす。
@@ -500,7 +505,8 @@ private:
 			lowerDimension(parse2EvalBase_, parse2Data_.params);
 			setUpdateMask(step);
 			std::cout << "update eval ... " << std::flush;
-			updateEval(pos.searcher()->options["Eval_Dir"]);
+			if (usePenalty_) updateEval<true >(pos.searcher()->options["Eval_Dir"]);
+			else             updateEval<false>(pos.searcher()->options["Eval_Dir"]);
 			std::cout << "done" << std::endl;
 			std::cout << "parse2 1 step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 			print();
@@ -522,6 +528,7 @@ private:
 	size_t index_;
 	Ply minDepth_;
 	Ply maxDepth_;
+	bool usePenalty_;
 	std::mt19937 mt_;
 	std::mt19937_64 mt64_;
 	std::vector<std::mt19937> mts_;
