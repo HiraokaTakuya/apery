@@ -10,6 +10,24 @@
 class Position;
 struct SplitPoint;
 
+struct EvalSum : public std::array<s32, 3> {
+	s32 sum() const { return (*this)[0] + (*this)[1] + (*this)[2]; }
+	EvalSum& operator += (const EvalSum& rhs) {
+		(*this)[0] += rhs[0];
+		(*this)[1] += rhs[1];
+		(*this)[2] += rhs[2];
+		return *this;
+	}
+	EvalSum& operator -= (const EvalSum& rhs) {
+		(*this)[0] -= rhs[0];
+		(*this)[1] -= rhs[1];
+		(*this)[2] -= rhs[2];
+		return *this;
+	}
+	EvalSum operator + (const EvalSum& rhs) const { return EvalSum(*this) += rhs; }
+	EvalSum operator - (const EvalSum& rhs) const { return EvalSum(*this) -= rhs; }
+};
+
 struct SearchStack {
 	SplitPoint* splitPoint;
 	Ply ply;
@@ -19,8 +37,9 @@ struct SearchStack {
 	Depth reduction;
 	Score staticEval;
 	bool skipNullMove;
-	Score staticEvalRaw; // 評価関数の差分計算用、値が入っていないときは ScoreNotEvaluated にしておく。
-						 // 常に Black の評価値を入れておく。
+	EvalSum staticEvalRaw; // 評価関数の差分計算用、値が入っていないときは [0] を ScoreNotEvaluated にしておく。
+						   // 常に Black 側から見た評価値を入れておく。
+						   // 0: 双玉に対する評価値, 1: 先手玉に対する評価値, 2: 後手玉に対する評価値
 };
 
 struct SignalsType {
@@ -147,7 +166,7 @@ struct Searcher {
 	template <NodeType NT>
 	STATIC Score search(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth, const bool cutNode);
 	STATIC void think();
-    STATIC void checkTime();
+	STATIC void checkTime();
 
 	STATIC void doUSICommandLoop(int argc, char* argv[]);
 	STATIC void setOption(std::istringstream& ssCmd);
