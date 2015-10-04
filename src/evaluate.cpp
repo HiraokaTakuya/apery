@@ -58,14 +58,14 @@ namespace {
 		const int* list1 = pos.cplist1();
 
 		EvalSum sum;
-		sum[2] = Evaluater::KKP[sq_bk][sq_wk][index[0]];
+		sum[0] = Evaluater::KKP[sq_bk][sq_wk][index[0]];
 		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-		sum[0] =  pkppb[list0[0]];
-		sum[1] = -pkppw[list1[0]];
+		sum[1] =  pkppb[list0[0]];
+		sum[2] = -pkppw[list1[0]];
 		for (int i = 1; i < pos.nlist(); ++i) {
-			sum[0] += pkppb[list0[i]];
-			sum[1] -= pkppw[list1[i]];
+			sum[1] += pkppb[list0[i]];
+			sum[2] -= pkppw[list1[i]];
 		}
 
 		return sum;
@@ -125,7 +125,47 @@ namespace {
 
 		if (lastMove.pieceTypeFrom() == King) {
 			// todo: 玉が動いた時の差分計算
-			return false;
+			EvalSum diff = (ss-1)->staticEvalRaw; // 本当は diff ではないので名前が良くない。
+			const Square sq_bk = pos.kingSquare(Black);
+			const Square sq_wk = pos.kingSquare(White);
+			diff[0] = Evaluater::KK[sq_bk][sq_wk];
+			diff[0] += pos.material() * FVScale;
+			if (pos.cl().size == 1) {
+				if (pos.turn() == Black) {
+					const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
+					const int* list0 = pos.plist0();
+					const int* list1 = pos.plist1();
+					diff[2] = 0;
+					for (int i = 0; i < pos.nlist(); ++i) {
+						const int k0 = list0[i];
+						const int k1 = list1[i];
+						const auto* pkppw = ppkppw[k1];
+						for (int j = 0; j < i; ++j) {
+							const int l1 = list1[j];
+							diff[2] -= pkppw[l1];
+						}
+						diff[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
+					}
+				}
+				else {
+					const auto* ppkppb = Evaluater::KPP[sq_bk         ];
+					const int* list0 = pos.plist0();
+					diff[1] = 0;
+					for (int i = 0; i < pos.nlist(); ++i) {
+						const int k0 = list0[i];
+						const auto* pkppb = ppkppb[k0];
+						for (int j = 0; j < i; ++j) {
+							const int l0 = list0[j];
+							diff[1] += pkppb[l0];
+						}
+						diff[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
+					}
+				}
+				ss->staticEvalRaw = diff;
+			}
+			else {
+				return false;
+			}
 		}
 		else {
 			const int listIndex = pos.cl().listindex[0];
@@ -138,8 +178,8 @@ namespace {
 			else {
 				assert(pos.cl().size == 2);
 				diff += doapc(pos, pos.cl().clistpair[1].newlist);
-				diff[0] -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
-				diff[1] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
+				diff[1] -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
+				diff[2] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
 				const int listIndex_cap = pos.cl().listindex[1];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
@@ -149,8 +189,8 @@ namespace {
 				diff -= doapc(pos, pos.cl().clistpair[0].oldlist);
 
 				diff -= doapc(pos, pos.cl().clistpair[1].oldlist);
-				diff[0] += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
-				diff[1] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
+				diff[1] += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
+				diff[2] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
 			}
@@ -285,7 +325,9 @@ Score evaluateUnUseDiff(const Position& pos) {
 	const auto* ppkppb = Evaluater::KPP[sq_bk         ];
 	const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 
-	s32 score = Evaluater::KK[sq_bk][sq_wk];
+	EvalSum score;
+	score[0] = Evaluater::KK[sq_bk][sq_wk];
+	score[1] = score[2] = 0;
 	for (int i = 0; i < nlist; ++i) {
 		const int k0 = list0[i];
 		const int k1 = list1[i];
@@ -294,23 +336,24 @@ Score evaluateUnUseDiff(const Position& pos) {
 		for (int j = 0; j < i; ++j) {
 			const int l0 = list0[j];
 			const int l1 = list1[j];
-			score += pkppb[l0];
-			score -= pkppw[l1];
+			score[1] += pkppb[l0];
+			score[2] -= pkppw[l1];
 		}
-		score += Evaluater::KKP[sq_bk][sq_wk][k0];
+		score[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 	}
 
-	score += pos.material() * FVScale;
+	score[0] += pos.material() * FVScale;
 
 #if defined INANIWA_SHIFT
-	score += inaniwaScore(pos);
+	score[0] += inaniwaScore(pos);
 #endif
 
+	auto ret = score.sum();
 	if (pos.turn() == White) {
-		score = -score;
+		ret = -ret;
 	}
 
-	return static_cast<Score>(score);
+	return static_cast<Score>(ret);
 }
 
 Score evaluate(Position& pos, SearchStack* ss) {
