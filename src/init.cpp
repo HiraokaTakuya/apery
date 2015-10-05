@@ -43,7 +43,7 @@ namespace {
 	// Rook or Bishop の利きの範囲を調べて bitboard で返す。
 	// occupied  障害物があるマスが 1 の bitboard
 	Bitboard attackCalc(const Square square, const Bitboard& occupied, const bool isBishop) {
-		SquareDelta deltaArray[2][4] = {{DeltaN, DeltaS, DeltaE, DeltaW}, {DeltaNE, DeltaSE, DeltaSW, DeltaNW}};
+		const SquareDelta deltaArray[2][4] = {{DeltaN, DeltaS, DeltaE, DeltaW}, {DeltaNE, DeltaSE, DeltaSW, DeltaNW}};
 		Bitboard result = allZeroBB();
 		for (SquareDelta delta : deltaArray[isBishop]) {
 			for (Square sq = square + delta;
@@ -68,7 +68,7 @@ namespace {
 
 	// index, bits の情報を元にして、occupied の 1 のbit を いくつか 0 にする。
 	// index の値を, occupied の 1のbit の位置に変換する。
-	// index   (0, 1<<bits] の範囲のindex
+	// index   [0, 1<<bits) の範囲のindex
 	// bits    bit size
 	// blockMask   利きのあるマスが 1 のbitboard
 	// result  occupied
@@ -98,14 +98,13 @@ namespace {
 			blockMask[sq] = (isBishop ? bishopBlockMaskCalc(sq) : rookBlockMaskCalc(sq));
 			attackIndex[sq] = index;
 
-			Bitboard occupied[1 << 14];
 			const int num1s = (isBishop ? BishopBlockBits[sq] : RookBlockBits[sq]);
 			for (int i = 0; i < (1 << num1s); ++i) {
-				occupied[i] = indexToOccupied(i, num1s, blockMask[sq]);
+				const Bitboard occupied = indexToOccupied(i, num1s, blockMask[sq]);
 #if defined HAVE_BMI2
-				attacks[index + occupiedToIndex(occupied[i] & blockMask[sq], blockMask[sq])] = attackCalc(sq, occupied[i], isBishop);
+				attacks[index + occupiedToIndex(occupied & blockMask[sq], blockMask[sq])] = attackCalc(sq, occupied, isBishop);
 #else
-				attacks[index + occupiedToIndex(occupied[i], magic[sq], shift[sq])] = attackCalc(sq, occupied[i], isBishop);
+				attacks[index + occupiedToIndex(occupied, magic[sq], shift[sq])] = attackCalc(sq, occupied, isBishop);
 #endif
 			}
 			index += 1 << (64 - shift[sq]);
