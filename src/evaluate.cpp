@@ -274,11 +274,13 @@ namespace {
 		return nlist;
 	}
 
-	s32 evaluateBody(Position& pos, SearchStack* ss) {
+	void evaluateBody(Position& pos, SearchStack* ss) {
 		if (calcDifference(pos, ss)) {
-			const auto score = ss->staticEvalRaw.sum();
-			assert(evaluateUnUseDiff(pos) == (pos.turn() == Black ? score : -score));
-			return score;
+			assert([&] {
+					const auto score = ss->staticEvalRaw.sum();
+					return (evaluateUnUseDiff(pos) == (pos.turn() == Black ? score : -score));
+				}());
+			return;
 		}
 
 		const Square sq_bk = pos.kingSquare(Black);
@@ -315,7 +317,6 @@ namespace {
 		ss->staticEvalRaw = sum;
 
 		assert(evaluateUnUseDiff(pos) == (pos.turn() == Black ? sum.sum() : -sum.sum()));
-		return sum.sum();
 	}
 }
 
@@ -403,19 +404,17 @@ Score evaluate(Position& pos, SearchStack* ss) {
 	const Key keyExcludeTurn = pos.getKeyExcludeTurn();
 	// ポインタで取得してはいけない。lockless hash なので key と score を同時に取得する。
 	EvaluateHashEntry entry = *g_evalTable[keyExcludeTurn];
-	entry.decode();
-	if (entry.key() == keyHigh32) {
-		ss->staticEvalRaw = entry.score();
-		assert((pos.turn() == Black ? ss->staticEvalRaw : -ss->staticEvalRaw) == evaluateUnUseDiff(pos));
-		return (pos.turn() == Black ? entry.score() : -entry.score()) / FVScale;
+	if (entry.key == keyHigh32) {
+		ss->staticEvalRaw = entry.evalSum;
+		assert((pos.turn() == Black ? ss->staticEvalRaw.sum() : -ss->staticEvalRaw.sum()) == evaluateUnUseDiff(pos));
+		return static_cast<Score>(pos.turn() == Black ? entry.evalSum.sum() : -entry.evalSum.sum()) / FVScale;
 	}
 #endif
 
-	const Score score = static_cast<Score>(evaluateBody(pos, ss));
+	evaluateBody(pos, ss);
 #if defined USE_EHASH
-	entry.save(pos.getKey(), score);
-	entry.encode();
+	entry.save(pos.getKey(), ss->staticEvalRaw);
 	*g_evalTable[keyExcludeTurn] = entry;
 #endif
-	return (pos.turn() == Black ? score : -score) / FVScale;
+	return static_cast<Score>(pos.turn() == Black ? ss->staticEvalRaw.sum() : -ss->staticEvalRaw.sum()) / FVScale;
 }

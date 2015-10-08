@@ -10,24 +10,6 @@
 class Position;
 struct SplitPoint;
 
-struct EvalSum : public std::array<s32, 3> {
-	s32 sum() const { return (*this)[0] + (*this)[1] + (*this)[2]; }
-	EvalSum& operator += (const EvalSum& rhs) {
-		(*this)[0] += rhs[0];
-		(*this)[1] += rhs[1];
-		(*this)[2] += rhs[2];
-		return *this;
-	}
-	EvalSum& operator -= (const EvalSum& rhs) {
-		(*this)[0] -= rhs[0];
-		(*this)[1] -= rhs[1];
-		(*this)[2] -= rhs[2];
-		return *this;
-	}
-	EvalSum operator + (const EvalSum& rhs) const { return EvalSum(*this) += rhs; }
-	EvalSum operator - (const EvalSum& rhs) const { return EvalSum(*this) -= rhs; }
-};
-
 struct SearchStack {
 	SplitPoint* splitPoint;
 	Ply ply;

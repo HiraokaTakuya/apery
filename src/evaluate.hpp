@@ -1029,40 +1029,54 @@ extern const int kppArray[31];
 extern const int kkpArray[15];
 extern const int kppHandArray[ColorNum][HandPieceNum];
 
+struct EvalSum : public std::array<s32, 3> {
+	s32 sum() const { return (*this)[0] + (*this)[1] + (*this)[2]; }
+	EvalSum& operator += (const EvalSum& rhs) {
+		(*this)[0] += rhs[0];
+		(*this)[1] += rhs[1];
+		(*this)[2] += rhs[2];
+		return *this;
+	}
+	EvalSum& operator -= (const EvalSum& rhs) {
+		(*this)[0] -= rhs[0];
+		(*this)[1] -= rhs[1];
+		(*this)[2] -= rhs[2];
+		return *this;
+	}
+	EvalSum operator + (const EvalSum& rhs) const { return EvalSum(*this) += rhs; }
+	EvalSum operator - (const EvalSum& rhs) const { return EvalSum(*this) -= rhs; }
+};
+
 class Position;
 struct SearchStack;
 
 const size_t EvaluateTableSize = 0x1000000; // 134MB
 //const size_t EvaluateTableSize = 0x80000000; // 17GB
 
-// 64bit 変数1つなのは理由があって、
-// データを取得している最中に他のスレッドから書き換えられることが無くなるから。
-// lockless hash と呼ばれる。
-// 128bit とかだったら、64bitずつ2回データを取得しないといけないので、
-// key と score が対応しない可能性がある。
-// transposition table は正にその問題を抱えているが、
-// 静的評価値のように差分評価をする訳ではないので、問題になることは少ない。
-// 64bitに収まらない場合や、transposition table なども安全に扱いたいなら、
-// lockする、SSEやAVX命令を使う、チェックサムを持たせる、key を複数の変数に分けて保持するなどの方法がある。
-// 32bit OS 場合、64bit 変数を 32bitずつ2回データ取得するので、下位32bitを上位32bitでxorして
-// データ取得時に壊れていないか確認する。
-// 31- 0 keyhigh32
-// 63-32 score
 struct EvaluateHashEntry {
-	u32 key() const     { return static_cast<u32>(word); }
-	Score score() const { return static_cast<Score>(static_cast<s64>(word) >> 32); }
-	void save(const Key k, const Score s) {
-		word = static_cast<u64>(k >> 32) | static_cast<u64>(static_cast<s64>(s) << 32);
+	EvaluateHashEntry() {}
+	EvaluateHashEntry(const EvaluateHashEntry& rhs) {
+		// atomic にコピーする必要があるので、SSE を使用する。
+		_mm_store_si128(&this->m, rhs.m);
 	}
-#if defined __x86_64__
-	void encode() {}
-	void decode() {}
-#else
-	void encode() { word ^= word >> 32; }
-	void decode() { word ^= word >> 32; }
-#endif
-	u64 word;
+	EvaluateHashEntry& operator = (const EvaluateHashEntry& rhs) {
+		// atomic にコピーする必要があるので、SSE を使用する。
+		_mm_store_si128(&this->m, rhs.m);
+		return *this;
+	}
+	void save(const Key k, const EvalSum& s) {
+		evalSum = s;
+		key = k;
+	}
+	union {
+		__m128i m;
+		struct {
+			EvalSum evalSum;
+			u32 key;
+		};
+	};
 };
+static_assert(sizeof(EvaluateHashEntry) == 16, "");
 
 struct EvaluateHashTable : HashTable<EvaluateHashEntry, EvaluateTableSize> {};
 
