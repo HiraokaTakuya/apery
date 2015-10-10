@@ -184,10 +184,11 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 
 #if defined LEARN
 // 学習用。通常の go 呼び出しは文字列を扱って高コストなので、大量に探索の開始、終了を行う学習では別の呼び出し方にする。
-void go(const Position& pos, const Ply depth) {
+void go(const Position& pos, const Ply depth, const Move move) {
 	LimitsType limits;
 	std::vector<Move> moves;
 	limits.depth = depth;
+	moves.push_back(move);
 	pos.searcher()->threads.startThinking(pos, limits, moves);
 }
 #endif

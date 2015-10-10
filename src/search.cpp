@@ -503,7 +503,7 @@ void Searcher::idLoop(Position& pos) {
 	memset(ss, 0, 4 * sizeof(SearchStack));
 	bestMoveChanges = 0;
 #if defined LEARN
-	// 高速化の為に浅い探索は反復深化しないようにする。実戦時ではほぼ影響無い。学習時は浅い探索をひたすら繰り返す為。
+	// 高速化の為に浅い探索は反復深化しないようにする。学習時は浅い探索をひたすら繰り返す為。
 	depth = std::max<Ply>(0, limits.depth - 1);
 #else
 	depth = 0;
@@ -569,6 +569,10 @@ void Searcher::idLoop(Position& pos) {
 
 		// Multi PV loop
 		for (pvIdx = 0; pvIdx < pvSize && !signals.stop; ++pvIdx) {
+#if defined LEARN
+			alpha = this->alpha;
+			beta  = this->beta;
+#else
 			// aspiration search
 			// alpha, beta をある程度絞ることで、探索効率を上げる。
 			if (5 <= depth && abs(rootMoves[pvIdx].prevScore_) < ScoreKnownWin) {
@@ -580,6 +584,7 @@ void Searcher::idLoop(Position& pos) {
 				alpha = -ScoreInfinite;
 				beta  =  ScoreInfinite;
 			}
+#endif
 
 			// aspiration search の window 幅を、初めは小さい値にして探索し、
 			// fail high/low になったなら、今度は window 幅を広げて、再探索を行う。
@@ -601,6 +606,10 @@ void Searcher::idLoop(Position& pos) {
 					SYNCCOUT << pvInfoToUSI(pos, ply, alpha, beta) << SYNCENDL;
 					signals.stop = true;
 				}
+#endif
+
+#if defined LEARN
+				break;
 #endif
 
 				if (signals.stop) {

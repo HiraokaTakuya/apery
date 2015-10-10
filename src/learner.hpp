@@ -255,7 +255,7 @@ private:
 	}
 	void setLearnOptions(Searcher& s) {
 		std::string options[] = {"name Threads value 1",
-								 "name MultiPV value " + std::to_string(MaxLegalMoves),
+								 "name MultiPV value 1",
 								 "name OwnBook value false",
 								 "name Max_Random_Score_Diff value 0"};
 		for (auto& str : options) {
@@ -281,33 +281,33 @@ private:
 			auto& gameMoves = bookMovesDatum_[i];
 			for (auto& bmd : gameMoves) {
 				if (bmd.useLearning) {
-					go(pos, dist(mt));
-					const auto recordIt = std::find_if(std::begin(pos.searcher()->rootMoves),
-													   std::end(pos.searcher()->rootMoves),
-													   [&](const RootMove& rm) { return rm.pv_[0] == bmd.move; });
-					const Score recordScore = recordIt->score_;
-					bmd.recordIsNth = recordIt - std::begin(pos.searcher()->rootMoves);
+					pos.searcher()->alpha = -ScoreMaxEvaluate;
+					pos.searcher()->beta  =  ScoreMaxEvaluate;
+					go(pos, dist(mt), bmd.move);
+					const Score recordScore = pos.searcher()->rootMoves[0].score_;
+					bmd.recordIsNth = 0;
+					bmd.otherPVExist = false;
 					bmd.pvBuffer.clear();
-					bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordIt->pv_), std::end(recordIt->pv_));
-
-					const auto recordPVSize = bmd.pvBuffer.size();
-
 					if (abs(recordScore) < ScoreMaxEvaluate) {
-						for (auto it = recordIt - 1;
-							 it >= std::begin(pos.searcher()->rootMoves) && FVWindow > (it->score_ - recordScore);
-							 --it)
-						{
-							bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(it->pv_), std::end(it->pv_));
+						auto& recordPv = pos.searcher()->rootMoves[0].pv_;
+						bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordPv), std::end(recordPv));
+						const auto recordPVSize = bmd.pvBuffer.size();
+						for (MoveList<LegalAll> ml(pos); !ml.end(); ++ml) {
+							if (ml.move() != bmd.move) {
+								pos.searcher()->alpha = recordScore - FVWindow;
+								pos.searcher()->beta  = recordScore + FVWindow;
+								go(pos, dist(mt), ml.move());
+								const Score score = pos.searcher()->rootMoves[0].score_;
+								if (pos.searcher()->alpha < score && score < pos.searcher()->beta) {
+									auto& pv = pos.searcher()->rootMoves[0].pv_;
+									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
+									if (recordScore < score)
+										++bmd.recordIsNth;
+								}
+							}
 						}
-						for (auto it = recordIt + 1;
-							 it < std::end(pos.searcher()->rootMoves) && FVWindow > (recordScore - it->score_);
-							 ++it)
-						{
-							bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(it->pv_), std::end(it->pv_));
-						}
+						bmd.otherPVExist = (recordPVSize != bmd.pvBuffer.size());
 					}
-
-					bmd.otherPVExist = (recordPVSize != bmd.pvBuffer.size());
 				}
 				setUpStates->push(StateInfo());
 				pos.doMove(bmd.move, setUpStates->top());

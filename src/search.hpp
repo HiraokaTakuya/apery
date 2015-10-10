@@ -116,6 +116,11 @@ struct Searcher {
 	STATIC StateStackPtr setUpStates;
 	STATIC std::vector<RootMove> rootMoves;
 
+#if defined LEARN
+	STATIC Score alpha;
+	STATIC Score beta;
+#endif
+
 	STATIC size_t pvSize;
 	STATIC size_t pvIdx;
 	STATIC TimeManager timeManager;
