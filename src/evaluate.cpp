@@ -3,15 +3,11 @@
 #include "search.hpp"
 #include "thread.hpp"
 
-#if 0
-#define USE_EHASH
-#endif
-
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-s16 Evaluater::KPP[SquareNum][fe_end][fe_end];
-s32 Evaluater::KKP[SquareNum][SquareNum][fe_end];
-s32 Evaluater::KK[SquareNum][SquareNum];
+std::array<s16, 2> Evaluater::KPP[SquareNum][fe_end][fe_end];
+std::array<s32, 2> Evaluater::KKP[SquareNum][SquareNum][fe_end];
+std::array<s32, 2> Evaluater::KK[SquareNum][SquareNum];
 
 #if defined USE_K_FIX_OFFSET
 const s32 Evaluater::K_Fix_Offset[SquareNum] = {
@@ -58,11 +54,14 @@ namespace {
 		const int* list1 = pos.cplist1();
 
 		EvalSum sum;
-		sum[0] = Evaluater::KKP[sq_bk][sq_wk][index[0]];
+		sum[0][0] = Evaluater::KKP[sq_bk][sq_wk][index[0]][0];
+		sum[0][1] = Evaluater::KKP[sq_bk][sq_wk][index[0]][1];
 		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-		sum[1] = pkppb[list0[0]];
-		sum[2] = pkppw[list1[0]];
+		sum[1][0] = pkppb[list0[0]][0];
+		sum[1][1] = pkppb[list0[0]][1];
+		sum[2][0] = pkppw[list1[0]][0];
+		sum[2][1] = pkppw[list1[0]][1];
 		for (int i = 1; i < pos.nlist(); ++i) {
 			sum[1] += pkppb[list0[i]];
 			sum[2] += pkppw[list1[i]];
@@ -70,28 +69,28 @@ namespace {
 
 		return sum;
 	}
-	s32 doablack(const Position& pos, const int index[2]) {
+	std::array<s32, 2> doablack(const Position& pos, const int index[2]) {
 		const Square sq_bk = pos.kingSquare(Black);
 		const int* list0 = pos.cplist0();
 
 		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
-		s32 sum = pkppb[list0[0]];
+		std::array<s32, 2> sum = {{pkppb[list0[0]][0], pkppb[list0[0]][1]}};
 		for (int i = 1; i < pos.nlist(); ++i) {
-			sum += pkppb[list0[i]];
+			sum[0] += pkppb[list0[i]][0];
+			sum[1] += pkppb[list0[i]][1];
 		}
-
 		return sum;
 	}
-	s32 doawhite(const Position& pos, const int index[2]) {
+	std::array<s32, 2> doawhite(const Position& pos, const int index[2]) {
 		const Square sq_wk = pos.kingSquare(White);
 		const int* list1 = pos.cplist1();
 
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-		s32 sum = pkppw[list1[0]];
+		std::array<s32, 2> sum = {{pkppw[list1[0]][0], pkppw[list1[0]][1]}};
 		for (int i = 1; i < pos.nlist(); ++i) {
-			sum += pkppw[list1[i]];
+			sum[0] += pkppw[list1[i]][0];
+			sum[1] += pkppw[list1[i]][1];
 		}
-
 		return sum;
 	}
 
@@ -141,7 +140,7 @@ namespace {
 #if defined INANIWA_SHIFT
 		if (pos.csearcher()->inaniwaFlag != NotInaniwa) return false;
 #endif
-		if ((ss-1)->staticEvalRaw[0] == ScoreNotEvaluated)
+		if ((ss-1)->staticEvalRaw[0][0] == ScoreNotEvaluated)
 			return false;
 
 		const Move lastMove = (ss-1)->currentMove;
@@ -152,12 +151,13 @@ namespace {
 			const Square sq_bk = pos.kingSquare(Black);
 			const Square sq_wk = pos.kingSquare(White);
 			diff[0] = Evaluater::KK[sq_bk][sq_wk];
-			diff[0] += pos.material() * FVScale;
+			diff[0][0] += pos.material() * FVScale;
 			if (pos.turn() == Black) {
 				const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 				const int* list0 = pos.plist0();
 				const int* list1 = pos.plist1();
-				diff[2] = 0;
+				diff[2][0] = 0;
+				diff[2][1] = 0;
 				for (int i = 0; i < pos.nlist(); ++i) {
 					const int k0 = list0[i];
 					const int k1 = list1[i];
@@ -180,7 +180,8 @@ namespace {
 			else {
 				const auto* ppkppb = Evaluater::KPP[sq_bk         ];
 				const int* list0 = pos.plist0();
-				diff[1] = 0;
+				diff[1][0] = 0;
+				diff[1][1] = 0;
 				for (int i = 0; i < pos.nlist(); ++i) {
 					const int k0 = list0[i];
 					const auto* pkppb = ppkppb[k0];
@@ -231,7 +232,7 @@ namespace {
 			pos.plist0()[listIndex] = pos.cl().clistpair[0].newlist[0];
 			pos.plist1()[listIndex] = pos.cl().clistpair[0].newlist[1];
 
-			diff[0] += pos.materialDiff() * FVScale;
+			diff[0][0] += pos.materialDiff() * FVScale;
 
 			ss->staticEvalRaw = diff + (ss-1)->staticEvalRaw;
 		}
@@ -277,8 +278,8 @@ namespace {
 	void evaluateBody(Position& pos, SearchStack* ss) {
 		if (calcDifference(pos, ss)) {
 			assert([&] {
-					const auto score = ss->staticEvalRaw.sum();
-					return (evaluateUnUseDiff(pos) == (pos.turn() == Black ? score : -score));
+					const auto score = ss->staticEvalRaw.sum(pos.turn());
+					return (evaluateUnUseDiff(pos) == score);
 				}());
 			return;
 		}
@@ -295,7 +296,10 @@ namespace {
 		sum[0] = Evaluater::KK[sq_bk][sq_wk];
 		// loop 開始を i = 1 からにして、i = 0 の分のKKPを先に足す。
 		sum[0] += Evaluater::KKP[sq_bk][sq_wk][list0[0]];
-		sum[1] = sum[2] = 0;
+		sum[1][0] = 0;
+		sum[1][1] = 0;
+		sum[2][0] = 0;
+		sum[2][1] = 0;
 		for (int i = 1; i < pos.nlist(); ++i) {
 			const int k0 = list0[i];
 			const int k1 = list1[i];
@@ -310,13 +314,13 @@ namespace {
 			sum[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 		}
 
-		sum[0] += pos.material() * FVScale;
+		sum[0][0] += pos.material() * FVScale;
 #if defined INANIWA_SHIFT
-		sum[0] += inaniwaScore(pos);
+		sum[0][0] += inaniwaScore(pos);
 #endif
 		ss->staticEvalRaw = sum;
 
-		assert(evaluateUnUseDiff(pos) == (pos.turn() == Black ? sum.sum() : -sum.sum()));
+		assert(evaluateUnUseDiff(pos) == sum.sum(pos.turn()));
 	}
 }
 
@@ -362,7 +366,10 @@ Score evaluateUnUseDiff(const Position& pos) {
 
 	EvalSum score;
 	score[0] = Evaluater::KK[sq_bk][sq_wk];
-	score[1] = score[2] = 0;
+	score[1][0] = 0;
+	score[1][1] = 0;
+	score[2][0] = 0;
+	score[2][1] = 0;
 	for (int i = 0; i < nlist; ++i) {
 		const int k0 = list0[i];
 		const int k1 = list1[i];
@@ -377,26 +384,21 @@ Score evaluateUnUseDiff(const Position& pos) {
 		score[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 	}
 
-	score[0] += pos.material() * FVScale;
+	score[0][0] += pos.material() * FVScale;
 
 #if defined INANIWA_SHIFT
-	score[0] += inaniwaScore(pos);
+	score[0][0] += inaniwaScore(pos);
 #endif
 
-	auto ret = score.sum();
-	if (pos.turn() == White) {
-		ret = -ret;
-	}
-
-	return static_cast<Score>(ret);
+	return static_cast<Score>(score.sum(pos.turn()));
 }
 
 Score evaluate(Position& pos, SearchStack* ss) {
-	if (ss->staticEvalRaw[0] != ScoreNotEvaluated) {
+	if (ss->staticEvalRaw[0][0] != ScoreNotEvaluated) {
 		// null move の次の手の時のみ、ここに入る。
-		const Score score = static_cast<Score>(ss->staticEvalRaw.sum());
-		assert((pos.turn() == Black ? score : -score) == evaluateUnUseDiff(pos));
-		return (pos.turn() == Black ? score : -score) / FVScale;
+		const Score score = static_cast<Score>(ss->staticEvalRaw.sum(pos.turn()));
+		assert(score == evaluateUnUseDiff(pos));
+		return score / FVScale;
 	}
 
 #if defined USE_EHASH
@@ -416,5 +418,5 @@ Score evaluate(Position& pos, SearchStack* ss) {
 	entry.save(pos.getKey(), ss->staticEvalRaw);
 	*g_evalTable[keyExcludeTurn] = entry;
 #endif
-	return static_cast<Score>(pos.turn() == Black ? ss->staticEvalRaw.sum() : -ss->staticEvalRaw.sum()) / FVScale;
+	return static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) / FVScale;
 }

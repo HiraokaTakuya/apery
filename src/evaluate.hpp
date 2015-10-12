@@ -137,11 +137,25 @@ struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
 };
 extern KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
+template <typename Tl, typename Tr>
+inline std::array<Tl, 2> operator += (std::array<Tl, 2>& lhs, const std::array<Tr, 2>& rhs) {
+	lhs[0] += rhs[0];
+	lhs[1] += rhs[1];
+	return lhs;
+}
+template <typename Tl, typename Tr>
+inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<Tr, 2>& rhs) {
+	lhs[0] -= rhs[0];
+	lhs[1] -= rhs[1];
+	return lhs;
+}
+
 template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterBase {
 	static const int R_Mid = 8; // 相対位置の中心のindex
 	constexpr int MaxWeight() const { return 1 << 22; } // KPE自体が1/32の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚)
 														// 更に重みを下げる場合、MaxWeightを更に大きくしておく必要がある。
 														// なぜか clang で static const int MaxWeight を使っても Undefined symbols for architecture x86_64 と言われる。
+	constexpr int TurnWeight() const { return 8; }
 	// 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
 	// 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
 	// ただし、kkp に関する項目 (kkp, r_kkp_b, r_kkp_h) のみ、p は味方の駒として扱うので、k0 < k1 となるとは限らない。
@@ -795,11 +809,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
-struct Evaluater : public EvaluaterBase<s16, s32, s32> {
+struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, std::array<s32, 2> > {
 	// 探索時に参照する評価関数テーブル
-	static s16 KPP[SquareNum][fe_end][fe_end];
-	static s32 KKP[SquareNum][SquareNum][fe_end];
-	static s32 KK[SquareNum][SquareNum];
+	static std::array<s16, 2> KPP[SquareNum][fe_end][fe_end];
+	static std::array<s32, 2> KKP[SquareNum][SquareNum][fe_end];
+	static std::array<s32, 2> KK[SquareNum][SquareNum];
 #if defined USE_K_FIX_OFFSET
 	static const s32 K_Fix_Offset[SquareNum];
 #endif
@@ -955,10 +969,17 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 #define FOO(indices, oneArray, sum)										\
 		for (auto indexAndWeight : indices) {							\
 			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-			if (0 <= indexAndWeight.first) sum += static_cast<s64>(*oneArray( indexAndWeight.first)) * indexAndWeight.second; \
-			else                           sum -= static_cast<s64>(*oneArray(-indexAndWeight.first)) * indexAndWeight.second; \
+			if (0 <= indexAndWeight.first) {							\
+				sum[0] += static_cast<s64>((*oneArray( indexAndWeight.first))[0]) * indexAndWeight.second; \
+				sum[1] += static_cast<s64>((*oneArray( indexAndWeight.first))[1]) * indexAndWeight.second; \
+			}															\
+			else {														\
+				sum[0] -= static_cast<s64>((*oneArray(-indexAndWeight.first))[0]) * indexAndWeight.second; \
+				sum[1] += static_cast<s64>((*oneArray(-indexAndWeight.first))[1]) * indexAndWeight.second; \
+			}															\
 		}																\
-		sum /= MaxWeight();
+		sum[0] /= MaxWeight();											\
+		sum[1] /= MaxWeight() * TurnWeight();
 
 #if defined _OPENMP
 #pragma omp parallel
@@ -975,7 +996,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 				for (int i = 0; i < fe_end; ++i) {
 					for (int j = 0; j < fe_end; ++j) {
 						kppIndices(indices, static_cast<Square>(ksq), i, j);
-						s64 sum = 0;
+						std::array<s64, 2> sum = {{}};
 						FOO(indices, oneArrayKPP, sum);
 						KPP[ksq][i][j] += sum;
 					}
@@ -992,7 +1013,7 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
 					for (int i = 0; i < fe_end; ++i) {
 						kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
-						s64 sum = 0;
+						std::array<s64, 2> sum = {{}};
 						FOO(indices, oneArrayKKP, sum);
 						KKP[ksq0][ksq1][i] += sum;
 					}
@@ -1008,9 +1029,10 @@ struct Evaluater : public EvaluaterBase<s16, s32, s32> {
 				std::pair<ptrdiff_t, int> indices[KKIndicesMax];
 				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
 					kkIndices(indices, static_cast<Square>(ksq0), ksq1);
-					s64 sum = 0;
+					std::array<s64, 2> sum = {{}};
 					FOO(indices, oneArrayKK, sum);
-					KK[ksq0][ksq1] += sum / 2;
+					KK[ksq0][ksq1][0] += sum[0] / 2;
+					KK[ksq0][ksq1][1] += sum[1] / 2;
 #if defined USE_K_FIX_OFFSET
 					KK[ksq0][ksq1] += K_Fix_Offset[ksq0] - K_Fix_Offset[inverse(ksq1)];
 #endif
@@ -1029,18 +1051,28 @@ extern const int kppArray[31];
 extern const int kkpArray[15];
 extern const int kppHandArray[ColorNum][HandPieceNum];
 
-struct EvalSum : public std::array<s32, 3> {
-	s32 sum() const { return (*this)[0] + (*this)[1] - (*this)[2]; }
+struct EvalSum : public std::array<std::array<s32, 2>, 3> {
+	s32 sum(const Color c) const {
+		const s32 scoreBoard = (*this)[0][0] + (*this)[1][0] - (*this)[2][0];
+		const s32 scoreTurn  = (*this)[0][1] + (*this)[1][1] + (*this)[2][1];
+		return (c == Black ? scoreBoard : -scoreBoard) + scoreTurn;
+	}
 	EvalSum& operator += (const EvalSum& rhs) {
-		(*this)[0] += rhs[0];
-		(*this)[1] += rhs[1];
-		(*this)[2] += rhs[2];
+		(*this)[0][0] += rhs[0][0];
+		(*this)[0][1] += rhs[0][1];
+		(*this)[1][0] += rhs[1][0];
+		(*this)[1][1] += rhs[1][1];
+		(*this)[2][0] += rhs[2][0];
+		(*this)[2][1] += rhs[2][1];
 		return *this;
 	}
 	EvalSum& operator -= (const EvalSum& rhs) {
-		(*this)[0] -= rhs[0];
-		(*this)[1] -= rhs[1];
-		(*this)[2] -= rhs[2];
+		(*this)[0][0] -= rhs[0][0];
+		(*this)[0][1] -= rhs[0][1];
+		(*this)[1][0] -= rhs[1][0];
+		(*this)[1][1] -= rhs[1][1];
+		(*this)[2][0] -= rhs[2][0];
+		(*this)[2][1] -= rhs[2][1];
 		return *this;
 	}
 	EvalSum operator + (const EvalSum& rhs) const { return EvalSum(*this) += rhs; }
@@ -1050,6 +1082,7 @@ struct EvalSum : public std::array<s32, 3> {
 class Position;
 struct SearchStack;
 
+#if defined USE_EHASH
 const size_t EvaluateTableSize = 0x1000000; // 134MB
 //const size_t EvaluateTableSize = 0x80000000; // 17GB
 
@@ -1079,10 +1112,10 @@ struct EvaluateHashEntry {
 static_assert(sizeof(EvaluateHashEntry) == 16, "");
 
 struct EvaluateHashTable : HashTable<EvaluateHashEntry, EvaluateTableSize> {};
+extern EvaluateHashTable g_evalTable;
+#endif
 
 Score evaluateUnUseDiff(const Position& pos);
 Score evaluate(Position& pos, SearchStack* ss);
-
-extern EvaluateHashTable g_evalTable;
 
 #endif // #ifndef APERY_EVALUATE_HPP
