@@ -61,11 +61,11 @@ namespace {
 		sum[0] = Evaluater::KKP[sq_bk][sq_wk][index[0]];
 		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-		sum[1] =  pkppb[list0[0]];
-		sum[2] = -pkppw[list1[0]];
+		sum[1] = pkppb[list0[0]];
+		sum[2] = pkppw[list1[0]];
 		for (int i = 1; i < pos.nlist(); ++i) {
 			sum[1] += pkppb[list0[i]];
-			sum[2] -= pkppw[list1[i]];
+			sum[2] += pkppw[list1[i]];
 		}
 
 		return sum;
@@ -87,9 +87,9 @@ namespace {
 		const int* list1 = pos.cplist1();
 
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-		s32 sum = -pkppw[list1[0]];
+		s32 sum = pkppw[list1[0]];
 		for (int i = 1; i < pos.nlist(); ++i) {
-			sum -= pkppw[list1[i]];
+			sum += pkppw[list1[i]];
 		}
 
 		return sum;
@@ -164,7 +164,7 @@ namespace {
 					const auto* pkppw = ppkppw[k1];
 					for (int j = 0; j < i; ++j) {
 						const int l1 = list1[j];
-						diff[2] -= pkppw[l1];
+						diff[2] += pkppw[l1];
 					}
 					diff[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 				}
@@ -213,7 +213,7 @@ namespace {
 				assert(pos.cl().size == 2);
 				diff += doapc(pos, pos.cl().clistpair[1].newlist);
 				diff[1] -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
-				diff[2] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
+				diff[2] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
 				const int listIndex_cap = pos.cl().listindex[1];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
@@ -224,7 +224,7 @@ namespace {
 
 				diff -= doapc(pos, pos.cl().clistpair[1].oldlist);
 				diff[1] += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
-				diff[2] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
+				diff[2] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
 			}
@@ -305,7 +305,7 @@ namespace {
 				const int l0 = list0[j];
 				const int l1 = list1[j];
 				sum[1] += pkppb[l0];
-				sum[2] -= pkppw[l1];
+				sum[2] += pkppw[l1];
 			}
 			sum[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 		}
@@ -372,7 +372,7 @@ Score evaluateUnUseDiff(const Position& pos) {
 			const int l0 = list0[j];
 			const int l1 = list1[j];
 			score[1] += pkppb[l0];
-			score[2] -= pkppw[l1];
+			score[2] += pkppw[l1];
 		}
 		score[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 	}

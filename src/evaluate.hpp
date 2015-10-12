@@ -1030,7 +1030,7 @@ extern const int kkpArray[15];
 extern const int kppHandArray[ColorNum][HandPieceNum];
 
 struct EvalSum : public std::array<s32, 3> {
-	s32 sum() const { return (*this)[0] + (*this)[1] + (*this)[2]; }
+	s32 sum() const { return (*this)[0] + (*this)[1] - (*this)[2]; }
 	EvalSum& operator += (const EvalSum& rhs) {
 		(*this)[0] += rhs[0];
 		(*this)[1] += rhs[1];
