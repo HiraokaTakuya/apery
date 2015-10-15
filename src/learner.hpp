@@ -12,16 +12,16 @@
 #endif
 
 struct RawEvaluater {
-	float kpp_raw[SquareNum][fe_end][fe_end];
-	float kkp_raw[SquareNum][SquareNum][fe_end];
-	float kk_raw[SquareNum][SquareNum];
+	std::array<float, 2> kpp_raw[SquareNum][fe_end][fe_end];
+	std::array<float, 2> kkp_raw[SquareNum][SquareNum][fe_end];
+	std::array<float, 2> kk_raw[SquareNum][SquareNum];
 
-	void incParam(const Position& pos, const double dinc) {
+	void incParam(const Position& pos, const std::array<double, 2>& dinc) {
 		const Square sq_bk = pos.kingSquare(Black);
 		const Square sq_wk = pos.kingSquare(White);
 		const int* list0 = pos.cplist0();
 		const int* list1 = pos.cplist1();
-		const float f = dinc / FVScale; // same as Bonanza
+		const std::array<float, 2> f = {{static_cast<float>(dinc[0] / FVScale), static_cast<float>(dinc[1] / FVScale)}};
 
 		kk_raw[sq_bk][sq_wk] += f;
 		for (int i = 0; i < pos.nlist(); ++i) {
@@ -31,7 +31,8 @@ struct RawEvaluater {
 				const int l0 = list0[j];
 				const int l1 = list1[j];
 				kpp_raw[sq_bk         ][k0][l0] += f;
-				kpp_raw[inverse(sq_wk)][k1][l1] -= f;
+				kpp_raw[inverse(sq_wk)][k1][l1][0] -= f[0];
+				kpp_raw[inverse(sq_wk)][k1][l1][1] += f[1];
 			}
 			kkp_raw[sq_bk][sq_wk][k0] += f;
 		}
@@ -52,12 +53,18 @@ RawEvaluater& operator += (RawEvaluater& lhs, RawEvaluater& rhs) {
 }
 
 // kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
-inline void lowerDimension(EvaluaterBase<float, float, float>& base, const RawEvaluater& raw) {
+inline void lowerDimension(EvaluaterBase<std::array<float, 2>, std::array<float, 2>, std::array<float, 2> >& base, const RawEvaluater& raw) {
 #define FOO(indices, oneArray, sum)										\
 	for (auto indexAndWeight : indices) {								\
 		if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-		if (0 <= indexAndWeight.first) *oneArray( indexAndWeight.first) += sum * indexAndWeight.second / base.MaxWeight(); \
-		else                           *oneArray(-indexAndWeight.first) -= sum * indexAndWeight.second / base.MaxWeight(); \
+		if (0 <= indexAndWeight.first) {								\
+			(*oneArray( indexAndWeight.first))[0] += sum[0] * indexAndWeight.second / base.MaxWeight(); \
+			(*oneArray( indexAndWeight.first))[1] += sum[1] * indexAndWeight.second / base.MaxWeight(); \
+		}																\
+		else {															\
+			(*oneArray(-indexAndWeight.first))[0] -= sum[0] * indexAndWeight.second / base.MaxWeight(); \
+			(*oneArray(-indexAndWeight.first))[1] += sum[1] * indexAndWeight.second / base.MaxWeight(); \
+		}																\
 	}
 
 	// KPP
@@ -360,19 +367,21 @@ private:
 	}
 	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
 	template <bool UsePenalty, typename T>
-	void updateFV(T& v, float dv) {
+	void updateFV(std::array<T, 2>& v, std::array<float, 2> dv) {
 		const int step = count1s(mt64_() & updateMask_);
-		if (UsePenalty) {
-			if      (0 < v) dv -= static_cast<float>(FVPenalty());
-			else if (v < 0) dv += static_cast<float>(FVPenalty());
-		}
+		for (int i = 0; i < 2; ++i) {
+			if (UsePenalty) {
+				if      (0 < v[i]) dv[i] -= static_cast<float>(FVPenalty());
+				else if (v[i] < 0) dv[i] += static_cast<float>(FVPenalty());
+			}
 
-		// T が enum だと 0 になることがある。
-		// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
-		static_assert(std::numeric_limits<T>::max() != 0, "");
-		static_assert(std::numeric_limits<T>::min() != 0, "");
-		if      (0.0 <= dv && v <= std::numeric_limits<T>::max() - step) v += step;
-		else if (dv <= 0.0 && std::numeric_limits<T>::min() + step <= v) v -= step;
+			// T が enum だと 0 になることがある。
+			// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
+			static_assert(std::numeric_limits<T>::max() != 0, "");
+			static_assert(std::numeric_limits<T>::min() != 0, "");
+			if      (0.0 <= dv[i] && v[i] <= std::numeric_limits<T>::max() - step) v[i] += step;
+			else if (dv[i] <= 0.0 && std::numeric_limits<T>::min() + step <= v[i]) v[i] -= step;
+		}
 	}
 	template <bool UsePenalty>
 	void updateEval(const std::string& dirName) {
@@ -438,7 +447,7 @@ private:
 						pos.doMove(bmd.pvBuffer[recordPVIndex], setUpStates->top());
 					}
 					// evaluate() の差分計算を無効化する。
-					ss[0].staticEvalRaw[0] = ss[1].staticEvalRaw[0] = ScoreNotEvaluated;
+					ss[0].staticEvalRaw[0][0] = ss[1].staticEvalRaw[0][0] = ScoreNotEvaluated;
 					const Score recordScore = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
 #if defined PRINT_PV
 					std::cout << ", score: " << recordScore << std::endl;
@@ -447,7 +456,7 @@ private:
 						pos.undoMove(bmd.pvBuffer[jj]);
 					}
 
-					double sum_dT = 0.0;
+					std::array<double, 2> sum_dT = {{0.0, 0.0}};
 					for (int otherPVIndex = recordPVIndex + 1; otherPVIndex < static_cast<int>(bmd.pvBuffer.size()); ++otherPVIndex) {
 #if defined PRINT_PV
 						std::cout << "otherpv : ";
@@ -459,15 +468,18 @@ private:
 							setUpStates->push(StateInfo());
 							pos.doMove(bmd.pvBuffer[otherPVIndex], setUpStates->top());
 						}
-						ss[0].staticEvalRaw[0] = ss[1].staticEvalRaw[0] = ScoreNotEvaluated;
+						ss[0].staticEvalRaw[0][0] = ss[1].staticEvalRaw[0][0] = ScoreNotEvaluated;
 						const Score score = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
 						const auto diff = score - recordScore;
-						const double dT = (rootColor == Black ? dsigmoid(diff) : -dsigmoid(diff));
+						const double dsig = dsigmoid(diff);
+						std::array<double, 2> dT = {{(rootColor == Black ? dsig : -dsig), dsig}};
 #if defined PRINT_PV
-						std::cout << ", score: " << score << ", dT: " << dT << std::endl;
+						std::cout << ", score: " << score << ", dT: " << dT[0] << std::endl;
 #endif
 						sum_dT += dT;
-						parse2Data.params.incParam(pos, -dT);
+						dT[0] = -dT[0];
+						dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
+						parse2Data.params.incParam(pos, dT);
 						for (int jj = otherPVIndex - 1; !bmd.pvBuffer[jj].isNone(); --jj) {
 							pos.undoMove(bmd.pvBuffer[jj]);
 						}
@@ -477,6 +489,7 @@ private:
 						setUpStates->push(StateInfo());
 						pos.doMove(bmd.pvBuffer[jj], setUpStates->top());
 					}
+					sum_dT[1] = (pos.turn() == rootColor ? sum_dT[1] : -sum_dT[1]);
 					parse2Data.params.incParam(pos, sum_dT);
 					for (int jj = recordPVIndex - 1; 0 <= jj; --jj) {
 						pos.undoMove(bmd.pvBuffer[jj]);
@@ -518,7 +531,7 @@ private:
 		for (Rank r = Rank9; r < RankNum; ++r) {
 			for (File f = FileA; FileI <= f; --f) {
 				const Square sq = makeSquare(f, r);
-				printf("%5d", Evaluater::KPP[B2][f_gold + C2][f_gold + sq]);
+				printf("%5d", Evaluater::KPP[B2][f_gold + C2][f_gold + sq][0]);
 			}
 			printf("\n");
 		}
@@ -538,7 +551,7 @@ private:
 	std::vector<std::vector<BookMoveData> > bookMovesDatum_;
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
-	EvaluaterBase<float, float, float> parse2EvalBase_;
+	EvaluaterBase<std::array<float, 2>, std::array<float, 2>, std::array<float, 2> > parse2EvalBase_;
 	Evaluater eval_;
 	int stepNum_;
 	size_t gameNumForIteration_;
