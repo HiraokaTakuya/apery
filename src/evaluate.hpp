@@ -305,7 +305,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			ret[retIdx++] = std::make_pair(&kpps.ypp[krank][i][inverseFileIndexIfLefterThanMiddle(j)] - oneArrayKPP(0), MaxWeight());
 #endif
 
-#if defined EVAL_PASE1 || defined EVAL_PHASE3
+#if defined EVAL_PHASE1 || defined EVAL_PHASE3
 			const Color jcolor = pieceToColor(jpiece);
 			const PieceType jpt = pieceToPieceType(jpiece);
 			Bitboard jtoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(jpt, jcolor, jsq, setMaskBB(ksq)));
