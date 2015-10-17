@@ -315,6 +315,8 @@ private:
 						}
 						bmd.otherPVExist = (recordPVSize != bmd.pvBuffer.size());
 					}
+					else
+						bmd.recordIsNth = MaxLegalMoves;
 				}
 				setUpStates->push(StateInfo());
 				pos.doMove(bmd.move, setUpStates->top());
