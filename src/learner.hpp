@@ -151,6 +151,7 @@ public:
 		ssCmd >> updateMax;
 		ssCmd >> updateMin;
 		ssCmd >> usePenalty_;
+		std::cout << "\n"; // ファイルにログをリダイレクトしたとき、追記の場合はまずは改行した方が見易い。
 		if (updateMax < 0 || 64 < updateMax) {
 			updateMax = 64; // 乱数が 64 bit なので、bit count 方式だと 64 が上限。
 			std::cout << "you can set update_max [1, 64]" << std::endl;
