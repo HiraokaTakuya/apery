@@ -41,6 +41,23 @@ struct RawEvaluater {
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
+// float 型の atomic 加算
+inline float atomicAdd(std::atomic<float> &x, const float diff) {
+	float old = x.load(std::memory_order_consume);
+	float desired = old + diff;
+	while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
+		desired = old + diff;
+	return desired;
+}
+// float 型の atomic 減算
+inline float atomicSub(std::atomic<float> &x, const float diff) {
+	float old = x.load(std::memory_order_consume);
+	float desired = old - diff;
+	while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
+		desired = old - diff;
+	return desired;
+}
+
 RawEvaluater& operator += (RawEvaluater& lhs, RawEvaluater& rhs) {
 	for (auto lit = &(***std::begin(lhs.kpp_raw)), rit = &(***std::begin(rhs.kpp_raw)); lit != &(***std::end(lhs.kpp_raw)); ++lit, ++rit)
 		*lit += *rit;
@@ -53,27 +70,37 @@ RawEvaluater& operator += (RawEvaluater& lhs, RawEvaluater& rhs) {
 }
 
 // kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
-inline void lowerDimension(EvaluaterBase<std::array<float, 2>, std::array<float, 2>, std::array<float, 2> >& base, const RawEvaluater& raw) {
+inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
+										 std::array<std::atomic<float>, 2>,
+										 std::array<std::atomic<float>, 2> >& base, const RawEvaluater& raw)
+{
 #define FOO(indices, oneArray, sum)										\
 	for (auto indexAndWeight : indices) {								\
 		if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
 		if (0 <= indexAndWeight.first) {								\
-			(*oneArray( indexAndWeight.first))[0] += sum[0] * indexAndWeight.second / base.MaxWeight(); \
-			(*oneArray( indexAndWeight.first))[1] += sum[1] * indexAndWeight.second / base.MaxWeight(); \
+			atomicAdd((*oneArray( indexAndWeight.first))[0], sum[0] * indexAndWeight.second / base.MaxWeight()); \
+			atomicAdd((*oneArray( indexAndWeight.first))[1], sum[1] * indexAndWeight.second / base.MaxWeight()); \
 		}																\
 		else {															\
-			(*oneArray(-indexAndWeight.first))[0] -= sum[0] * indexAndWeight.second / base.MaxWeight(); \
-			(*oneArray(-indexAndWeight.first))[1] += sum[1] * indexAndWeight.second / base.MaxWeight(); \
+			atomicSub((*oneArray(-indexAndWeight.first))[0], sum[0] * indexAndWeight.second / base.MaxWeight()); \
+			atomicAdd((*oneArray(-indexAndWeight.first))[1], sum[1] * indexAndWeight.second / base.MaxWeight()); \
 		}																\
 	}
 
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+
 	// KPP
 	{
-		std::pair<ptrdiff_t, int> indices[base.KPPIndicesMax];
-		for (Square ksq = I9; ksq < SquareNum; ++ksq) {
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (int ksq = I9; ksq < SquareNum; ++ksq) {
+			std::pair<ptrdiff_t, int> indices[base.KPPIndicesMax];
 			for (int i = 0; i < fe_end; ++i) {
 				for (int j = 0; j < fe_end; ++j) {
-					base.kppIndices(indices, ksq, i, j);
+					base.kppIndices(indices, static_cast<Square>(ksq), i, j);
 					FOO(indices, base.oneArrayKPP, raw.kpp_raw[ksq][i][j]);
 				}
 			}
@@ -81,11 +108,14 @@ inline void lowerDimension(EvaluaterBase<std::array<float, 2>, std::array<float,
 	}
 	// KKP
 	{
-		std::pair<ptrdiff_t, int> indices[base.KKPIndicesMax];
-		for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (int ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+			std::pair<ptrdiff_t, int> indices[base.KKPIndicesMax];
 			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
 				for (int i = 0; i < fe_end; ++i) {
-					base.kkpIndices(indices, ksq0, ksq1, i);
+					base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
 					FOO(indices, base.oneArrayKKP, raw.kkp_raw[ksq0][ksq1][i]);
 				}
 			}
@@ -93,10 +123,13 @@ inline void lowerDimension(EvaluaterBase<std::array<float, 2>, std::array<float,
 	}
 	// KK
 	{
-		std::pair<ptrdiff_t, int> indices[base.KKIndicesMax];
-		for (Square ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (int ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+			std::pair<ptrdiff_t, int> indices[base.KKIndicesMax];
 			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
-				base.kkIndices(indices, ksq0, ksq1);
+				base.kkIndices(indices, static_cast<Square>(ksq0), ksq1);
 				FOO(indices, base.oneArrayKK, raw.kk_raw[ksq0][ksq1]);
 			}
 		}
@@ -350,7 +383,8 @@ private:
 	}
 	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
 	template <bool UsePenalty, typename T>
-	void updateFV(std::array<T, 2>& v, std::array<float, 2> dv) {
+	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& dvRef) {
+		std::array<float, 2> dv = {dvRef[0].load(), dvRef[1].load()};
 		const int step = count1s(mt64_() & updateMask_);
 		for (int i = 0; i < 2; ++i) {
 			if (UsePenalty) {
@@ -539,7 +573,9 @@ private:
 	std::atomic<s64> predictions_[PredSize];
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
-	EvaluaterBase<std::array<float, 2>, std::array<float, 2>, std::array<float, 2> > parse2EvalBase_;
+	EvaluaterBase<std::array<std::atomic<float>, 2>,
+				  std::array<std::atomic<float>, 2>,
+				  std::array<std::atomic<float>, 2> > parse2EvalBase_;
 	Evaluater eval_;
 	int stepNum_;
 	size_t gameNumForIteration_;
