@@ -126,7 +126,6 @@ struct BookMoveData {
 								// 間には MoveNone で区切りを入れる。
 
 	Move move; // 指し手
-	int recordIsNth; // 正解の手が何番目に良い手か。0から数える。
 	bool winner; // 勝ったかどうか
 	bool useLearning; // 学習に使うかどうか
 	bool otherPVExist; // 棋譜の手と近い点数の手があったか。useLearning == true のときだけ有効な値が入る
@@ -293,11 +292,11 @@ private:
 					pos.searcher()->beta  =  ScoreMaxEvaluate;
 					go(pos, dist(mt), bmd.move);
 					const Score recordScore = pos.searcher()->rootMoves[0].score_;
-					bmd.recordIsNth = MaxLegalMoves;
+					++moveCount_;
 					bmd.otherPVExist = false;
 					bmd.pvBuffer.clear();
 					if (abs(recordScore) < ScoreMaxEvaluate) {
-						bmd.recordIsNth = 0;
+						int recordIsNth = 0; // 正解の手が何番目に良い手か。0から数える。
 						auto& recordPv = pos.searcher()->rootMoves[0].pv_;
 						bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordPv), std::end(recordPv));
 						const auto recordPVSize = bmd.pvBuffer.size();
@@ -312,10 +311,12 @@ private:
 									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
 								}
 								if (recordScore < score)
-									++bmd.recordIsNth;
+									++recordIsNth;
 							}
 						}
 						bmd.otherPVExist = (recordPVSize != bmd.pvBuffer.size());
+						for (int i = recordIsNth; i < PredSize; ++i)
+							++predictions_[i];
 					}
 				}
 				setUpStates->push(StateInfo());
@@ -329,41 +330,21 @@ private:
 		std::shuffle(std::begin(bookMovesDatum_), std::end(bookMovesDatum_), mt_);
 		std::cout << "shuffle elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 		index_ = 0;
+		moveCount_.store(0);
+		for (auto& pred : predictions_)
+			pred.store(0);
 		std::vector<std::thread> threads(positions_.size());
 		for (size_t i = 0; i < positions_.size(); ++i)
 			threads[i] = std::thread([this, i] { learnParse1Body(positions_[i], mts_[i]); });
 		learnParse1Body(pos, mt_);
 		for (auto& thread : threads)
 			thread.join();
-		auto total_move = [this] {
-			u64 count = 0;
-			for (size_t i = 0; i < gameNumForIteration_; ++i) {
-				auto& bmds = bookMovesDatum_[i];
-				for (auto& bmd : bmds)
-					if (bmd.useLearning)
-						++count;
-			}
-			return count;
-		};
-		auto prediction = [this] (const int i) {
-			std::vector<u64> count(i, 0);
-			for (size_t ii = 0; ii < gameNumForIteration_; ++ii) {
-				auto& bmds = bookMovesDatum_[ii];
-				for (auto& bmd : bmds)
-					if (bmd.useLearning)
-						for (int j = 0; j < i; ++j)
-							if (bmd.recordIsNth <= j)
-								++count[j];
-			}
-			return count;
-		};
-		const auto total = total_move();
+
 		std::cout << "\nGames = " << bookMovesDatum_.size()
-				  << "\nTotal Moves = " << total
+				  << "\nTotal Moves = " << moveCount_
 				  << "\nPrediction = ";
-		const auto pred = prediction(8);
-		for (auto elem : pred)
-			std::cout << static_cast<double>(elem*100) / total << ", ";
+		for (auto& pred : predictions_)
+			std::cout << static_cast<double>(pred.load()*100) / moveCount_.load() << ", ";
 		std::cout << std::endl;
 		std::cout << "parse1 elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 	}
@@ -541,6 +522,9 @@ private:
 		fflush(stdout);
 	}
 
+	static const int PredSize = 8;
+	static const Score FVWindow = static_cast<Score>(256);
+
 	std::mutex mutex_;
 	size_t index_;
 	Ply minDepth_;
@@ -551,6 +535,8 @@ private:
 	std::vector<std::mt19937> mts_;
 	std::vector<Position> positions_;
 	std::vector<std::vector<BookMoveData> > bookMovesDatum_;
+	std::atomic<s64> moveCount_;
+	std::atomic<s64> predictions_[PredSize];
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
 	EvaluaterBase<std::array<float, 2>, std::array<float, 2>, std::array<float, 2> > parse2EvalBase_;
@@ -560,8 +546,6 @@ private:
 	u64 updateMaxMask_;
 	u64 updateMinMask_;
 	u64 updateMask_;
-
-	static const Score FVWindow = static_cast<Score>(256);
 };
 
 #endif

@@ -21,6 +21,7 @@
 #include <chrono>
 #include <array>
 #include <tuple>
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
