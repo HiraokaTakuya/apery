@@ -293,10 +293,11 @@ private:
 					pos.searcher()->beta  =  ScoreMaxEvaluate;
 					go(pos, dist(mt), bmd.move);
 					const Score recordScore = pos.searcher()->rootMoves[0].score_;
-					bmd.recordIsNth = 0;
+					bmd.recordIsNth = MaxLegalMoves;
 					bmd.otherPVExist = false;
 					bmd.pvBuffer.clear();
 					if (abs(recordScore) < ScoreMaxEvaluate) {
+						bmd.recordIsNth = 0;
 						auto& recordPv = pos.searcher()->rootMoves[0].pv_;
 						bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordPv), std::end(recordPv));
 						const auto recordPVSize = bmd.pvBuffer.size();
@@ -309,15 +310,13 @@ private:
 								if (pos.searcher()->alpha < score && score < pos.searcher()->beta) {
 									auto& pv = pos.searcher()->rootMoves[0].pv_;
 									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
-									if (recordScore < score)
-										++bmd.recordIsNth;
 								}
+								if (recordScore < score)
+									++bmd.recordIsNth;
 							}
 						}
 						bmd.otherPVExist = (recordPVSize != bmd.pvBuffer.size());
 					}
-					else
-						bmd.recordIsNth = MaxLegalMoves;
 				}
 				setUpStates->push(StateInfo());
 				pos.doMove(bmd.move, setUpStates->top());
