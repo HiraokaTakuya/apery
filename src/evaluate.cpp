@@ -54,17 +54,17 @@ namespace {
 		const int* list1 = pos.cplist1();
 
 		EvalSum sum;
-		sum[0][0] = Evaluater::KKP[sq_bk][sq_wk][index[0]][0];
-		sum[0][1] = Evaluater::KKP[sq_bk][sq_wk][index[0]][1];
+		sum.p[0][0] = Evaluater::KKP[sq_bk][sq_wk][index[0]][0];
+		sum.p[0][1] = Evaluater::KKP[sq_bk][sq_wk][index[0]][1];
 		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-		sum[1][0] = pkppb[list0[0]][0];
-		sum[1][1] = pkppb[list0[0]][1];
-		sum[2][0] = pkppw[list1[0]][0];
-		sum[2][1] = pkppw[list1[0]][1];
+		sum.p[1][0] = pkppb[list0[0]][0];
+		sum.p[1][1] = pkppb[list0[0]][1];
+		sum.p[2][0] = pkppw[list1[0]][0];
+		sum.p[2][1] = pkppw[list1[0]][1];
 		for (int i = 1; i < pos.nlist(); ++i) {
-			sum[1] += pkppb[list0[i]];
-			sum[2] += pkppw[list1[i]];
+			sum.p[1] += pkppb[list0[i]];
+			sum.p[2] += pkppw[list1[i]];
 		}
 
 		return sum;
@@ -140,7 +140,7 @@ namespace {
 #if defined INANIWA_SHIFT
 		if (pos.csearcher()->inaniwaFlag != NotInaniwa) return false;
 #endif
-		if ((ss-1)->staticEvalRaw[0][0] == ScoreNotEvaluated)
+		if ((ss-1)->staticEvalRaw.p[0][0] == ScoreNotEvaluated)
 			return false;
 
 		const Move lastMove = (ss-1)->currentMove;
@@ -150,53 +150,53 @@ namespace {
 			EvalSum diff = (ss-1)->staticEvalRaw; // 本当は diff ではないので名前が良くない。
 			const Square sq_bk = pos.kingSquare(Black);
 			const Square sq_wk = pos.kingSquare(White);
-			diff[0] = Evaluater::KK[sq_bk][sq_wk];
-			diff[0][0] += pos.material() * FVScale;
+			diff.p[0] = Evaluater::KK[sq_bk][sq_wk];
+			diff.p[0][0] += pos.material() * FVScale;
 			if (pos.turn() == Black) {
 				const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 				const int* list0 = pos.plist0();
 				const int* list1 = pos.plist1();
-				diff[2][0] = 0;
-				diff[2][1] = 0;
+				diff.p[2][0] = 0;
+				diff.p[2][1] = 0;
 				for (int i = 0; i < pos.nlist(); ++i) {
 					const int k0 = list0[i];
 					const int k1 = list1[i];
 					const auto* pkppw = ppkppw[k1];
 					for (int j = 0; j < i; ++j) {
 						const int l1 = list1[j];
-						diff[2] += pkppw[l1];
+						diff.p[2] += pkppw[l1];
 					}
-					diff[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
+					diff.p[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 				}
 
 				if (pos.cl().size == 2) {
 					const int listIndex_cap = pos.cl().listindex[1];
-					diff[1] += doablack(pos, pos.cl().clistpair[1].newlist);
+					diff.p[1] += doablack(pos, pos.cl().clistpair[1].newlist);
 					pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
-					diff[1] -= doablack(pos, pos.cl().clistpair[1].oldlist);
+					diff.p[1] -= doablack(pos, pos.cl().clistpair[1].oldlist);
 					pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
 				}
 			}
 			else {
 				const auto* ppkppb = Evaluater::KPP[sq_bk         ];
 				const int* list0 = pos.plist0();
-				diff[1][0] = 0;
-				diff[1][1] = 0;
+				diff.p[1][0] = 0;
+				diff.p[1][1] = 0;
 				for (int i = 0; i < pos.nlist(); ++i) {
 					const int k0 = list0[i];
 					const auto* pkppb = ppkppb[k0];
 					for (int j = 0; j < i; ++j) {
 						const int l0 = list0[j];
-						diff[1] += pkppb[l0];
+						diff.p[1] += pkppb[l0];
 					}
-					diff[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
+					diff.p[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 				}
 
 				if (pos.cl().size == 2) {
 					const int listIndex_cap = pos.cl().listindex[1];
-					diff[2] += doawhite(pos, pos.cl().clistpair[1].newlist);
+					diff.p[2] += doawhite(pos, pos.cl().clistpair[1].newlist);
 					pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
-					diff[2] -= doawhite(pos, pos.cl().clistpair[1].oldlist);
+					diff.p[2] -= doawhite(pos, pos.cl().clistpair[1].oldlist);
 					pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
 				}
 			}
@@ -213,8 +213,8 @@ namespace {
 			else {
 				assert(pos.cl().size == 2);
 				diff += doapc(pos, pos.cl().clistpair[1].newlist);
-				diff[1] -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
-				diff[2] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
+				diff.p[1] -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
+				diff.p[2] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
 				const int listIndex_cap = pos.cl().listindex[1];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
@@ -224,15 +224,15 @@ namespace {
 				diff -= doapc(pos, pos.cl().clistpair[0].oldlist);
 
 				diff -= doapc(pos, pos.cl().clistpair[1].oldlist);
-				diff[1] += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
-				diff[2] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
+				diff.p[1] += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
+				diff.p[2] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
 			}
 			pos.plist0()[listIndex] = pos.cl().clistpair[0].newlist[0];
 			pos.plist1()[listIndex] = pos.cl().clistpair[0].newlist[1];
 
-			diff[0][0] += pos.materialDiff() * FVScale;
+			diff.p[0][0] += pos.materialDiff() * FVScale;
 
 			ss->staticEvalRaw = diff + (ss-1)->staticEvalRaw;
 		}
@@ -289,13 +289,13 @@ namespace {
 		const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 
 		EvalSum sum;
-		sum[0] = Evaluater::KK[sq_bk][sq_wk];
+		sum.p[0] = Evaluater::KK[sq_bk][sq_wk];
 		// loop 開始を i = 1 からにして、i = 0 の分のKKPを先に足す。
-		sum[0] += Evaluater::KKP[sq_bk][sq_wk][list0[0]];
-		sum[1][0] = 0;
-		sum[1][1] = 0;
-		sum[2][0] = 0;
-		sum[2][1] = 0;
+		sum.p[0] += Evaluater::KKP[sq_bk][sq_wk][list0[0]];
+		sum.p[1][0] = 0;
+		sum.p[1][1] = 0;
+		sum.p[2][0] = 0;
+		sum.p[2][1] = 0;
 		for (int i = 1; i < pos.nlist(); ++i) {
 			const int k0 = list0[i];
 			const int k1 = list1[i];
@@ -304,15 +304,15 @@ namespace {
 			for (int j = 0; j < i; ++j) {
 				const int l0 = list0[j];
 				const int l1 = list1[j];
-				sum[1] += pkppb[l0];
-				sum[2] += pkppw[l1];
+				sum.p[1] += pkppb[l0];
+				sum.p[2] += pkppw[l1];
 			}
-			sum[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
+			sum.p[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 		}
 
-		sum[0][0] += pos.material() * FVScale;
+		sum.p[0][0] += pos.material() * FVScale;
 #if defined INANIWA_SHIFT
-		sum[0][0] += inaniwaScore(pos);
+		sum.p[0][0] += inaniwaScore(pos);
 #endif
 		ss->staticEvalRaw = sum;
 
@@ -360,11 +360,11 @@ Score evaluateUnUseDiff(const Position& pos) {
 	const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
 
 	EvalSum score;
-	score[0] = Evaluater::KK[sq_bk][sq_wk];
-	score[1][0] = 0;
-	score[1][1] = 0;
-	score[2][0] = 0;
-	score[2][1] = 0;
+	score.p[0] = Evaluater::KK[sq_bk][sq_wk];
+	score.p[1][0] = 0;
+	score.p[1][1] = 0;
+	score.p[2][0] = 0;
+	score.p[2][1] = 0;
 	for (int i = 0; i < nlist; ++i) {
 		const int k0 = list0[i];
 		const int k1 = list1[i];
@@ -373,23 +373,23 @@ Score evaluateUnUseDiff(const Position& pos) {
 		for (int j = 0; j < i; ++j) {
 			const int l0 = list0[j];
 			const int l1 = list1[j];
-			score[1] += pkppb[l0];
-			score[2] += pkppw[l1];
+			score.p[1] += pkppb[l0];
+			score.p[2] += pkppw[l1];
 		}
-		score[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
+		score.p[0] += Evaluater::KKP[sq_bk][sq_wk][k0];
 	}
 
-	score[0][0] += pos.material() * FVScale;
+	score.p[0][0] += pos.material() * FVScale;
 
 #if defined INANIWA_SHIFT
-	score[0][0] += inaniwaScore(pos);
+	score.p[0][0] += inaniwaScore(pos);
 #endif
 
 	return static_cast<Score>(score.sum(pos.turn()));
 }
 
 Score evaluate(Position& pos, SearchStack* ss) {
-	if (ss->staticEvalRaw[0][0] != ScoreNotEvaluated) {
+	if (ss->staticEvalRaw.p[0][0] != ScoreNotEvaluated) {
 		// null move の次の手の時のみ、ここに入る。
 		const Score score = static_cast<Score>(ss->staticEvalRaw.sum(pos.turn()));
 		assert(score == evaluateUnUseDiff(pos));

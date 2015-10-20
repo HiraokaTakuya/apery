@@ -1043,32 +1043,34 @@ extern const int kppArray[31];
 extern const int kkpArray[15];
 extern const int kppHandArray[ColorNum][HandPieceNum];
 
-struct EvalSum : public std::array<std::array<s32, 2>, 3> {
+union EvalSum {
 	s32 sum(const Color c) const {
-		const s32 scoreBoard = (*this)[0][0] + (*this)[1][0] - (*this)[2][0];
-		const s32 scoreTurn  = (*this)[0][1] + (*this)[1][1] + (*this)[2][1];
+		const s32 scoreBoard = p[0][0] + p[1][0] - p[2][0];
+		const s32 scoreTurn  = p[0][1] + p[1][1] + p[2][1];
 		return (c == Black ? scoreBoard : -scoreBoard) + scoreTurn;
 	}
 	EvalSum& operator += (const EvalSum& rhs) {
-		(*this)[0][0] += rhs[0][0];
-		(*this)[0][1] += rhs[0][1];
-		(*this)[1][0] += rhs[1][0];
-		(*this)[1][1] += rhs[1][1];
-		(*this)[2][0] += rhs[2][0];
-		(*this)[2][1] += rhs[2][1];
+		p[0][0] += rhs.p[0][0];
+		p[0][1] += rhs.p[0][1];
+		p[1][0] += rhs.p[1][0];
+		p[1][1] += rhs.p[1][1];
+		p[2][0] += rhs.p[2][0];
+		p[2][1] += rhs.p[2][1];
 		return *this;
 	}
 	EvalSum& operator -= (const EvalSum& rhs) {
-		(*this)[0][0] -= rhs[0][0];
-		(*this)[0][1] -= rhs[0][1];
-		(*this)[1][0] -= rhs[1][0];
-		(*this)[1][1] -= rhs[1][1];
-		(*this)[2][0] -= rhs[2][0];
-		(*this)[2][1] -= rhs[2][1];
+		p[0][0] -= rhs.p[0][0];
+		p[0][1] -= rhs.p[0][1];
+		p[1][0] -= rhs.p[1][0];
+		p[1][1] -= rhs.p[1][1];
+		p[2][0] -= rhs.p[2][0];
+		p[2][1] -= rhs.p[2][1];
 		return *this;
 	}
 	EvalSum operator + (const EvalSum& rhs) const { return EvalSum(*this) += rhs; }
 	EvalSum operator - (const EvalSum& rhs) const { return EvalSum(*this) -= rhs; }
+
+	std::array<std::array<s32, 2>, 4> p;
 };
 
 class Position;

@@ -450,7 +450,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 		ss->currentMove = move;
 
 		pos.doMove(move, st, ci, givesCheck);
-		(ss+1)->staticEvalRaw[0][0] = ScoreNotEvaluated;
+		(ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 		score = (givesCheck ? -qsearch<NT, true>(pos, ss+1, -beta, -alpha, depth - OnePly)
 				 : -qsearch<NT, false>(pos, ss+1, -beta, -alpha, depth - OnePly));
 		pos.undoMove(move);
@@ -590,13 +590,13 @@ void Searcher::idLoop(Position& pos) {
 			// fail high/low になったなら、今度は window 幅を広げて、再探索を行う。
 			while (true) {
 				// 探索を行う。
-				ss->staticEvalRaw[0][0] = (ss+1)->staticEvalRaw[0][0] = ScoreNotEvaluated;
+				ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 				bestScore = search<Root>(pos, ss + 1, alpha, beta, static_cast<Depth>(depth * OnePly), false);
 				// 先頭が最善手になるようにソート
 				insertionSort(rootMoves.begin() + pvIdx, rootMoves.end());
 
 				for (size_t i = 0; i <= pvIdx; ++i) {
-					ss->staticEvalRaw[0][0] = (ss+1)->staticEvalRaw[0][0] = ScoreNotEvaluated;
+					ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 					rootMoves[i].insertPvInTT(pos);
 				}
 
@@ -690,7 +690,7 @@ void Searcher::idLoop(Position& pos) {
 					|| timeManager.availableTime() * 40 / 100 < searchTimer.elapsed()))
 			{
 				const Score rBeta = bestScore - 2 * CapturePawnScore;
-				(ss+1)->staticEvalRaw[0][0] = ScoreNotEvaluated;
+				(ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 				(ss+1)->excludedMove = rootMoves[0].pv_[0];
 				(ss+1)->skipNullMove = true;
 				const Score s = search<NonPV>(pos, ss+1, rBeta-1, rBeta, (depth - 3) * OnePly, true);
@@ -1069,7 +1069,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 			if (pos.pseudoLegalMoveIsLegal<false, false>(move, ci.pinned)) {
 				ss->currentMove = move;
 				pos.doMove(move, st, ci, pos.moveGivesCheck(move, ci));
-				(ss+1)->staticEvalRaw[0][0] = ScoreNotEvaluated;
+				(ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 				score = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
 				pos.undoMove(move);
 				if (rbeta <= score) {
@@ -1247,7 +1247,7 @@ split_point_start:
 
 		// step14
 		pos.doMove(move, st, ci, givesCheck);
-		(ss+1)->staticEvalRaw[0][0] = ScoreNotEvaluated;
+		(ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 
 		// step15
 		// LMR
