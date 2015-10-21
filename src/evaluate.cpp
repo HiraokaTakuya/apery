@@ -241,36 +241,32 @@ namespace {
 	}
 
 	int make_list_unUseDiff(const Position& pos, int list0[EvalList::ListSize], int list1[EvalList::ListSize], int nlist) {
-		Square sq;
-		Bitboard bb;
-
-#define FOO(posBB, f_pt, e_pt)							\
-		bb = (posBB) & pos.bbOf(Black);					\
-		FOREACH_BB(bb, sq, {							\
-				list0[nlist] = (f_pt) + sq;				\
-				list1[nlist] = (e_pt) + inverse(sq);	\
-				nlist    += 1;							\
-			});											\
-														\
-		bb = (posBB) & pos.bbOf(White);					\
-		FOREACH_BB(bb, sq, {							\
-				list0[nlist] = (e_pt) + sq;				\
-				list1[nlist] = (f_pt) + inverse(sq);	\
-				nlist    += 1;							\
-			});
-
-		FOO(pos.bbOf(Pawn  ), f_pawn  , e_pawn  );
-		FOO(pos.bbOf(Lance ), f_lance , e_lance );
-		FOO(pos.bbOf(Knight), f_knight, e_knight);
-		FOO(pos.bbOf(Silver), f_silver, e_silver);
+		auto func = [&](const Bitboard& posBB, const int f_pt, const int e_pt) {
+			Square sq;
+			Bitboard bb;
+			bb = (posBB) & pos.bbOf(Black);
+			FOREACH_BB(bb, sq, {
+					list0[nlist] = (f_pt) + sq;
+					list1[nlist] = (e_pt) + inverse(sq);
+					nlist    += 1;
+				});
+			bb = (posBB) & pos.bbOf(White);
+			FOREACH_BB(bb, sq, {
+					list0[nlist] = (e_pt) + sq;
+					list1[nlist] = (f_pt) + inverse(sq);
+					nlist    += 1;
+				});
+		};
+		func(pos.bbOf(Pawn  ), f_pawn  , e_pawn  );
+		func(pos.bbOf(Lance ), f_lance , e_lance );
+		func(pos.bbOf(Knight), f_knight, e_knight);
+		func(pos.bbOf(Silver), f_silver, e_silver);
 		const Bitboard goldsBB = pos.goldsBB();
-		FOO(goldsBB         , f_gold  , e_gold  );
-		FOO(pos.bbOf(Bishop), f_bishop, e_bishop);
-		FOO(pos.bbOf(Horse ), f_horse , e_horse );
-		FOO(pos.bbOf(Rook  ), f_rook  , e_rook  );
-		FOO(pos.bbOf(Dragon), f_dragon, e_dragon);
-
-#undef FOO
+		func(goldsBB         , f_gold  , e_gold  );
+		func(pos.bbOf(Bishop), f_bishop, e_bishop);
+		func(pos.bbOf(Horse ), f_horse , e_horse );
+		func(pos.bbOf(Rook  ), f_rook  , e_rook  );
+		func(pos.bbOf(Dragon), f_dragon, e_dragon);
 
 		return nlist;
 	}
@@ -336,28 +332,27 @@ Score evaluateUnUseDiff(const Position& pos) {
 	const Square sq_wk = pos.kingSquare(White);
 	int nlist = 0;
 
-#define FOO(hand, HP, list0_index, list1_index)		\
-	for (u32 i = 1; i <= hand.numOf<HP>(); ++i) {	\
-		list0[nlist] = list0_index + i;				\
-		list1[nlist] = list1_index + i;				\
-		++nlist;									\
-	}
-
-	FOO(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
-	FOO(handW, HPawn  , e_hand_pawn  , f_hand_pawn  );
-	FOO(handB, HLance , f_hand_lance , e_hand_lance );
-	FOO(handW, HLance , e_hand_lance , f_hand_lance );
-	FOO(handB, HKnight, f_hand_knight, e_hand_knight);
-	FOO(handW, HKnight, e_hand_knight, f_hand_knight);
-	FOO(handB, HSilver, f_hand_silver, e_hand_silver);
-	FOO(handW, HSilver, e_hand_silver, f_hand_silver);
-	FOO(handB, HGold  , f_hand_gold  , e_hand_gold  );
-	FOO(handW, HGold  , e_hand_gold  , f_hand_gold  );
-	FOO(handB, HBishop, f_hand_bishop, e_hand_bishop);
-	FOO(handW, HBishop, e_hand_bishop, f_hand_bishop);
-	FOO(handB, HRook  , f_hand_rook  , e_hand_rook  );
-	FOO(handW, HRook  , e_hand_rook  , f_hand_rook  );
-#undef FOO
+	auto func = [&](const Hand hand, const HandPiece hp, const int list0_index, const int list1_index) {
+		for (u32 i = 1; i <= hand.numOf(hp); ++i) {
+			list0[nlist] = list0_index + i;
+			list1[nlist] = list1_index + i;
+			++nlist;
+		}
+	};
+	func(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
+	func(handW, HPawn  , e_hand_pawn  , f_hand_pawn  );
+	func(handB, HLance , f_hand_lance , e_hand_lance );
+	func(handW, HLance , e_hand_lance , f_hand_lance );
+	func(handB, HKnight, f_hand_knight, e_hand_knight);
+	func(handW, HKnight, e_hand_knight, f_hand_knight);
+	func(handB, HSilver, f_hand_silver, e_hand_silver);
+	func(handW, HSilver, e_hand_silver, f_hand_silver);
+	func(handB, HGold  , f_hand_gold  , e_hand_gold  );
+	func(handW, HGold  , e_hand_gold  , f_hand_gold  );
+	func(handB, HBishop, f_hand_bishop, e_hand_bishop);
+	func(handW, HBishop, e_hand_bishop, f_hand_bishop);
+	func(handB, HRook  , f_hand_rook  , e_hand_rook  );
+	func(handW, HRook  , e_hand_rook  , f_hand_rook  );
 
 	nlist = make_list_unUseDiff(pos, list0, list1, nlist);
 

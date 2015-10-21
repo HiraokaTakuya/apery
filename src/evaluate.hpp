@@ -924,12 +924,6 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 		FOO(kpps.ypp);								\
 		FOO(kkps.kkp);								\
 	}
-#define ALL_BASE_EVAL {							\
-		BASE_PHASE1;							\
-		BASE_PHASE2;							\
-		BASE_PHASE3;							\
-		BASE_PHASE4;							\
-	}
 #define READ_BASE_EVAL {						\
 		BASE_PHASE1;							\
 		BASE_PHASE2;							\
@@ -942,7 +936,6 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 		BASE_PHASE3;							\
 		BASE_PHASE4;							\
 	}
-#undef ALL_BASE_EVAL
 	void read(const std::string& dirName) {
 #define FOO(x) {														\
 			std::ifstream ifs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
@@ -959,7 +952,6 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 		WRITE_BASE_EVAL;
 #undef FOO
 	}
-#undef ALL_BASE_EVAL
 #undef READ_BASE_EVAL
 #undef WRITE_BASE_EVAL
 	void setEvaluate() {
