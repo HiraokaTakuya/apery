@@ -26,6 +26,10 @@
 #define STATIC
 #endif
 
+#if 1
+#define USE_SSE_EVAL
+#endif
+
 #if 0
 #define USE_EHASH
 #endif
