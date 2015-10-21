@@ -1045,7 +1045,7 @@ extern const int kppHandArray[ColorNum][HandPieceNum];
 
 union EvalSum {
 	s32 sum(const Color c) const {
-		const s32 scoreBoard = p[0][0] + p[1][0] - p[2][0];
+		const s32 scoreBoard = p[0][0] - p[1][0] + p[2][0];
 		const s32 scoreTurn  = p[0][1] + p[1][1] + p[2][1];
 		return (c == Black ? scoreBoard : -scoreBoard) + scoreTurn;
 	}
