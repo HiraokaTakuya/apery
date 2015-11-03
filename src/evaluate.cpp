@@ -165,19 +165,18 @@ namespace {
 			diff.p[2][0] += pos.material() * FVScale;
 			if (pos.turn() == Black) {
 				const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
-				const int* list0 = pos.plist0();
 				const int* list1 = pos.plist1();
 				diff.p[1][0] = 0;
 				diff.p[1][1] = 0;
 				for (int i = 0; i < pos.nlist(); ++i) {
-					const int k0 = list0[i];
 					const int k1 = list1[i];
 					const auto* pkppw = ppkppw[k1];
 					for (int j = 0; j < i; ++j) {
 						const int l1 = list1[j];
 						diff.p[1] += pkppw[l1];
 					}
-					diff.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
+					diff.p[2][0] -= Evaluater::KKP[inverse(sq_wk)][inverse(sq_bk)][k1][0];
+					diff.p[2][1] += Evaluater::KKP[inverse(sq_wk)][inverse(sq_bk)][k1][1];
 				}
 
 				if (pos.cl().size == 2) {
