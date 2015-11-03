@@ -1044,7 +1044,15 @@ extern const int kkpArray[15];
 extern const int kppHandArray[ColorNum][HandPieceNum];
 
 struct EvalSum {
-#if defined USE_SSE_EVAL
+#if defined USE_AVX2_EVAL
+	EvalSum(const EvalSum& es) {
+		_mm256_store_si256(&mm, es.mm);
+	}
+	EvalSum& operator = (const EvalSum& rhs) {
+		_mm256_store_si256(&mm, es.mm);
+		return *this;
+	}
+#elif defined USE_SSE_EVAL
 	EvalSum(const EvalSum& es) {
 		_mm_store_si128(&m[0], es.m[0]);
 		_mm_store_si128(&m[1], es.m[1]);
@@ -1062,7 +1070,9 @@ struct EvalSum {
 		return (c == Black ? scoreBoard : -scoreBoard) + scoreTurn;
 	}
 	EvalSum& operator += (const EvalSum& rhs) {
-#if defined USE_SSE_EVAL
+#if defined USE_AVX2_EVAL
+		mm = _mm256_add_epi32(mm, rhs.mm);
+#elif defined USE_SSE_EVAL
 		m[0] = _mm_add_epi32(m[0], rhs.m[0]);
 		m[1] = _mm_add_epi32(m[1], rhs.m[1]);
 #else
@@ -1076,7 +1086,9 @@ struct EvalSum {
 		return *this;
 	}
 	EvalSum& operator -= (const EvalSum& rhs) {
-#if defined USE_SSE_EVAL
+#if defined USE_AVX2_EVAL
+		mm = _mm256_sub_epi32(mm, rhs.mm);
+#elif defined USE_SSE_EVAL
 		m[0] = _mm_sub_epi32(m[0], rhs.m[0]);
 		m[1] = _mm_sub_epi32(m[1], rhs.m[1]);
 #else
@@ -1093,8 +1105,11 @@ struct EvalSum {
 	EvalSum operator - (const EvalSum& rhs) const { return EvalSum(*this) -= rhs; }
 
 	union {
-		std::array<std::array<s32, 2>, 4> p;
-#if defined USE_SSE_EVAL
+		std::array<std::array<s32, 2>, 3> p;
+#if defined USE_AVX2_EVAL
+		std::array<std::array<s16, 4>, 4> p16;
+		__m256i mm;
+#elif defined USE_AVX2_EVAL || defined USE_SSE_EVAL
 		std::array<std::array<s16, 4>, 4> p16;
 		__m128i m[2];
 #endif

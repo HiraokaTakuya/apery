@@ -27,7 +27,12 @@
 #endif
 
 #if 1
+// 評価関数の SIMD 化
+#if defined HAVE_AVX2_EVAL
+#define USE_AVX2_EVAL
+#elif defined HAVE_SSE4
 #define USE_SSE_EVAL
+#endif
 #endif
 
 #if 0

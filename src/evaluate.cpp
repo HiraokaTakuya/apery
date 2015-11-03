@@ -58,7 +58,7 @@ namespace {
 		sum.p[2][1] = Evaluater::KKP[sq_bk][sq_wk][index[0]][1];
 		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
 		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
-#if defined USE_SSE_EVAL
+#if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
 		sum.m[0] = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[list1[0]][0]), *reinterpret_cast<const s32*>(&pkppb[list0[0]][0]));
 		sum.m[0] = _mm_cvtepi16_epi32(sum.m[0]);
 		for (int i = 1; i < pos.nlist(); ++i) {
@@ -301,6 +301,24 @@ namespace {
 
 		EvalSum sum;
 		sum.p[2] = Evaluater::KK[sq_bk][sq_wk];
+#if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
+		sum.m[0] = _mm_setzero_si128();
+		for (int i = 0; i < pos.nlist(); ++i) {
+			const int k0 = list0[i];
+			const int k1 = list1[i];
+			const auto* pkppb = ppkppb[k0];
+			const auto* pkppw = ppkppw[k1];
+			for (int j = 0; j < i; ++j) {
+				const int l0 = list0[j];
+				const int l1 = list1[j];
+				__m128i tmp;
+				tmp = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[l1][0]), *reinterpret_cast<const s32*>(&pkppb[l0][0]));
+				tmp = _mm_cvtepi16_epi32(tmp);
+				sum.m[0] = _mm_add_epi32(sum.m[0], tmp);
+			}
+			sum.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
+		}
+#else
 		// loop 開始を i = 1 からにして、i = 0 の分のKKPを先に足す。
 		sum.p[2] += Evaluater::KKP[sq_bk][sq_wk][list0[0]];
 		sum.p[0][0] = 0;
@@ -320,6 +338,7 @@ namespace {
 			}
 			sum.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
 		}
+#endif
 
 		sum.p[2][0] += pos.material() * FVScale;
 #if defined INANIWA_SHIFT
@@ -372,24 +391,7 @@ Score evaluateUnUseDiff(const Position& pos) {
 
 	EvalSum score;
 	score.p[2] = Evaluater::KK[sq_bk][sq_wk];
-#if defined USE_SSE_EVAL
-	score.m[0] = _mm_setzero_si128();
-	for (int i = 0; i < nlist; ++i) {
-		const int k0 = list0[i];
-		const int k1 = list1[i];
-		const auto* pkppb = ppkppb[k0];
-		const auto* pkppw = ppkppw[k1];
-		for (int j = 0; j < i; ++j) {
-			const int l0 = list0[j];
-			const int l1 = list1[j];
-			__m128i tmp;
-			tmp = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[l1][0]), *reinterpret_cast<const s32*>(&pkppb[l0][0]));
-			tmp = _mm_cvtepi16_epi32(tmp);
-			score.m[0] = _mm_add_epi32(score.m[0], tmp);
-		}
-		score.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
-	}
-#else
+
 	score.p[0][0] = 0;
 	score.p[0][1] = 0;
 	score.p[1][0] = 0;
@@ -407,7 +409,6 @@ Score evaluateUnUseDiff(const Position& pos) {
 		}
 		score.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
 	}
-#endif
 
 	score.p[2][0] += pos.material() * FVScale;
 
