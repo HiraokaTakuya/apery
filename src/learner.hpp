@@ -170,10 +170,14 @@ public:
 		eval_.init(pos.searcher()->options["Eval_Dir"], false);
 		s64 gameNum;
 		std::string recordFileName;
+		std::string blackRecordFileName;
+		std::string whiteRecordFileName;
 		size_t threadNum;
 		s64 updateMax;
 		s64 updateMin;
 		ssCmd >> recordFileName;
+		ssCmd >> blackRecordFileName;
+		ssCmd >> whiteRecordFileName;
 		ssCmd >> gameNum;
 		ssCmd >> threadNum;
 		ssCmd >> minDepth_;
@@ -193,6 +197,8 @@ public:
 			std::cout << "you can set update_min [1, update_max]" << std::endl;
 		}
 		std::cout << "record_file: " << recordFileName
+				  << "\nblack record_file: " << blackRecordFileName
+				  << "\nwhite record_file: " << whiteRecordFileName
 				  << "\nread games: " << (gameNum == 0 ? "all" : std::to_string(gameNum))
 				  << "\nthread_num: " << threadNum
 				  << "\nsearch_depth min, max: " << minDepth_ << ", " << maxDepth_
@@ -205,7 +211,7 @@ public:
 		updateMaxMask_ = (UINT64_C(1) << updateMax) - 1;
 		updateMinMask_ = (UINT64_C(1) << updateMin) - 1;
 		setUpdateMask(stepNum_);
-		readBook(pos, recordFileName, gameNum);
+		readBook(pos, recordFileName, blackRecordFileName, whiteRecordFileName, gameNum);
 		// 既に 1 つのSearcher, Positionが立ち上がっているので、指定した数 - 1 の Searcher, Position を立ち上げる。
 		threadNum = std::max<size_t>(0, threadNum - 1);
 		std::vector<Searcher> searchers(threadNum);
@@ -232,7 +238,9 @@ public:
 private:
 	// 学習に使う棋譜から、手と手に対する補助的な情報を付けでデータ保持する。
 	// 50000局程度に対して10秒程度で終わるからシングルコアで良い。
-	void setLearnMoves(Position& pos, std::set<std::pair<Key, Move> >& dict, std::string& s0, std::string& s1) {
+	void setLearnMoves(Position& pos, std::set<std::pair<Key, Move> >& dict, std::string& s0, std::string& s1,
+					   const std::array<bool, ColorNum>& useTurnMove)
+	{
 		bookMovesDatum_.push_back(std::vector<BookMoveData>());
 		BookMoveData bmdBase[ColorNum];
 		bmdBase[Black].move = bmdBase[White].move = Move::moveNone();
@@ -258,7 +266,7 @@ private:
 				break;
 			BookMoveData bmd = bmdBase[pos.turn()];
 			bmd.move = move;
-			if (dict.find(std::make_pair(pos.getKey(), move)) == std::end(dict)) {
+			if (useTurnMove[pos.turn()] && dict.find(std::make_pair(pos.getKey(), move)) == std::end(dict)) {
 				// この局面かつこの指し手は初めて見るので、学習に使う。
 				bmd.useLearning = true;
 				dict.insert(std::make_pair(pos.getKey(), move));
@@ -273,13 +281,15 @@ private:
 			pos.doMove(move, setUpStates->top());
 		}
 	}
-	void readBook(Position& pos, const std::string& recordFileName, const s64 gameNum) {
-		std::ifstream ifs(recordFileName.c_str(), std::ios::binary);
+	void readBookBody(std::set<std::pair<Key, Move> >& dict, Position& pos, const std::string& record, const std::array<bool, ColorNum>& useTurnMove, const s64 gameNum)
+	{
+		if (record == "-") // "-" なら棋譜ファイルを読み込まない。
+			return;
+		std::ifstream ifs(record.c_str(), std::ios::binary);
 		if (!ifs) {
-			std::cout << "I cannot read " << recordFileName << std::endl;
+			std::cout << "I cannot read " << record << std::endl;
 			exit(EXIT_FAILURE);
 		}
-		std::set<std::pair<Key, Move> > dict;
 		std::string s0;
 		std::string s1;
 		// 0 なら全部の棋譜を読む
@@ -288,9 +298,19 @@ private:
 			std::getline(ifs, s0);
 			std::getline(ifs, s1);
 			if (!ifs) break;
-			setLearnMoves(pos, dict, s0, s1);
+			setLearnMoves(pos, dict, s0, s1, useTurnMove);
 		}
 		std::cout << "games existed: " << bookMovesDatum_.size() << std::endl;
+	}
+	void readBook(Position& pos,
+				  const std::string& recordFileName,
+				  const std::string& blackRecordFileName,
+				  const std::string& whiteRecordFileName, const s64 gameNum)
+	{
+		std::set<std::pair<Key, Move> > dict;
+		readBookBody(dict, pos,      recordFileName, {true , true }, gameNum);
+		readBookBody(dict, pos, blackRecordFileName, {true , false}, gameNum);
+		readBookBody(dict, pos, whiteRecordFileName, {false, true }, gameNum);
 		gameNumForIteration_ = std::min(gameNumForIteration_, bookMovesDatum_.size());
 	}
 	void setLearnOptions(Searcher& s) {
