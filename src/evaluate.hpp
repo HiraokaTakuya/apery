@@ -1049,7 +1049,7 @@ struct EvalSum {
 		_mm256_store_si256(&mm, es.mm);
 	}
 	EvalSum& operator = (const EvalSum& rhs) {
-		_mm256_store_si256(&mm, es.mm);
+		_mm256_store_si256(&mm, rhs.mm);
 		return *this;
 	}
 #elif defined USE_SSE_EVAL

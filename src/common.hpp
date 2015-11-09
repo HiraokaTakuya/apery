@@ -249,14 +249,14 @@ using Key = u64;
 // Size は 2のべき乗であること。
 template <typename T, size_t Size>
 struct HashTable {
-	HashTable() : entries_(Size, T()) {}
+	HashTable() { clear(); }
 	T* operator [] (const Key k) { return &entries_[static_cast<size_t>(k) & (Size-1)]; }
-	void clear() { std::fill(std::begin(entries_), std::end(entries_), T()); }
+	void clear() { memset(entries_, 0, sizeof(entries_)); }
 	// Size が 2のべき乗であることのチェック
 	static_assert((Size & (Size-1)) == 0, "");
 
 private:
-	std::vector<T> entries_;
+	T entries_[Size];
 };
 
 // ミリ秒単位の時間を表すクラス
