@@ -26,7 +26,7 @@
 #define STATIC
 #endif
 
-#if 0
+#if 1
 // 評価関数の SIMD 化
 #if defined HAVE_AVX2_EVAL
 #define USE_AVX2_EVAL
