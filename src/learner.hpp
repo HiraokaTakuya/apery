@@ -8,7 +8,9 @@
 #if defined LEARN
 
 #if 0
-#define PRINT_PV
+#define PRINT_PV(x) x
+#else
+#define PRINT_PV(x)
 #endif
 
 struct RawEvaluater {
@@ -467,41 +469,29 @@ private:
 			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
 			auto& gameMoves = bookMovesDatum_[i];
 			for (auto& bmd : gameMoves) {
-#if defined PRINT_PV
-				pos.print();
-#endif
+				PRINT_PV(pos.print());
 				if (bmd.useLearning && bmd.otherPVExist) {
 					const Color rootColor = pos.turn();
 					int recordPVIndex = 0;
-#if defined PRINT_PV
-					std::cout << "recordpv: ";
-#endif
+					PRINT_PV(std::cout << "recordpv: ");
 					for (; !bmd.pvBuffer[recordPVIndex].isNone(); ++recordPVIndex) {
-#if defined PRINT_PV
-						std::cout << bmd.pvBuffer[recordPVIndex].toCSA();
-#endif
+						PRINT_PV(std::cout << bmd.pvBuffer[recordPVIndex].toCSA());
 						setUpStates->push(StateInfo());
 						pos.doMove(bmd.pvBuffer[recordPVIndex], setUpStates->top());
 					}
 					// evaluate() の差分計算を無効化する。
 					ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 					const Score recordScore = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
-#if defined PRINT_PV
-					std::cout << ", score: " << recordScore << std::endl;
-#endif
+					PRINT_PV(std::cout << ", score: " << recordScore << std::endl);
 					for (int jj = recordPVIndex - 1; 0 <= jj; --jj) {
 						pos.undoMove(bmd.pvBuffer[jj]);
 					}
 
 					std::array<double, 2> sum_dT = {{0.0, 0.0}};
 					for (int otherPVIndex = recordPVIndex + 1; otherPVIndex < static_cast<int>(bmd.pvBuffer.size()); ++otherPVIndex) {
-#if defined PRINT_PV
-						std::cout << "otherpv : ";
-#endif
+						PRINT_PV(std::cout << "otherpv : ");
 						for (; !bmd.pvBuffer[otherPVIndex].isNone(); ++otherPVIndex) {
-#if defined PRINT_PV
-							std::cout << bmd.pvBuffer[otherPVIndex].toCSA();
-#endif
+							PRINT_PV(std::cout << bmd.pvBuffer[otherPVIndex].toCSA());
 							setUpStates->push(StateInfo());
 							pos.doMove(bmd.pvBuffer[otherPVIndex], setUpStates->top());
 						}
@@ -510,9 +500,7 @@ private:
 						const auto diff = score - recordScore;
 						const double dsig = dsigmoid(diff);
 						std::array<double, 2> dT = {{(rootColor == Black ? dsig : -dsig), dsig}};
-#if defined PRINT_PV
-						std::cout << ", score: " << score << ", dT: " << dT[0] << std::endl;
-#endif
+						PRINT_PV(std::cout << ", score: " << score << ", dT: " << dT[0] << std::endl);
 						sum_dT += dT;
 						dT[0] = -dT[0];
 						dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
