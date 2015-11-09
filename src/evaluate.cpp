@@ -420,28 +420,25 @@ Score evaluateUnUseDiff(const Position& pos) {
 
 Score evaluate(Position& pos, SearchStack* ss) {
 	if (ss->staticEvalRaw.p[0][0] != ScoreNotEvaluated) {
-		// null move の次の手の時のみ、ここに入る。
 		const Score score = static_cast<Score>(ss->staticEvalRaw.sum(pos.turn()));
 		assert(score == evaluateUnUseDiff(pos));
 		return score / FVScale;
 	}
 
 #if defined USE_EHASH
-	const u32 keyHigh32 = static_cast<u32>(pos.getKey() >> 32);
 	const Key keyExcludeTurn = pos.getKeyExcludeTurn();
-	// ポインタで取得してはいけない。lockless hash なので key と score を同時に取得する。
-	EvaluateHashEntry entry = *g_evalTable[keyExcludeTurn];
-	if (entry.key == keyHigh32) {
-		ss->staticEvalRaw = entry.evalSum;
-		assert((pos.turn() == Black ? ss->staticEvalRaw.sum() : -ss->staticEvalRaw.sum()) == evaluateUnUseDiff(pos));
-		return static_cast<Score>(pos.turn() == Black ? entry.evalSum.sum() : -entry.evalSum.sum()) / FVScale;
+	EvaluateHashEntry entry = *g_evalTable[keyExcludeTurn]; // atomic にデータを取得する必要がある。
+	if (entry.p64[3] == keyExcludeTurn) {
+		ss->staticEvalRaw = entry;
+		assert(static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) == evaluateUnUseDiff(pos));
+		return static_cast<Score>(entry.sum(pos.turn())) / FVScale;
 	}
 #endif
 
 	evaluateBody(pos, ss);
 #if defined USE_EHASH
-	entry.save(pos.getKey(), ss->staticEvalRaw);
-	*g_evalTable[keyExcludeTurn] = entry;
+	ss->staticEvalRaw.p64[3] = keyExcludeTurn;
+	*g_evalTable[keyExcludeTurn] = ss->staticEvalRaw;
 #endif
 	return static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) / FVScale;
 }

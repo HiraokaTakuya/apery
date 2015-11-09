@@ -1106,11 +1106,11 @@ struct EvalSum {
 
 	union {
 		std::array<std::array<s32, 2>, 3> p;
+		std::array<u64, 4> p64; // ehash 用。p64[3] に局面の hash key を入れる。
 #if defined USE_AVX2_EVAL
-		std::array<std::array<s16, 4>, 4> p16;
 		__m256i mm;
-#elif defined USE_AVX2_EVAL || defined USE_SSE_EVAL
-		std::array<std::array<s16, 4>, 4> p16;
+#endif
+#if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
 		__m128i m[2];
 #endif
 	};
@@ -1120,34 +1120,11 @@ class Position;
 struct SearchStack;
 
 #if defined USE_EHASH
-const size_t EvaluateTableSize = 0x1000000; // 134MB
-//const size_t EvaluateTableSize = 0x80000000; // 17GB
+const size_t EvaluateTableSize = 0x400000; // 134MB
+//const size_t EvaluateTableSize = 0x10000000; // 8GB
+//const size_t EvaluateTableSize = 0x20000000; // 17GB
 
-struct EvaluateHashEntry {
-	EvaluateHashEntry() {}
-	EvaluateHashEntry(const EvaluateHashEntry& rhs) {
-		// atomic にコピーする必要があるので、SSE を使用する。
-		_mm_store_si128(&this->m, rhs.m);
-	}
-	EvaluateHashEntry& operator = (const EvaluateHashEntry& rhs) {
-		// atomic にコピーする必要があるので、SSE を使用する。
-		_mm_store_si128(&this->m, rhs.m);
-		return *this;
-	}
-	void save(const Key k, const EvalSum& s) {
-		evalSum = s;
-		key = k;
-	}
-	union {
-		__m128i m;
-		struct {
-			EvalSum evalSum;
-			u32 key;
-		};
-	};
-};
-static_assert(sizeof(EvaluateHashEntry) == 16, "");
-
+using EvaluateHashEntry = EvalSum;
 struct EvaluateHashTable : HashTable<EvaluateHashEntry, EvaluateTableSize> {};
 extern EvaluateHashTable g_evalTable;
 #endif
