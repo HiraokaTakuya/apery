@@ -881,6 +881,7 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 	}
 #undef ALL_SYNTHESIZED_EVAL
 
+#if defined EVAL_PHASE1
 #define BASE_PHASE1 {								\
 		FOO(kpps.kee);								\
 		FOO(kpps.r_kpe_b);							\
@@ -898,6 +899,11 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 		FOO(kkps.r_ke);								\
 		FOO(kks.k);									\
 	}
+#else
+#define BASE_PHASE1
+#endif
+
+#if defined EVAL_PHASE2
 #define BASE_PHASE2 {								\
 		FOO(kpps.r_pp_bb);							\
 		FOO(kpps.r_pp_hb);							\
@@ -905,6 +911,11 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 		FOO(kkps.r_kp_h);							\
 		FOO(kks.r_kk);								\
 	}
+#else
+#define BASE_PHASE2
+#endif
+
+#if defined EVAL_PHASE3
 #define BASE_PHASE3 {								\
 		FOO(kpps.r_kpp_bb);							\
 		FOO(kpps.r_kpp_hb);							\
@@ -918,12 +929,21 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 		FOO(kkps.kke);								\
 		FOO(kks.kk);								\
 	}
+#else
+#define BASE_PHASE3
+#endif
+
+#if defined EVAL_PHASE4
 #define BASE_PHASE4 {								\
 		FOO(kpps.kpp);								\
 		FOO(kpps.xpp);								\
 		FOO(kpps.ypp);								\
 		FOO(kkps.kkp);								\
 	}
+#else
+#define BASE_PHASE4
+#endif
+
 #define READ_BASE_EVAL {						\
 		BASE_PHASE1;							\
 		BASE_PHASE2;							\
