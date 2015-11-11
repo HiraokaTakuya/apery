@@ -1106,7 +1106,10 @@ struct EvalSum {
 
 	union {
 		std::array<std::array<s32, 2>, 3> p;
-		std::array<u64, 4> p64; // ehash 用。p64[3] に局面の hash key を入れる。
+		struct {
+			u64 dummy[3];
+			u64 key; // ehash用。
+		};
 #if defined USE_AVX2_EVAL
 		__m256i mm;
 #endif

@@ -428,7 +428,7 @@ Score evaluate(Position& pos, SearchStack* ss) {
 #if defined USE_EHASH
 	const Key keyExcludeTurn = pos.getKeyExcludeTurn();
 	EvaluateHashEntry entry = *g_evalTable[keyExcludeTurn]; // atomic にデータを取得する必要がある。
-	if (entry.p64[3] == keyExcludeTurn) {
+	if (entry.key == keyExcludeTurn) {
 		ss->staticEvalRaw = entry;
 		assert(static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) == evaluateUnUseDiff(pos));
 		return static_cast<Score>(entry.sum(pos.turn())) / FVScale;
@@ -437,7 +437,7 @@ Score evaluate(Position& pos, SearchStack* ss) {
 
 	evaluateBody(pos, ss);
 #if defined USE_EHASH
-	ss->staticEvalRaw.p64[3] = keyExcludeTurn;
+	ss->staticEvalRaw.key = keyExcludeTurn;
 	*g_evalTable[keyExcludeTurn] = ss->staticEvalRaw;
 #endif
 	return static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) / FVScale;
