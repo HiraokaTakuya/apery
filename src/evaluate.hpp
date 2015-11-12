@@ -1046,7 +1046,7 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 					KK[ksq0][ksq1][0] += sum[0] / 2;
 					KK[ksq0][ksq1][1] += sum[1] / 2;
 #if defined USE_K_FIX_OFFSET
-					KK[ksq0][ksq1] += K_Fix_Offset[ksq0] - K_Fix_Offset[inverse(ksq1)];
+					KK[ksq0][ksq1][0] += K_Fix_Offset[ksq0] - K_Fix_Offset[inverse(ksq1)];
 #endif
 				}
 			}
