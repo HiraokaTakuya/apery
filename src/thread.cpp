@@ -31,7 +31,7 @@ Thread::Thread(Searcher* s) /*: splitPoints()*/ {
 void TimerThread::idleLoop() {
 	while (!exit) {
 		{
-			std::unique_lock<std::mutex> lock(sleepLock);
+			std::unique_lock<Mutex> lock(sleepLock);
 			if (!exit) {
 				sleepCond.wait_for(lock, std::chrono::milliseconds(msec ? msec : INT_MAX));
 			}
@@ -45,7 +45,7 @@ void TimerThread::idleLoop() {
 void MainThread::idleLoop() {
 	while (true) {
 		{
-			std::unique_lock<std::mutex> lock(sleepLock);
+			std::unique_lock<Mutex> lock(sleepLock);
 			thinking = false;
 			while (!thinking && !exit) {
 				// UI 関連だから要らないのかも。
@@ -66,7 +66,7 @@ void MainThread::idleLoop() {
 }
 
 void Thread::notifyOne() {
-	std::unique_lock<std::mutex> lock(sleepLock);
+	std::unique_lock<Mutex> lock(sleepLock);
 	sleepCond.notify_one();
 }
 
@@ -91,7 +91,7 @@ bool Thread::isAvailableTo(Thread* master) const {
 }
 
 void Thread::waitFor(volatile const bool& b) {
-	std::unique_lock<std::mutex> lock(sleepLock);
+	std::unique_lock<Mutex> lock(sleepLock);
 	sleepCond.wait(lock, [&] { return b; });
 }
 
@@ -149,7 +149,7 @@ void ThreadPool::setTimer(const int msec) {
 
 void ThreadPool::waitForThinkFinished() {
 	MainThread* t = mainThread();
-	std::unique_lock<std::mutex> lock(t->sleepLock);
+	std::unique_lock<Mutex> lock(t->sleepLock);
 	sleepCond_.wait(lock, [&] { return !(t->thinking); });
 }
 

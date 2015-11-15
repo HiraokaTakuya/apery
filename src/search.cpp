@@ -1649,13 +1649,13 @@ void Searcher::checkTime() {
 
 	s64 nodes = 0;
 	if (limits.nodes) {
-		std::unique_lock<std::mutex> lock(threads.mutex_);
+		std::unique_lock<Mutex> lock(threads.mutex_);
 
 		nodes = rootPosition.nodesSearched();
 		for (size_t i = 0; i < threads.size(); ++i) {
 			for (int j = 0; j < threads[i]->splitPointsSize; ++j) {
 				SplitPoint& splitPoint = threads[i]->splitPoints[j];
-				std::unique_lock<std::mutex> spLock(splitPoint.mutex);
+				std::unique_lock<Mutex> spLock(splitPoint.mutex);
 				nodes += splitPoint.nodes;
 				u64 sm = splitPoint.slavesMask;
 				while (sm) {
@@ -1700,7 +1700,7 @@ void Thread::idleLoop() {
 				return;
 			}
 
-			std::unique_lock<std::mutex> lock(sleepLock);
+			std::unique_lock<Mutex> lock(sleepLock);
 			if (thisSp != nullptr && !thisSp->slavesMask) {
 				break;
 			}

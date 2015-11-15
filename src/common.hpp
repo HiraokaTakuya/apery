@@ -284,6 +284,31 @@ private:
 
 extern std::mt19937_64 g_randomTimeSeed;
 
+#if defined _WIN32 && !defined _MSC_VER
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#undef NOMINMAX
+
+struct Mutex {
+	Mutex() { InitializeCriticalSection(&cs); }
+	~Mutex() { DeleteCriticalSection(&cs); }
+	void lock() { EnterCriticalSection(&cs); }
+	void unlock() { LeaveCriticalSection(&cs); }
+
+private:
+	CRITICAL_SECTION cs;
+};
+using ConditionVariable = std::condition_variable_any;
+#else
+using Mutex = std::mutex;
+using ConditionVariable = std::condition_variable;
+#endif
+
 #if 0
 #include <boost/detail/endian.hpp>
 template <typename T> inline void reverseEndian(T& r) {

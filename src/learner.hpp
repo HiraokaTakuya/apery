@@ -326,7 +326,7 @@ private:
 		}
 	}
 	template <bool Dump> size_t lockingIndexIncrement() {
-		std::unique_lock<std::mutex> lock(mutex_);
+		std::unique_lock<Mutex> lock(mutex_);
 		if (Dump) {
 			if      (index_ % 500 == 0) std::cout << index_ << std::endl;
 			else if (index_ % 100 == 0) std::cout << "o" << std::flush;
@@ -567,7 +567,7 @@ private:
 	static const int PredSize = 8;
 	static const Score FVWindow = static_cast<Score>(256);
 
-	std::mutex mutex_;
+	Mutex mutex_;
 	size_t index_;
 	Ply minDepth_;
 	Ply maxDepth_;
