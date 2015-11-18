@@ -42,16 +42,11 @@ MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const H
 	assert(depth <= Depth0);
 	legalMoves_[0].score = INT_MAX; // 番兵のセット
 
-	if (pos.inCheck()) {
+	if (pos.inCheck())
 		phase_ = QEvasionSearch;
-	}
 	// todo: ここで Stockfish は qcheck がある。
-	else if (DepthQRecaptures < depth) {
+	else if (DepthQRecaptures < depth)
 		phase_ = QSearch;
-		if (!ttm.isNone() && !ttm.isCaptureOrPawnPromotion()) {
-			ttm = Move::moveNone();
-		}
-	}
 	else {
 		phase_ = QRecapture;
 		recaptureSquare_ = sq;
