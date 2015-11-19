@@ -10,7 +10,7 @@ enum Depth {
 	Depth1                 = 1,
 	DepthQChecks           = -1 * OnePly,
 	DepthQNoChecks         = -2 * OnePly,
-	DepthQRecaptures       = -5 * OnePly,
+	DepthQRecaptures       = -8 * OnePly,
 	DepthNone              = -127 * OnePly
 };
 OverloadEnumOperators(Depth);
