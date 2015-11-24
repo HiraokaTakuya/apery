@@ -435,9 +435,7 @@ private:
 		// updateFV()で学習しないパラメータに入ったノイズを無くす。
 		eval_.write(dirName);
 		eval_.init(dirName, false);
-#if defined USE_EHASH
 		g_evalTable.clear();
-#endif
 	}
 	double sigmoid(const double x) const {
 		const double a = 7.0/static_cast<double>(FVWindow);

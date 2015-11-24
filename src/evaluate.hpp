@@ -1124,10 +1124,20 @@ struct EvalSum {
 	EvalSum operator + (const EvalSum& rhs) const { return EvalSum(*this) += rhs; }
 	EvalSum operator - (const EvalSum& rhs) const { return EvalSum(*this) -= rhs; }
 
+	// ehash 用。
+	void encode() {
+#if defined USE_AVX2_EVAL
+		// EvalSum は atomic にコピーされるので key が合っていればデータも合っている。
+#else
+		key ^= data[0] ^ data[1] ^ data[2];
+#endif
+	}
+	void decode() { encode(); }
+
 	union {
 		std::array<std::array<s32, 2>, 3> p;
 		struct {
-			u64 dummy[3];
+			u64 data[3];
 			u64 key; // ehash用。
 		};
 #if defined USE_AVX2_EVAL
@@ -1142,7 +1152,6 @@ struct EvalSum {
 class Position;
 struct SearchStack;
 
-#if defined USE_EHASH
 const size_t EvaluateTableSize = 0x400000; // 134MB
 //const size_t EvaluateTableSize = 0x10000000; // 8GB
 //const size_t EvaluateTableSize = 0x20000000; // 17GB
@@ -1150,7 +1159,6 @@ const size_t EvaluateTableSize = 0x400000; // 134MB
 using EvaluateHashEntry = EvalSum;
 struct EvaluateHashTable : HashTable<EvaluateHashEntry, EvaluateTableSize> {};
 extern EvaluateHashTable g_evalTable;
-#endif
 
 Score evaluateUnUseDiff(const Position& pos);
 Score evaluate(Position& pos, SearchStack* ss);

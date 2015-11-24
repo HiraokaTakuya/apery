@@ -35,10 +35,6 @@
 #endif
 #endif
 
-#if 1 && defined USE_AVX2_EVAL
-#define USE_EHASH
-#endif
-
 #if 0
 // 玉の位置にボーナスを与える。
 // 入玉を狙ったり、相手の入玉を阻止したりする為に使う。

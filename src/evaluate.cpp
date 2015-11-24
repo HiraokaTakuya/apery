@@ -23,9 +23,7 @@ const s32 Evaluater::K_Fix_Offset[SquareNum] = {
 };
 #endif
 
-#if defined USE_EHASH
 EvaluateHashTable g_evalTable;
-#endif
 
 const int kppArray[31] = {
 	0,        f_pawn,   f_lance,  f_knight,
@@ -425,20 +423,19 @@ Score evaluate(Position& pos, SearchStack* ss) {
 		return score / FVScale;
 	}
 
-#if defined USE_EHASH
 	const Key keyExcludeTurn = pos.getKeyExcludeTurn();
 	EvaluateHashEntry entry = *g_evalTable[keyExcludeTurn]; // atomic にデータを取得する必要がある。
+	entry.decode();
 	if (entry.key == keyExcludeTurn) {
 		ss->staticEvalRaw = entry;
 		assert(static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) == evaluateUnUseDiff(pos));
 		return static_cast<Score>(entry.sum(pos.turn())) / FVScale;
 	}
-#endif
 
 	evaluateBody(pos, ss);
-#if defined USE_EHASH
+
 	ss->staticEvalRaw.key = keyExcludeTurn;
+	ss->staticEvalRaw.encode();
 	*g_evalTable[keyExcludeTurn] = ss->staticEvalRaw;
-#endif
 	return static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) / FVScale;
 }
