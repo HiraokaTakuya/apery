@@ -76,7 +76,7 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
-	(*this)["Eval_Dir"]                    = USIOption("20150501", onEvalDir);
+	(*this)["Eval_Dir"]                    = USIOption("20151105", onEvalDir);
 	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
