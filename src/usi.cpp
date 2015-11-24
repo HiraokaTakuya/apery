@@ -68,7 +68,7 @@ namespace {
 }
 
 void OptionsMap::init(Searcher* s) {
-	(*this)["USI_Hash"]                    = USIOption(32, 1, 65536, onHashSize, s);
+	(*this)["USI_Hash"]                    = USIOption(256, 1, 65536, onHashSize, s);
 	(*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
 	(*this)["Book_File"]                   = USIOption("book/20150503/book.bin");
 	(*this)["Best_Book_Move"]              = USIOption(false);

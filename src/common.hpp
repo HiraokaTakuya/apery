@@ -30,7 +30,7 @@
 #include <ctime>
 #include <cmath>
 #include <cstddef>
-#include <boost/align/aligned_alloc.hpp>
+//#include <boost/align/aligned_alloc.hpp>
 
 #if defined HAVE_BMI2
 #include <immintrin.h>
@@ -251,7 +251,7 @@ using Key = u64;
 template <typename T, size_t Size>
 struct HashTable {
 	HashTable() {
-		entries_ = (T*)(boost::alignment::aligned_alloc(sizeof(T), sizeof(T)*Size));
+		//entries_ = (T*)(boost::alignment::aligned_alloc(sizeof(T), sizeof(T)*Size));
 		clear();
 	}
 	T* operator [] (const Key k) { return entries_ + (static_cast<size_t>(k) & (Size-1)); }
@@ -260,7 +260,8 @@ struct HashTable {
 	static_assert((Size & (Size-1)) == 0, "");
 
 private:
-	T* entries_;
+	//T* entries_;
+	T entries_[Size];
 };
 
 // ミリ秒単位の時間を表すクラス
