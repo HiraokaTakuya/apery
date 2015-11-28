@@ -424,7 +424,7 @@ void measureGenerateMoves(const Position& pos) {
 #endif
 
 #ifdef NDEBUG
-const std::string MyName = "Apery_Twig_SDT3";
+const std::string MyName = "Apery";
 #else
 const std::string MyName = "Apery Debug Build";
 #endif
