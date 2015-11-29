@@ -44,6 +44,8 @@ enum BishopInDangerFlag {
 	WhiteBishopInDangerIn28,
 	BlackBishopInDangerIn78,
 	WhiteBishopInDangerIn78,
+	BlackBishopInDangerIn38,
+	WhiteBishopInDangerIn38,
 	BishopInDangerFlagNum
 };
 

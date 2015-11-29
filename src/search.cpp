@@ -745,6 +745,21 @@ void Searcher::detectBishopInDanger(const Position& pos) {
 			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn78 : WhiteBishopInDangerIn78);
 			//tt.clear();
 		}
+		else if (pos.hand(pos.turn()).exists<HBishop>()
+				 && pos.hand(them).exists<HBishop>()
+				 && pos.piece(inverseIfWhite(them, G2)) == Empty
+				 && pos.piece(inverseIfWhite(them, I2)) == Empty
+				 && pieceToPieceType(pos.piece(inverseIfWhite(them, H2))) == Silver
+				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == King
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == King
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == Gold)
+				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King
+					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
+		{
+			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn38 : WhiteBishopInDangerIn38);
+			//tt.clear();
+		}
 	}
 }
 #endif
