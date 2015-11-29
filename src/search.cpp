@@ -538,25 +538,6 @@ void Searcher::idLoop(Position& pos) {
 		return;
 	}
 
-#if defined BISHOP_IN_DANGER
-	if ((bishopInDangerFlag == BlackBishopInDangerIn28
-		 && std::find_if(std::begin(rootMoves), std::end(rootMoves),
-						 [](const RootMove& rm) { return rm.pv_[0].toCSA() == "0082KA"; }) != std::end(rootMoves))
-		|| (bishopInDangerFlag == WhiteBishopInDangerIn28
-			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
-							[](const RootMove& rm) { return rm.pv_[0].toCSA() == "0028KA"; }) != std::end(rootMoves))
-		|| (bishopInDangerFlag == BlackBishopInDangerIn78
-			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
-						 [](const RootMove& rm) { return rm.pv_[0].toCSA() == "0032KA"; }) != std::end(rootMoves))
-		|| (bishopInDangerFlag == WhiteBishopInDangerIn78
-			&& std::find_if(std::begin(rootMoves), std::end(rootMoves),
-							[](const RootMove& rm) { return rm.pv_[0].toCSA() == "0078KA"; }) != std::end(rootMoves)))
-	{
-		if (rootMoves.size() != 1)
-			pvSize = std::max<size_t>(pvSize, 2);
-	}
-#endif
-
 	// 反復深化で探索を行う。
 	while (++depth <= MaxPly && !signals.stop && (!limits.depth || depth <= limits.depth)) {
 		// 前回の iteration の結果を全てコピー
@@ -1318,15 +1299,6 @@ split_point_start:
 			if (isPVMove || alpha < score) {
 				// PV move or new best move
 				rm.score_ = score;
-#if defined BISHOP_IN_DANGER
-				if ((bishopInDangerFlag == BlackBishopInDangerIn28 && move.toCSA() == "0082KA")
-					|| (bishopInDangerFlag == WhiteBishopInDangerIn28 && move.toCSA() == "0028KA")
-					|| (bishopInDangerFlag == BlackBishopInDangerIn78 && move.toCSA() == "0032KA")
-					|| (bishopInDangerFlag == WhiteBishopInDangerIn78 && move.toCSA() == "0078KA"))
-				{
-					rm.score_ -= options["Danger_Demerit_Score"];
-				}
-#endif
 				rm.extractPvFromTT(pos);
 
 				if (!isPVMove) {
@@ -1596,6 +1568,26 @@ void Searcher::think() {
 			goto finalize;
 		}
 	}
+#if defined BISHOP_IN_DANGER
+	{
+		detectBishopInDanger(pos);
+		auto deleteFunc = [&rootMoves](const std::string& str) {
+			auto it = std::find_if(std::begin(rootMoves), std::end(rootMoves), [&str](const RootMove& rm) {
+					return rm.pv_[0].toCSA() == str;
+				});
+			if (it != std::end(rootMoves))
+				rootMoves.erase(it);
+		};
+		switch (bishopInDangerFlag) {
+		case NotBishopInDanger: break;
+		case BlackBishopInDangerIn28: deleteFunc("0082KA"); break;
+		case WhiteBishopInDangerIn28: deleteFunc("0028KA"); break;
+		case BlackBishopInDangerIn78: deleteFunc("0032KA"); break;
+		case WhiteBishopInDangerIn78: deleteFunc("0078KA"); break;
+		default: UNREACHABLE;
+		}
+	}
+#endif
 
 	threads.wakeUp(thisptr);
 
@@ -1607,9 +1599,6 @@ void Searcher::think() {
 
 #if defined INANIWA_SHIFT
 	detectInaniwa(pos);
-#endif
-#if defined BISHOP_IN_DANGER
-	detectBishopInDanger(pos);
 #endif
 #endif
 	idLoop(pos);
