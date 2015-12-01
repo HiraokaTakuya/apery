@@ -1586,7 +1586,7 @@ void Searcher::think() {
 #if defined BISHOP_IN_DANGER
 	{
 		detectBishopInDanger(pos);
-		auto deleteFunc = [&rootMoves](const std::string& str) {
+		auto deleteFunc = [](const std::string& str) {
 			auto it = std::find_if(std::begin(rootMoves), std::end(rootMoves), [&str](const RootMove& rm) {
 					return rm.pv_[0].toCSA() == str;
 				});
@@ -1599,6 +1599,8 @@ void Searcher::think() {
 		case WhiteBishopInDangerIn28: deleteFunc("0028KA"); break;
 		case BlackBishopInDangerIn78: deleteFunc("0032KA"); break;
 		case WhiteBishopInDangerIn78: deleteFunc("0078KA"); break;
+		case BlackBishopInDangerIn38: deleteFunc("0072KA"); break;
+		case WhiteBishopInDangerIn38: deleteFunc("0038KA"); break;
 		default: UNREACHABLE;
 		}
 	}
