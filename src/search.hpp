@@ -134,9 +134,6 @@ struct Searcher {
 #if defined INANIWA_SHIFT
 	STATIC InaniwaFlag inaniwaFlag;
 #endif
-#if defined BISHOP_IN_DANGER
-	STATIC BishopInDangerFlag bishopInDangerFlag;
-#endif
 	STATIC Position rootPosition;
 	STATIC ThreadPool threads;
 	STATIC OptionsMap options;
@@ -148,9 +145,6 @@ struct Searcher {
 	STATIC Score qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth);
 #if defined INANIWA_SHIFT
 	STATIC void detectInaniwa(const Position& pos);
-#endif
-#if defined BISHOP_IN_DANGER
-	STATIC void detectBishopInDanger(const Position& pos);
 #endif
 	template <NodeType NT>
 	STATIC Score search(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth, const bool cutNode);

@@ -38,9 +38,6 @@ TranspositionTable Searcher::tt;
 #if defined INANIWA_SHIFT
 InaniwaFlag Searcher::inaniwaFlag;
 #endif
-#if defined BISHOP_IN_DANGER
-BishopInDangerFlag Searcher::bishopInDangerFlag;
-#endif
 Position Searcher::rootPosition(nullptr);
 ThreadPool Searcher::threads;
 OptionsMap Searcher::options;
@@ -259,6 +256,58 @@ namespace {
 	inline std::string scoreToUSI(const Score score) {
 		return scoreToUSI(score, -ScoreInfinite, ScoreInfinite);
 	}
+
+#if defined BISHOP_IN_DANGER
+	BishopInDangerFlag detectBishopInDanger(const Position& pos) {
+		if (pos.gamePly() <= 60) {
+			const Color them = oppositeColor(pos.turn());
+			if (pos.hand(pos.turn()).exists<HBishop>()
+				&& pos.bbOf(Silver, them).isSet(inverseIfWhite(them, H3))
+				&& (pos.bbOf(King  , them).isSet(inverseIfWhite(them, F2))
+					|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, F3))
+					|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, E1)))
+				&& pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, G3))
+				&& pos.piece(inverseIfWhite(them, H2)) == Empty
+				&& pos.piece(inverseIfWhite(them, G2)) == Empty
+				&& pos.piece(inverseIfWhite(them, G1)) == Empty)
+			{
+				return (pos.turn() == Black ? BlackBishopInDangerIn28 : WhiteBishopInDangerIn28);
+			}
+			else if (pos.hand(pos.turn()).exists<HBishop>()
+					 && pos.hand(them).exists<HBishop>()
+					 && pos.piece(inverseIfWhite(them, C2)) == Empty
+					 && pos.piece(inverseIfWhite(them, C1)) == Empty
+					 && pos.piece(inverseIfWhite(them, D2)) == Empty
+					 && pos.piece(inverseIfWhite(them, D1)) == Empty
+					 && pos.piece(inverseIfWhite(them, A2)) == Empty
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Silver
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, B2))) == Silver)
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Knight
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, B1))) == Knight)
+					 && ((pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
+						  && pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King)
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
+			{
+				return (pos.turn() == Black ? BlackBishopInDangerIn78 : WhiteBishopInDangerIn78);
+			}
+			else if (pos.hand(pos.turn()).exists<HBishop>()
+					 && pos.hand(them).exists<HBishop>()
+					 && pos.piece(inverseIfWhite(them, G2)) == Empty
+					 && pos.piece(inverseIfWhite(them, I2)) == Empty
+					 && pieceToPieceType(pos.piece(inverseIfWhite(them, H2))) == Silver
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == King
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == King
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == Gold)
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
+			{
+				return (pos.turn() == Black ? BlackBishopInDangerIn38 : WhiteBishopInDangerIn38);
+			}
+		}
+		return NotBishopInDanger;
+	}
+#endif
 }
 
 std::string Searcher::pvInfoToUSI(Position& pos, const Ply depth, const Score alpha, const Score beta) {
@@ -706,59 +755,6 @@ void Searcher::detectInaniwa(const Position& pos) {
 		if ((pos.bbOf(Pawn, oppositeColor(pos.turn())) & mask) == mask) {
 			inaniwaFlag = (pos.turn() == Black ? InaniwaIsWhite : InaniwaIsBlack);
 			tt.clear();
-		}
-	}
-}
-#endif
-#if defined BISHOP_IN_DANGER
-void Searcher::detectBishopInDanger(const Position& pos) {
-	if (bishopInDangerFlag == NotBishopInDanger && pos.gamePly() <= 50) {
-		const Color them = oppositeColor(pos.turn());
-		if (pos.hand(pos.turn()).exists<HBishop>()
-			&& pos.bbOf(Silver, them).isSet(inverseIfWhite(them, H3))
-			&& (pos.bbOf(King  , them).isSet(inverseIfWhite(them, F2))
-				|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, F3))
-				|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, E1)))
-			&& pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, G3))
-			&& pos.piece(inverseIfWhite(them, H2)) == Empty
-			&& pos.piece(inverseIfWhite(them, G2)) == Empty
-			&& pos.piece(inverseIfWhite(them, G1)) == Empty)
-		{
-			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn28 : WhiteBishopInDangerIn28);
-			//tt.clear();
-		}
-		else if (pos.hand(pos.turn()).exists<HBishop>()
-				 && pos.hand(them).exists<HBishop>()
-				 && pos.piece(inverseIfWhite(them, C2)) == Empty
-				 && pos.piece(inverseIfWhite(them, C1)) == Empty
-				 && pos.piece(inverseIfWhite(them, D2)) == Empty
-				 && pos.piece(inverseIfWhite(them, D1)) == Empty
-				 && pos.piece(inverseIfWhite(them, A2)) == Empty
-				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Silver
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, B2))) == Silver)
-				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Knight
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, B1))) == Knight)
-				 && ((pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
-					  && pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King)
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
-		{
-			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn78 : WhiteBishopInDangerIn78);
-			//tt.clear();
-		}
-		else if (pos.hand(pos.turn()).exists<HBishop>()
-				 && pos.hand(them).exists<HBishop>()
-				 && pos.piece(inverseIfWhite(them, G2)) == Empty
-				 && pos.piece(inverseIfWhite(them, I2)) == Empty
-				 && pieceToPieceType(pos.piece(inverseIfWhite(them, H2))) == Silver
-				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == King
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == King
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == Gold)
-				 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King
-					 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
-		{
-			bishopInDangerFlag = (pos.turn() == Black ? BlackBishopInDangerIn38 : WhiteBishopInDangerIn38);
-			//tt.clear();
 		}
 	}
 }
@@ -1585,7 +1581,6 @@ void Searcher::think() {
 	}
 #if defined BISHOP_IN_DANGER
 	{
-		detectBishopInDanger(pos);
 		auto deleteFunc = [](const std::string& str) {
 			auto it = std::find_if(std::begin(rootMoves), std::end(rootMoves), [&str](const RootMove& rm) {
 					return rm.pv_[0].toCSA() == str;
@@ -1593,7 +1588,7 @@ void Searcher::think() {
 			if (it != std::end(rootMoves))
 				rootMoves.erase(it);
 		};
-		switch (bishopInDangerFlag) {
+		switch (detectBishopInDanger(pos)) {
 		case NotBishopInDanger: break;
 		case BlackBishopInDangerIn28: deleteFunc("0082KA"); break;
 		case WhiteBishopInDangerIn28: deleteFunc("0028KA"); break;
