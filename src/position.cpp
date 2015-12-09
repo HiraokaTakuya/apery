@@ -1925,11 +1925,10 @@ Bitboard Position::attackersTo(const Color c, const Square sq, const Bitboard& o
 	return ((attacksFrom<Pawn  >(opposite, sq          ) & bbOf(Pawn  ))
 			| (attacksFrom<Lance >(opposite, sq, occupied) & bbOf(Lance ))
 			| (attacksFrom<Knight>(opposite, sq          ) & bbOf(Knight))
-			| (attacksFrom<Silver>(opposite, sq          ) & bbOf(Silver))
-			| (attacksFrom<Gold  >(opposite, sq          ) & goldsBB())
+			| (attacksFrom<Silver>(opposite, sq          ) & bbOf(Silver, King, Dragon))
+			| (attacksFrom<Gold  >(opposite, sq          ) & (bbOf(King  , Horse) | goldsBB()))
 			| (attacksFrom<Bishop>(          sq, occupied) & bbOf(Bishop, Horse        ))
-			| (attacksFrom<Rook  >(          sq, occupied) & bbOf(Rook  , Dragon       ))
-			| (attacksFrom<King  >(          sq          ) & bbOf(King  , Horse, Dragon)))
+			| (attacksFrom<Rook  >(          sq, occupied) & bbOf(Rook  , Dragon       )))
 		& bbOf(c);
 }
 
