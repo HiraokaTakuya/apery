@@ -91,7 +91,7 @@ inline int inverseFileIndexIfLefterThanMiddle(const int index) {
 	if (index < fe_hand_end) return index;
 	const int begin = kppIndexBegin(index);
 	const Square sq = static_cast<Square>(index - begin);
-	if (sq <= E1) return index;
+	if (sq <= SQ59) return index;
 	return static_cast<int>(begin + inverseFile(sq));
 };
 inline int inverseFileIndexIfOnBoard(const int index) {
@@ -245,22 +245,22 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		}
 		if (j < i) std::swap(i, j);
 
-		if (E1 < ksq) {
+		if (SQ59 < ksq) {
 			ksq = inverseFile(ksq);
 			i = inverseFileIndexIfOnBoard(i);
 			j = inverseFileIndexIfOnBoard(j);
 			if (j < i) std::swap(i, j);
 		}
-		else if (makeFile(ksq) == FileE) {
+		else if (makeFile(ksq) == File5) {
 			assert(i < j);
 			if (f_pawn <= i) {
 				const int ibegin = kppIndexBegin(i);
 				const Square isq = static_cast<Square>(i - ibegin);
-				if (E1 < isq) {
+				if (SQ59 < isq) {
 					i = ibegin + inverseFile(isq);
 					j = inverseFileIndexOnBoard(j);
 				}
-				else if (makeFile(isq) == FileE) {
+				else if (makeFile(isq) == File5) {
 					j = inverseFileIndexIfLefterThanMiddle(j);
 				}
 			}
@@ -310,8 +310,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const PieceType jpt = pieceToPieceType(jpiece);
 			Bitboard jtoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(jpt, jcolor, jsq, setMaskBB(ksq)));
 			while (jtoBB.isNot0()) {
-				Square jto = jtoBB.firstOneFromI9();
-				if (kfile == FileE && E1 < jto)
+				Square jto = jtoBB.firstOneFromSQ11();
+				if (kfile == File5 && SQ59 < jto)
 					jto = inverseFile(jto);
 				const int distance = squareDistance(jsq, jto);
 				// distance == 1 で 1/8 で 3bit シフトにする程度の寄与にする。
@@ -326,7 +326,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				ret[retIdx++] = std::make_pair(&kpps.r_pe_h[i][jcolor] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 				ret[retIdx++] = std::make_pair(&kpps.pe[i][jcolor][jto] - oneArrayKPP(0), MaxWeight() >> (distance+4));
 #endif
-				if (E1 < jto)
+				if (SQ59 < jto)
 					jto = inverseFile(jto);
 #if defined EVAL_PHASE3
 				ret[retIdx++] = std::make_pair(&kpps.ype[krank][i][jcolor][jto] - oneArrayKPP(0), MaxWeight() >> (distance+4));
@@ -393,16 +393,16 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				const Bitboard mask = setMaskBB(ksq) | setMaskBB(ijsq);
 				Bitboard jitoBB = mask.notThisAnd(Position::attacksFrom(jipt, jicolor, jisq, mask));
 				while (jitoBB.isNot0()) {
-					Square jito = jitoBB.firstOneFromI9();
+					Square jito = jitoBB.firstOneFromSQ11();
 					Square ijsq_tmp = ijsq;
-					assert(ksq <= E1);
-					if (makeFile(ksq) == FileE) {
-						if (E1 < ijsq_tmp) {
+					assert(ksq <= SQ59);
+					if (makeFile(ksq) == File5) {
+						if (SQ59 < ijsq_tmp) {
 							ij = inverseFileIndexOnBoard(ij);
 							ijsq_tmp = inverseFile(ijsq_tmp);
 							jito = inverseFile(jito);
 						}
-						else if (makeFile(ijsq_tmp) == FileE)
+						else if (makeFile(ijsq_tmp) == File5)
 							jito = inverseFile(jito);
 					}
 					const Rank ijrank = makeRank(ijsq_tmp);
@@ -417,11 +417,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					{
 						int ij_tmp = ij;
 						int jito_tmp = jito;
-						if (FileE < ijfile) {
+						if (File5 < ijfile) {
 							ij_tmp = inverseFileIndexOnBoard(ij_tmp);
 							jito_tmp = inverseFile(jito);
 						}
-						else if (FileE == ijfile && FileE < jitofile)
+						else if (File5 == ijfile && File5 < jitofile)
 							jito_tmp = inverseFile(jito);
 
 #if defined EVAL_PHASE3
@@ -444,11 +444,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 #endif
 
 					int ij_tmp = ij;
-					if (FileE < ijfile) {
+					if (File5 < ijfile) {
 						ij_tmp = inverseFileIndexOnBoard(ij_tmp);
 						jito = inverseFile(jito);
 					}
-					else if (FileE == ijfile && E1 < jito) {
+					else if (File5 == ijfile && SQ59 < jito) {
 						jito = inverseFile(jito);
 					}
 #if defined EVAL_PHASE1
@@ -461,7 +461,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			func(ksq, j, i);
 #endif
 			auto ee_func = [this, &retIdx, &ret](Square ksq, int i, int j) {
-				assert(ksq <= E1);
+				assert(ksq <= SQ59);
 				const Rank krank = makeRank(ksq);
 				const File kfile = makeFile(ksq);
 				auto color = [](int ij) {
@@ -488,17 +488,17 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				Bitboard itoBB = imask.notThisAnd(Position::attacksFrom(jpt, icolor, isq, imask));
 				Bitboard jtoBB = jmask.notThisAnd(Position::attacksFrom(jpt, jcolor, jsq, jmask));
 				while (itoBB.isNot0()) {
-					const Square ito = itoBB.firstOneFromI9();
+					const Square ito = itoBB.firstOneFromSQ11();
 					const int itodistance = squareDistance(isq, ito);
 					Bitboard jtoBB_tmp = jtoBB;
 					while (jtoBB_tmp.isNot0()) {
-						const Square jto = jtoBB_tmp.firstOneFromI9();
+						const Square jto = jtoBB_tmp.firstOneFromSQ11();
 						const int jtodistance = squareDistance(jsq, jto);
 						const int distance = itodistance + jtodistance - 1;
 						{
 							Square ito_tmp = ito;
 							Square jto_tmp = jto;
-							if (kfile == FileE) {
+							if (kfile == File5) {
 								if (icolor == jcolor) {
 									if (std::min(inverseFile(ito_tmp), inverseFile(jto_tmp)) < std::min(ito_tmp, jto_tmp)) {
 										ito_tmp = inverseFile(ito_tmp);
@@ -508,11 +508,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 										std::swap(ito_tmp, jto_tmp);
 								}
 								else {
-									if (E1 < ito_tmp) {
+									if (SQ59 < ito_tmp) {
 										ito_tmp = inverseFile(ito_tmp);
 										jto_tmp = inverseFile(jto_tmp);
 									}
-									else if (makeFile(ito_tmp) == FileE && E1 < jto_tmp)
+									else if (makeFile(ito_tmp) == File5 && SQ59 < jto_tmp)
 										jto_tmp = inverseFile(jto_tmp);
 								}
 							}
@@ -553,11 +553,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 								std::swap(ito_tmp, jto_tmp);
 						}
 						else {
-							if (E1 < ito_tmp) {
+							if (SQ59 < ito_tmp) {
 								ito_tmp = inverseFile(ito_tmp);
 								jto_tmp = inverseFile(jto_tmp);
 							}
-							else if (makeFile(ito_tmp) == FileE && E1 < jto_tmp)
+							else if (makeFile(ito_tmp) == File5 && SQ59 < jto_tmp)
 								jto_tmp = inverseFile(jto_tmp);
 						}
 #if defined EVAL_PHASE1
@@ -578,12 +578,12 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			ee_func(ksq, i, j);
 #endif
 
-			if (ifile == FileE) {
+			if (ifile == File5) {
 				// ppに関してiが5筋なのでjだけ左右反転しても構わない。
 				j = inverseFileIndexIfLefterThanMiddle(j);
 				if (j < i) std::swap(i, j);
 			}
-			else if ((E1 < isq)
+			else if ((SQ59 < isq)
 					 || (ibegin == jbegin && inverseFile(jsq) < isq))
 			{
 				// ppに関してiを左右反転するのでjも左右反転する。
@@ -610,11 +610,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			return;
 		}
 		auto kp_func = [this, &retIdx, &ret](Square ksq, int i, int sign) {
-			if (E1 < ksq) {
+			if (SQ59 < ksq) {
 				ksq = inverseFile(ksq);
 				i = inverseFileIndexIfOnBoard(i);
 			}
-			else if (makeFile(ksq) == FileE)
+			else if (makeFile(ksq) == File5)
 				i = inverseFileIndexIfLefterThanMiddle(i);
 #if defined EVAL_PHASE3
 			ret[retIdx++] = std::make_pair(sign*(&kkps.kp[ksq][i] - oneArrayKKP(0)), MaxWeight());
@@ -638,7 +638,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					const Color icolor = pieceToColor(ipiece);
 					Bitboard itoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(ipt, icolor, isq, setMaskBB(ksq)));
 					while (itoBB.isNot0()) {
-						Square ito = itoBB.firstOneFromI9();
+						Square ito = itoBB.firstOneFromSQ11();
 						const int distance = squareDistance(isq, ito);
 						ret[retIdx++] = std::make_pair(sign*(&kkps.r_ke[icolor][R_Mid + -abs(makeFile(ksq) - makeFile(ito))][R_Mid + makeRank(ksq) - makeRank(ito)] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
 					}
@@ -656,9 +656,9 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 
 				Bitboard itoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(ipt, icolor, isq, setMaskBB(ksq)));
 				while (itoBB.isNot0()) {
-					Square ito = itoBB.firstOneFromI9();
+					Square ito = itoBB.firstOneFromSQ11();
 					const int distance = squareDistance(isq, ito);
-					if (makeFile(ksq) == FileE && E1 < ito)
+					if (makeFile(ksq) == File5 && SQ59 < ito)
 						ito = inverseFile(ito);
 					ret[retIdx++] = std::make_pair(sign*(&kkps.ke[ksq][icolor][ito] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
 				}
@@ -684,16 +684,16 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			i = opp_ibegin + (i < fe_hand_end ? i - ibegin : inverse(static_cast<Square>(i - ibegin)));
 			sign = -1;
 		}
-		if (E1 < ksq0) {
+		if (SQ59 < ksq0) {
 			ksq0 = inverseFile(ksq0);
 			ksq1 = inverseFile(ksq1);
 			i = inverseFileIndexIfOnBoard(i);
 		}
-		else if (makeFile(ksq0) == FileE && E1 < ksq1) {
+		else if (makeFile(ksq0) == File5 && SQ59 < ksq1) {
 			ksq1 = inverseFile(ksq1);
 			i = inverseFileIndexIfOnBoard(i);
 		}
-		else if (makeFile(ksq0) == FileE && makeFile(ksq1) == FileE) {
+		else if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5) {
 			i = inverseFileIndexIfLefterThanMiddle(i);
 		}
 #if defined EVAL_PHASE4
@@ -722,9 +722,9 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const Bitboard mask = setMaskBB(ksq0) | setMaskBB(ksq1);
 			Bitboard itoBB = mask.notThisAnd(Position::attacksFrom(ipt, icolor, isq, mask));
 			while (itoBB.isNot0()) {
-				Square ito = itoBB.firstOneFromI9();
+				Square ito = itoBB.firstOneFromSQ11();
 				const int distance = squareDistance(isq, ito);
-				if (makeFile(ksq0) == FileE && makeFile(ksq1) == FileE && E1 < ito)
+				if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5 && SQ59 < ito)
 					ito = inverseFile(ito);
 #if defined EVAL_PHASE3
 				ret[retIdx++] = std::make_pair(sign*(&kkps.kke[ksq0][ksq1][icolor][ito] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
@@ -798,7 +798,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 #if defined EVAL_PHASE2
 			ret[retIdx++] = std::make_pair(sign*(&kks.r_kk[R_Mid + kfile0 - kfile1][R_Mid + krank0 - krank1] - oneArrayKK(0)), MaxWeight());
 #endif
-			assert(ksq0 <= E1);
+			assert(ksq0 <= SQ59);
 			assert(kfile0 - kfile1 <= 0);
 		};
 		kk_func(ksq0         , ksq1         ,  1);
@@ -1002,7 +1002,7 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 #pragma omp for
 #endif
 			// OpenMP対応したら何故か ksq を Square 型にすると ++ksq が定義されていなくてコンパイルエラーになる。
-			for (int ksq = I9; ksq < SquareNum; ++ksq) {
+			for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
 				// indices は更に for ループの外側に置きたいが、OpenMP 使っているとアクセス競合しそうなのでループの中に置く。
 				std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
 				for (int i = 0; i < fe_end; ++i) {
@@ -1020,9 +1020,9 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 #ifdef _OPENMP
 #pragma omp for
 #endif
-			for (int ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
 				std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
-				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 					for (int i = 0; i < fe_end; ++i) {
 						kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
 						std::array<s64, 2> sum = {{}};
@@ -1037,9 +1037,9 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 #ifdef _OPENMP
 #pragma omp for
 #endif
-			for (int ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
 				std::pair<ptrdiff_t, int> indices[KKIndicesMax];
-				for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 					kkIndices(indices, static_cast<Square>(ksq0), ksq1);
 					std::array<s64, 2> sum = {{}};
 					FOO(indices, oneArrayKK, sum);

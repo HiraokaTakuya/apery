@@ -98,7 +98,7 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 #ifdef _OPENMP
 #pragma omp for
 #endif
-		for (int ksq = I9; ksq < SquareNum; ++ksq) {
+		for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
 			std::pair<ptrdiff_t, int> indices[base.KPPIndicesMax];
 			for (int i = 0; i < fe_end; ++i) {
 				for (int j = 0; j < fe_end; ++j) {
@@ -113,9 +113,9 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 #ifdef _OPENMP
 #pragma omp for
 #endif
-		for (int ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+		for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
 			std::pair<ptrdiff_t, int> indices[base.KKPIndicesMax];
-			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+			for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 				for (int i = 0; i < fe_end; ++i) {
 					base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
 					FOO(indices, base.oneArrayKKP, raw.kkp_raw[ksq0][ksq1][i]);
@@ -128,9 +128,9 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 #ifdef _OPENMP
 #pragma omp for
 #endif
-		for (int ksq0 = I9; ksq0 < SquareNum; ++ksq0) {
+		for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
 			std::pair<ptrdiff_t, int> indices[base.KKIndicesMax];
-			for (Square ksq1 = I9; ksq1 < SquareNum; ++ksq1) {
+			for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 				base.kkIndices(indices, static_cast<Square>(ksq0), ksq1);
 				FOO(indices, base.oneArrayKK, raw.kk_raw[ksq0][ksq1]);
 			}
@@ -551,10 +551,10 @@ private:
 		}
 	}
 	void print() {
-		for (Rank r = Rank9; r < RankNum; ++r) {
-			for (File f = FileA; FileI <= f; --f) {
+		for (Rank r = Rank1; r < RankNum; ++r) {
+			for (File f = File9; File1 <= f; --f) {
 				const Square sq = makeSquare(f, r);
-				printf("%5d", Evaluater::KPP[B2][f_gold + C2][f_gold + sq][0]);
+				printf("%5d", Evaluater::KPP[SQ88][f_gold + SQ78][f_gold + sq][0]);
 			}
 			printf("\n");
 		}

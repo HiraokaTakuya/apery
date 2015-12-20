@@ -12,7 +12,7 @@ Key Book::ZobTurn;
 
 void Book::init() {
 	for (Piece p = Empty; p < PieceNone; ++p) {
-		for (Square sq = I9; sq < SquareNum; ++sq) {
+		for (Square sq = SQ11; sq < SquareNum; ++sq) {
 			ZobPiece[p][sq] = mt64bit_.random();
 		}
 	}
@@ -82,7 +82,7 @@ Key Book::bookKey(const Position& pos) {
 	Bitboard bb = pos.occupiedBB();
 
 	while (bb.isNot0()) {
-		const Square sq = bb.firstOneFromI9();
+		const Square sq = bb.firstOneFromSQ11();
 		key ^= ZobPiece[pos.piece(sq)][sq];
 	}
 	const Hand hand = pos.hand(pos.turn());

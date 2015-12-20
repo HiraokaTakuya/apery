@@ -262,45 +262,45 @@ namespace {
 		if (pos.gamePly() <= 60) {
 			const Color them = oppositeColor(pos.turn());
 			if (pos.hand(pos.turn()).exists<HBishop>()
-				&& pos.bbOf(Silver, them).isSet(inverseIfWhite(them, H3))
-				&& (pos.bbOf(King  , them).isSet(inverseIfWhite(them, F2))
-					|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, F3))
-					|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, E1)))
-				&& pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, G3))
-				&& pos.piece(inverseIfWhite(them, H2)) == Empty
-				&& pos.piece(inverseIfWhite(them, G2)) == Empty
-				&& pos.piece(inverseIfWhite(them, G1)) == Empty)
+				&& pos.bbOf(Silver, them).isSet(inverseIfWhite(them, SQ27))
+				&& (pos.bbOf(King  , them).isSet(inverseIfWhite(them, SQ48))
+					|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, SQ47))
+					|| pos.bbOf(King  , them).isSet(inverseIfWhite(them, SQ59)))
+				&& pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, SQ37))
+				&& pos.piece(inverseIfWhite(them, SQ28)) == Empty
+				&& pos.piece(inverseIfWhite(them, SQ38)) == Empty
+				&& pos.piece(inverseIfWhite(them, SQ39)) == Empty)
 			{
 				return (pos.turn() == Black ? BlackBishopInDangerIn28 : WhiteBishopInDangerIn28);
 			}
 			else if (pos.hand(pos.turn()).exists<HBishop>()
 					 && pos.hand(them).exists<HBishop>()
-					 && pos.piece(inverseIfWhite(them, C2)) == Empty
-					 && pos.piece(inverseIfWhite(them, C1)) == Empty
-					 && pos.piece(inverseIfWhite(them, D2)) == Empty
-					 && pos.piece(inverseIfWhite(them, D1)) == Empty
-					 && pos.piece(inverseIfWhite(them, A2)) == Empty
-					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Silver
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, B2))) == Silver)
-					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, C3))) == Knight
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, B1))) == Knight)
-					 && ((pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
-						  && pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King)
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
+					 && pos.piece(inverseIfWhite(them, SQ78)) == Empty
+					 && pos.piece(inverseIfWhite(them, SQ79)) == Empty
+					 && pos.piece(inverseIfWhite(them, SQ68)) == Empty
+					 && pos.piece(inverseIfWhite(them, SQ69)) == Empty
+					 && pos.piece(inverseIfWhite(them, SQ98)) == Empty
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ77))) == Silver
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ88))) == Silver)
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ77))) == Knight
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ89))) == Knight)
+					 && ((pieceToPieceType(pos.piece(inverseIfWhite(them, SQ58))) == Gold
+						  && pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == King)
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == Gold))
 			{
 				return (pos.turn() == Black ? BlackBishopInDangerIn78 : WhiteBishopInDangerIn78);
 			}
 			else if (pos.hand(pos.turn()).exists<HBishop>()
 					 && pos.hand(them).exists<HBishop>()
-					 && pos.piece(inverseIfWhite(them, G2)) == Empty
-					 && pos.piece(inverseIfWhite(them, I2)) == Empty
-					 && pieceToPieceType(pos.piece(inverseIfWhite(them, H2))) == Silver
-					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == King
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == King
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E2))) == Gold
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E3))) == Gold)
-					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == King
-						 || pieceToPieceType(pos.piece(inverseIfWhite(them, E1))) == Gold))
+					 && pos.piece(inverseIfWhite(them, SQ38)) == Empty
+					 && pos.piece(inverseIfWhite(them, SQ18)) == Empty
+					 && pieceToPieceType(pos.piece(inverseIfWhite(them, SQ28))) == Silver
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ58))) == King
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ57))) == King
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ58))) == Gold
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ57))) == Gold)
+					 && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == King
+						 || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == Gold))
 			{
 				return (pos.turn() == Black ? BlackBishopInDangerIn38 : WhiteBishopInDangerIn38);
 			}
@@ -750,8 +750,8 @@ void Searcher::idLoop(Position& pos) {
 // 稲庭判定
 void Searcher::detectInaniwa(const Position& pos) {
 	if (inaniwaFlag == NotInaniwa && 20 <= pos.gamePly()) {
-		const Rank TRank7 = (pos.turn() == Black ? Rank7 : Rank3); // not constant
-		const Bitboard mask = rankMask(TRank7) & ~fileMask<FileA>() & ~fileMask<FileI>();
+		const Rank Trank3 = (pos.turn() == Black ? Rank3 : Rank7); // not constant
+		const Bitboard mask = rankMask(Trank3) & ~fileMask<File9>() & ~fileMask<File1>();
 		if ((pos.bbOf(Pawn, oppositeColor(pos.turn())) & mask) == mask) {
 			inaniwaFlag = (pos.turn() == Black ? InaniwaIsWhite : InaniwaIsBlack);
 			tt.clear();
@@ -1497,7 +1497,7 @@ bool nyugyoku(const Position& pos) {
 
 	const Color us = pos.turn();
 	// 敵陣のマスク
-	const Bitboard opponentsField = (us == Black ? inFrontMask<Black, Rank6>() : inFrontMask<White, Rank4>());
+	const Bitboard opponentsField = (us == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
 
 	// 二 宣言側の玉が敵陣三段目以内に入っている。
 	if (!pos.bbOf(King, us).andIsNot0(opponentsField))

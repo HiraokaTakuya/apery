@@ -146,7 +146,7 @@ public:
 	Score materialDiff() const { return st_->material - st_->previous->material; }
 
 	FORCE_INLINE Square kingSquare(const Color c) const {
-		assert(kingSquare_[c] == bbOf(King, c).constFirstOneFromI9());
+		assert(kingSquare_[c] == bbOf(King, c).constFirstOneFromSQ11());
 		return kingSquare_[c];
 	}
 
@@ -318,7 +318,7 @@ private:
 			(bbOf(Rook, Dragon) & rookAttackToEdge(ksq)) | (bbOf(Bishop, Horse) & bishopAttackToEdge(ksq));
 
 		while (pinners.isNot0()) {
-			const Square sq = pinners.firstOneFromI9();
+			const Square sq = pinners.firstOneFromSQ11();
 			// pin する遠隔駒と玉の間にある駒の位置の Bitboard
 			const Bitboard between = betweenBB(sq, ksq) & occupiedBB();
 

@@ -9,10 +9,10 @@ namespace {
 	// square のマスにおける、障害物を調べる必要がある場所を調べて Bitboard で返す。
 	Bitboard rookBlockMaskCalc(const Square square) {
 		Bitboard result = squareFileMask(square) ^ squareRankMask(square);
-		if (makeFile(square) != FileA) { result &= ~fileMask<FileA>(); }
-		if (makeFile(square) != FileI) { result &= ~fileMask<FileI>(); }
-		if (makeRank(square) != Rank1) { result &= ~rankMask<Rank1>(); }
+		if (makeFile(square) != File9) { result &= ~fileMask<File9>(); }
+		if (makeFile(square) != File1) { result &= ~fileMask<File1>(); }
 		if (makeRank(square) != Rank9) { result &= ~rankMask<Rank9>(); }
+		if (makeRank(square) != Rank1) { result &= ~rankMask<Rank1>(); }
 		return result;
 	}
 
@@ -21,23 +21,23 @@ namespace {
 		const Rank rank = makeRank(square);
 		const File file = makeFile(square);
 		Bitboard result = allZeroBB();
-		for (Square sq = I9; sq < SquareNum; ++sq) {
+		for (Square sq = SQ11; sq < SquareNum; ++sq) {
 			const Rank r = makeRank(sq);
 			const File f = makeFile(sq);
 			if (abs(rank - r) == abs(file - f))
 				result.setBit(sq);
 		}
-		result &= ~(rankMask<Rank1>() | rankMask<Rank9>() | fileMask<FileA>() | fileMask<FileI>());
+		result &= ~(rankMask<Rank9>() | rankMask<Rank1>() | fileMask<File9>() | fileMask<File1>());
 		result.clearBit(square);
 
 		return result;
 	}
 
 	// square のマスにおける、障害物を調べる必要がある場所を Bitboard で返す。
-	// lance の前方だけを調べれば良さそうだけど、Rank8 ~ Rank2 の状態をそのまま index に使いたいので、
+	// lance の前方だけを調べれば良さそうだけど、Rank2 ~ Rank8 の状態をそのまま index に使いたいので、
 	// 縦方向全て(端を除く)の occupied を全て調べる。
 	Bitboard lanceBlockMask(const Square square) {
-		return squareFileMask(square) & ~(rankMask<Rank1>() | rankMask<Rank9>());
+		return squareFileMask(square) & ~(rankMask<Rank9>() | rankMask<Rank1>());
 	}
 
 	// Rook or Bishop の利きの範囲を調べて bitboard で返す。
@@ -76,7 +76,7 @@ namespace {
 		Bitboard tmpBlockMask = blockMask;
 		Bitboard result = allZeroBB();
 		for (int i = 0; i < bits; ++i) {
-			const Square sq = tmpBlockMask.firstOneFromI9();
+			const Square sq = tmpBlockMask.firstOneFromSQ11();
 			if (index & (1 << i))
 				result.setBit(sq);
 		}
@@ -94,7 +94,7 @@ namespace {
 		auto* magic       = (isBishop ? BishopMagic       : RookMagic      );
 #endif
 		int index = 0;
-		for (Square sq = I9; sq < SquareNum; ++sq) {
+		for (Square sq = SQ11; sq < SquareNum; ++sq) {
 			blockMask[sq] = (isBishop ? bishopBlockMaskCalc(sq) : rookBlockMaskCalc(sq));
 			attackIndex[sq] = index;
 
@@ -114,7 +114,7 @@ namespace {
 	// LanceBlockMask, LanceAttack の値を設定する。
 	void initLanceAttacks() {
 		for (Color c = Black; c < ColorNum; ++c) {
-			for (Square sq = I9; sq < SquareNum; ++sq) {
+			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				const Bitboard blockMask = lanceBlockMask(sq);
 				//const int num1s = blockMask.popCount(); // 常に 7
 				const int num1s = 7;
@@ -128,44 +128,44 @@ namespace {
 	}
 
 	void initKingAttacks() {
-		for (Square sq = I9; sq < SquareNum; ++sq)
+		for (Square sq = SQ11; sq < SquareNum; ++sq)
 			KingAttack[sq] = rookAttack(sq, allOneBB()) | bishopAttack(sq, allOneBB());
 	}
 
 	void initGoldAttacks() {
 		for (Color c = Black; c < ColorNum; ++c)
-			for (Square sq = I9; sq < SquareNum; ++sq)
+			for (Square sq = SQ11; sq < SquareNum; ++sq)
 				GoldAttack[c][sq] = (kingAttack(sq) & inFrontMask(c, makeRank(sq))) | rookAttack(sq, allOneBB());
 	}
 
 	void initSilverAttacks() {
 		for (Color c = Black; c < ColorNum; ++c)
-			for (Square sq = I9; sq < SquareNum; ++sq)
+			for (Square sq = SQ11; sq < SquareNum; ++sq)
 				SilverAttack[c][sq] = (kingAttack(sq) & inFrontMask(c, makeRank(sq))) | bishopAttack(sq, allOneBB());
 	}
 
 	void initKnightAttacks() {
 		for (Color c = Black; c < ColorNum; ++c) {
-			for (Square sq = I9; sq < SquareNum; ++sq) {
+			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				KnightAttack[c][sq] = allZeroBB();
 				const Bitboard bb = pawnAttack(c, sq);
 				if (bb.isNot0())
-					KnightAttack[c][sq] = bishopStepAttacks(bb.constFirstOneFromI9()) & inFrontMask(c, makeRank(sq));
+					KnightAttack[c][sq] = bishopStepAttacks(bb.constFirstOneFromSQ11()) & inFrontMask(c, makeRank(sq));
 			}
 		}
 	}
 
 	void initPawnAttacks() {
 		for (Color c = Black; c < ColorNum; ++c)
-			for (Square sq = I9; sq < SquareNum; ++sq)
+			for (Square sq = SQ11; sq < SquareNum; ++sq)
 				PawnAttack[c][sq] = silverAttack(c, sq) ^ bishopAttack(sq, allOneBB());
 	}
 
 	void initSquareRelation() {
-		for (Square sq1 = I9; sq1 < SquareNum; ++sq1) {
+		for (Square sq1 = SQ11; sq1 < SquareNum; ++sq1) {
 			const File file1 = makeFile(sq1);
 			const Rank rank1 = makeRank(sq1);
-			for (Square sq2 = I9; sq2 < SquareNum; ++sq2) {
+			for (Square sq2 = SQ11; sq2 < SquareNum; ++sq2) {
 				const File file2 = makeFile(sq2);
 				const Rank rank2 = makeRank(sq2);
 				SquareRelation[sq1][sq2] = DirecMisc;
@@ -186,7 +186,7 @@ namespace {
 	// 障害物が無いときの利きの Bitboard
 	// RookAttack, BishopAttack, LanceAttack を設定してから、この関数を呼ぶこと。
 	void initAttackToEdge() {
-		for (Square sq = I9; sq < SquareNum; ++sq) {
+		for (Square sq = SQ11; sq < SquareNum; ++sq) {
 			RookAttackToEdge[sq] = rookAttack(sq, allZeroBB());
 			BishopAttackToEdge[sq] = bishopAttack(sq, allZeroBB());
 			LanceAttackToEdge[Black][sq] = lanceAttack(Black, sq, allZeroBB());
@@ -195,8 +195,8 @@ namespace {
 	}
 
 	void initBetweenBB() {
-		for (Square sq1 = I9; sq1 < SquareNum; ++sq1) {
-			for (Square sq2 = I9; sq2 < SquareNum; ++sq2) {
+		for (Square sq1 = SQ11; sq1 < SquareNum; ++sq1) {
+			for (Square sq2 = SQ11; sq2 < SquareNum; ++sq2) {
 				BetweenBB[sq1][sq2] = allZeroBB();
 				if (sq1 == sq2) continue;
 				const Direction direc = squareRelation(sq1, sq2);
@@ -211,11 +211,11 @@ namespace {
 	void initCheckTable() {
 		for (Color c = Black; c < ColorNum; ++c) {
 			const Color opp = oppositeColor(c);
-			for (Square sq = I9; sq < SquareNum; ++sq) {
+			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				GoldCheckTable[c][sq] = allZeroBB();
 				Bitboard checkBB = goldAttack(opp, sq);
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
+					const Square checkSq = checkBB.firstOneFromSQ11();
 					GoldCheckTable[c][sq] |= goldAttack(opp, checkSq);
 				}
 				GoldCheckTable[c][sq].andEqualNot(setMaskBB(sq) | goldAttack(opp, sq));
@@ -224,28 +224,28 @@ namespace {
 
 		for (Color c = Black; c < ColorNum; ++c) {
 			const Color opp = oppositeColor(c);
-			for (Square sq = I9; sq < SquareNum; ++sq) {
+			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				SilverCheckTable[c][sq] = allZeroBB();
 
 				Bitboard checkBB = silverAttack(opp, sq);
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
+					const Square checkSq = checkBB.firstOneFromSQ11();
 					SilverCheckTable[c][sq] |= silverAttack(opp, checkSq);
 				}
-				const Bitboard TRank789BB = (c == Black ? inFrontMask<Black, Rank6>() : inFrontMask<White, Rank4>());
+				const Bitboard TRank123BB = (c == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
 				checkBB = goldAttack(opp, sq);
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
+					const Square checkSq = checkBB.firstOneFromSQ11();
 					// 移動元が敵陣である位置なら、金に成って王手出来る。
-					SilverCheckTable[c][sq] |= (silverAttack(opp, checkSq) & TRank789BB);
+					SilverCheckTable[c][sq] |= (silverAttack(opp, checkSq) & TRank123BB);
 				}
 
-				const Bitboard TRank6BB = (c == Black ? rankMask<Rank6>() : rankMask<Rank4>());
+				const Bitboard TRank4BB = (c == Black ? rankMask<Rank4>() : rankMask<Rank6>());
 				// 移動先が3段目で、4段目に移動したときも、成ることが出来る。
-				checkBB = goldAttack(opp, sq) & TRank789BB;
+				checkBB = goldAttack(opp, sq) & TRank123BB;
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
-					SilverCheckTable[c][sq] |= (silverAttack(opp, checkSq) & TRank6BB);
+					const Square checkSq = checkBB.firstOneFromSQ11();
+					SilverCheckTable[c][sq] |= (silverAttack(opp, checkSq) & TRank4BB);
 				}
 				SilverCheckTable[c][sq].andEqualNot(setMaskBB(sq) | silverAttack(opp, sq));
 			}
@@ -253,18 +253,18 @@ namespace {
 
 		for (Color c = Black; c < ColorNum; ++c) {
 			const Color opp = oppositeColor(c);
-			for (Square sq = I9; sq < SquareNum; ++sq) {
+			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				KnightCheckTable[c][sq] = allZeroBB();
 
 				Bitboard checkBB = knightAttack(opp, sq);
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
+					const Square checkSq = checkBB.firstOneFromSQ11();
 					KnightCheckTable[c][sq] |= knightAttack(opp, checkSq);
 				}
-				const Bitboard TRank789BB = (c == Black ? inFrontMask<Black, Rank6>() : inFrontMask<White, Rank4>());
-				checkBB = goldAttack(opp, sq) & TRank789BB;
+				const Bitboard TRank123BB = (c == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
+				checkBB = goldAttack(opp, sq) & TRank123BB;
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
+					const Square checkSq = checkBB.firstOneFromSQ11();
 					KnightCheckTable[c][sq] |= knightAttack(opp, checkSq);
 				}
 			}
@@ -272,13 +272,13 @@ namespace {
 
 		for (Color c = Black; c < ColorNum; ++c) {
 			const Color opp = oppositeColor(c);
-			for (Square sq = I9; sq < SquareNum; ++sq) {
+			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				LanceCheckTable[c][sq] = lanceAttackToEdge(opp, sq);
 
-				const Bitboard TRank789BB = (c == Black ? inFrontMask<Black, Rank6>() : inFrontMask<White, Rank4>());
-				Bitboard checkBB = goldAttack(opp, sq) & TRank789BB;
+				const Bitboard TRank123BB = (c == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
+				Bitboard checkBB = goldAttack(opp, sq) & TRank123BB;
 				while (checkBB.isNot0()) {
-					const Square checkSq = checkBB.firstOneFromI9();
+					const Square checkSq = checkBB.firstOneFromSQ11();
 					LanceCheckTable[c][sq] |= lanceAttackToEdge(opp, checkSq);
 				}
 				LanceCheckTable[c][sq].andEqualNot(setMaskBB(sq) | pawnAttack(opp, sq));
@@ -287,8 +287,8 @@ namespace {
 	}
 
 	void initSquareDistance() {
-		for (Square sq0 = I9; sq0 < SquareNum; ++sq0) {
-			for (Square sq1 = I9; sq1 < SquareNum; ++sq1) {
+		for (Square sq0 = SQ11; sq0 < SquareNum; ++sq0) {
+			for (Square sq1 = SQ11; sq1 < SquareNum; ++sq1) {
 				switch (squareRelation(sq0, sq1)) {
 				case DirecMisc:
 					// DirecMisc な関係は全て距離 1 にしてもKPE学習には問題無いんだけれど。

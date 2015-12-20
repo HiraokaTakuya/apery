@@ -6,32 +6,21 @@
 #include "color.hpp"
 
 // 盤面を [0, 80] の整数の index で表す
-// I9 = 1一, I1 = 1九, A1 = 9九
-//
-// A9, B9, C9, D9, E9, F9, G9, H9, I9,
-// A8, B8, C8, D8, E8, F8, G8, H8, I8,
-// A7, B7, C7, D7, E7, F7, G7, H7, I7,
-// A6, B6, C6, D6, E6, F6, G6, H6, I6,
-// A5, B5, C5, D5, E5, F5, G5, H5, I5,
-// A4, B4, C4, D4, E4, F4, G4, H4, I4,
-// A3, B3, C3, D3, E3, F3, G3, H3, I3,
-// A2, B2, C2, D2, E2, F2, G2, H2, I2,
-// A1, B1, C1, D1, E1, F1, G1, H1, I1,
-//
 // Bitboard のビットが縦に並んでいて、
 // 0 ビット目から順に、以下の位置と対応させる。
+// SQ11 = 1一, SQ19 = 1九, SQ99 = 9九
 enum Square {
-	I9, I8, I7, I6, I5, I4, I3, I2, I1,
-	H9,	H8, H7, H6, H5, H4, H3, H2, H1,
-	G9,	G8, G7, G6, G5, G4, G3, G2, G1,
-	F9,	F8, F7, F6, F5, F4, F3, F2, F1,
-	E9,	E8, E7, E6, E5, E4, E3, E2, E1,
-	D9,	D8, D7, D6, D5, D4, D3, D2, D1,
-	C9,	C8, C7, C6, C5, C4, C3, C2, C1,
-	B9,	B8, B7, B6, B5, B4, B3, B2, B1,
-	A9,	A8, A7, A6, A5, A4, A3, A2, A1,
+	SQ11, SQ12, SQ13, SQ14, SQ15, SQ16, SQ17, SQ18, SQ19,
+	SQ21, SQ22, SQ23, SQ24, SQ25, SQ26, SQ27, SQ28, SQ29,
+	SQ31, SQ32, SQ33, SQ34, SQ35, SQ36, SQ37, SQ38, SQ39,
+	SQ41, SQ42, SQ43, SQ44, SQ45, SQ46, SQ47, SQ48, SQ49,
+	SQ51, SQ52, SQ53, SQ54, SQ55, SQ56, SQ57, SQ58, SQ59,
+	SQ61, SQ62, SQ63, SQ64, SQ65, SQ66, SQ67, SQ68, SQ69,
+	SQ71, SQ72, SQ73, SQ74, SQ75, SQ76, SQ77, SQ78, SQ79,
+	SQ81, SQ82, SQ83, SQ84, SQ85, SQ86, SQ87, SQ88, SQ89,
+	SQ91, SQ92, SQ93, SQ94, SQ95, SQ96, SQ97, SQ98, SQ99,
 	SquareNum, // = 81
-	SquareNoLeftNum = D9,
+	SquareNoLeftNum = SQ61,
 	B_hand_pawn   = SquareNum     + -1,
 	B_hand_lance  = B_hand_pawn   + 18,
 	B_hand_knight = B_hand_lance  +  4,
@@ -50,14 +39,16 @@ enum Square {
 };
 OverloadEnumOperators(Square);
 
+// 筋
 enum File {
-	FileI, FileH, FileG, FileF, FileE, FileD, FileC, FileB, FileA, FileNum,
-	FileNoLeftNum = FileD
+	File1, File2, File3, File4, File5, File6, File7, File8, File9, FileNum,
+	FileNoLeftNum = File6
 };
 OverloadEnumOperators(File);
 
+// 段
 enum Rank {
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1, RankNum
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9, RankNum
 };
 OverloadEnumOperators(Rank);
 
@@ -104,27 +95,27 @@ inline constexpr Square makeSquare(const File f, const Rank r) {
 }
 
 const Rank SquareToRank[SquareNum] = {
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1,
-	Rank9, Rank8, Rank7, Rank6, Rank5, Rank4, Rank3, Rank2, Rank1
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9,
+	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9
 };
 
 const File SquareToFile[SquareNum] = {
-	FileI, FileI, FileI, FileI, FileI, FileI, FileI, FileI, FileI,
-	FileH, FileH, FileH, FileH, FileH, FileH, FileH, FileH, FileH,
-	FileG, FileG, FileG, FileG, FileG, FileG, FileG, FileG, FileG,
-	FileF, FileF, FileF, FileF, FileF, FileF, FileF, FileF, FileF,
-	FileE, FileE, FileE, FileE, FileE, FileE, FileE, FileE, FileE,
-	FileD, FileD, FileD, FileD, FileD, FileD, FileD, FileD, FileD,
-	FileC, FileC, FileC, FileC, FileC, FileC, FileC, FileC, FileC,
-	FileB, FileB, FileB, FileB, FileB, FileB, FileB, FileB, FileB,
-	FileA, FileA, FileA, FileA, FileA, FileA, FileA, FileA, FileA
+	File1, File1, File1, File1, File1, File1, File1, File1, File1,
+	File2, File2, File2, File2, File2, File2, File2, File2, File2,
+	File3, File3, File3, File3, File3, File3, File3, File3, File3,
+	File4, File4, File4, File4, File4, File4, File4, File4, File4,
+	File5, File5, File5, File5, File5, File5, File5, File5, File5,
+	File6, File6, File6, File6, File6, File6, File6, File6, File6,
+	File7, File7, File7, File7, File7, File7, File7, File7, File7,
+	File8, File8, File8, File8, File8, File8, File8, File8, File8,
+	File9, File9, File9, File9, File9, File9, File9, File9, File9
 };
 
 // 速度が必要な場面で使用する。
@@ -220,11 +211,11 @@ inline constexpr Square inverseIfWhite(const Color c, const Square sq) { return 
 inline bool canPromote(const Color c, const Rank fromOrToRank) {
 #if 1
 	static_assert(Black == 0, "");
-	static_assert(Rank9 == 0, "");
+	static_assert(Rank1 == 0, "");
 	return static_cast<bool>(0x1c00007u & (1u << ((c << 4) + fromOrToRank)));
 #else
 	// 同じ意味。
-	return (c == Black ? isInFrontOf<Black, Rank6, Rank4>(fromOrToRank) : isInFrontOf<White, Rank6, Rank4>(fromOrToRank));
+	return (c == Black ? isInFrontOf<Black, Rank4, Rank6>(fromOrToRank) : isInFrontOf<White, Rank4, Rank6>(fromOrToRank));
 #endif
 }
 

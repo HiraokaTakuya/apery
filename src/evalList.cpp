@@ -39,7 +39,7 @@ void EvalList::set(const Position& pos) {
 
 	Bitboard bb = pos.bbOf(King).notThisAnd(pos.occupiedBB());
 	while (bb.isNot0()) {
-		const Square sq = bb.firstOneFromI9();
+		const Square sq = bb.firstOneFromSQ11();
 		const Piece pc = pos.piece(sq);
 		listToSquareHand[nlist] = sq;
 		squareHandToList[sq] = nlist;

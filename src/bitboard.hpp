@@ -139,7 +139,7 @@ public:
 	// Bitboard の right 側だけの要素を調べて、最初に 1 であるマスの index を返す。
 	// そのマスを 0 にする。
 	// Bitboard の right 側が 0 でないことを前提にしている。
-	FORCE_INLINE Square firstOneRightFromI9() {
+	FORCE_INLINE Square firstOneRightFromSQ11() {
 		const Square sq = static_cast<Square>(firstOneFromLSB(this->p(0)));
 		// LSB 側の最初の 1 の bit を 0 にする
 		this->p_[0] &= this->p(0) - 1;
@@ -148,31 +148,31 @@ public:
 	// Bitboard の left 側だけの要素を調べて、最初に 1 であるマスの index を返す。
 	// そのマスを 0 にする。
 	// Bitboard の left 側が 0 でないことを前提にしている。
-	FORCE_INLINE Square firstOneLeftFromB9() {
+	FORCE_INLINE Square firstOneLeftFromSQ81() {
 		const Square sq = static_cast<Square>(firstOneFromLSB(this->p(1)) + 63);
 		// LSB 側の最初の 1 の bit を 0 にする
 		this->p_[1] &= this->p(1) - 1;
 		return sq;
 	}
-	// Bitboard を I9 から A1 まで調べて、最初に 1 であるマスの index を返す。
+	// Bitboard を SQ11 から SQ99 まで調べて、最初に 1 であるマスの index を返す。
 	// そのマスを 0 にする。
 	// Bitboard が allZeroBB() でないことを前提にしている。
 	// VC++ の _BitScanForward() は入力が 0 のときに 0 を返す仕様なので、
 	// 最初に 0 でないか判定するのは少し損。
-	FORCE_INLINE Square firstOneFromI9() {
+	FORCE_INLINE Square firstOneFromSQ11() {
 		if (this->p(0)) {
-			return firstOneRightFromI9();
+			return firstOneRightFromSQ11();
 		}
-		return firstOneLeftFromB9();
+		return firstOneLeftFromSQ81();
 	}
 	// 返す位置を 0 にしないバージョン。
-	FORCE_INLINE Square constFirstOneRightFromI9() const { return static_cast<Square>(firstOneFromLSB(this->p(0))); }
-	FORCE_INLINE Square constFirstOneLeftFromB9() const { return static_cast<Square>(firstOneFromLSB(this->p(1)) + 63); }
-	FORCE_INLINE Square constFirstOneFromI9() const {
+	FORCE_INLINE Square constFirstOneRightFromSQ11() const { return static_cast<Square>(firstOneFromLSB(this->p(0))); }
+	FORCE_INLINE Square constFirstOneLeftFromSQ81() const { return static_cast<Square>(firstOneFromLSB(this->p(1)) + 63); }
+	FORCE_INLINE Square constFirstOneFromSQ11() const {
 		if (this->p(0)) {
-			return constFirstOneRightFromI9();
+			return constFirstOneRightFromSQ11();
 		}
-		return constFirstOneLeftFromB9();
+		return constFirstOneLeftFromSQ81();
 	}
 	// Bitboard の 1 の bit を数える。
 	// Crossover は、merge() すると 1 である bit が重なる可能性があるなら true
@@ -198,9 +198,9 @@ public:
 	// for debug
 	void printBoard() const {
 		std::cout << "   A  B  C  D  E  F  G  H  I\n";
-		for (Rank r = Rank9; r < RankNum; ++r) {
+		for (Rank r = Rank1; r < RankNum; ++r) {
 			std::cout << (9 - r);
-			for (File f = FileA; FileI <= f; --f) {
+			for (File f = File9; File1 <= f; --f) {
 				std::cout << (this->isSet(makeSquare(f, r)) ? "  X" : "  .");
 			}
 			std::cout << "\n";
@@ -210,8 +210,8 @@ public:
 	}
 
 	void printTable(const int part) const {
-		for (Rank r = Rank9; r < RankNum; ++r) {
-			for (File f = FileC; FileI <= f; --f) {
+		for (Rank r = Rank1; r < RankNum; ++r) {
+			for (File f = File7; File1 <= f; --f) {
 				std::cout << (UINT64_C(1) & (this->p(part) >> makeSquare(f, r)));
 			}
 			std::cout << std::endl;
@@ -220,7 +220,7 @@ public:
 	}
 
 	// 指定した位置が Bitboard のどちらの u64 変数の要素か
-	static int part(const Square sq) { return static_cast<int>(C1 < sq); }
+	static int part(const Square sq) { return static_cast<int>(SQ79 < sq); }
 
 private:
 #if defined (HAVE_SSE2) || defined (HAVE_SSE4)
@@ -264,25 +264,25 @@ const int Slide[SquareNum] = {
 	10, 10, 10, 10, 10, 10, 10, 10, 10
 };
 
-const Bitboard FileIMask = Bitboard(UINT64_C(0x1ff) << (9 * 0), 0);
-const Bitboard FileHMask = Bitboard(UINT64_C(0x1ff) << (9 * 1), 0);
-const Bitboard FileGMask = Bitboard(UINT64_C(0x1ff) << (9 * 2), 0);
-const Bitboard FileFMask = Bitboard(UINT64_C(0x1ff) << (9 * 3), 0);
-const Bitboard FileEMask = Bitboard(UINT64_C(0x1ff) << (9 * 4), 0);
-const Bitboard FileDMask = Bitboard(UINT64_C(0x1ff) << (9 * 5), 0);
-const Bitboard FileCMask = Bitboard(UINT64_C(0x1ff) << (9 * 6), 0);
-const Bitboard FileBMask = Bitboard(0, 0x1ff << (9 * 0));
-const Bitboard FileAMask = Bitboard(0, 0x1ff << (9 * 1));
+const Bitboard File1Mask = Bitboard(UINT64_C(0x1ff) << (9 * 0), 0);
+const Bitboard File2Mask = Bitboard(UINT64_C(0x1ff) << (9 * 1), 0);
+const Bitboard File3Mask = Bitboard(UINT64_C(0x1ff) << (9 * 2), 0);
+const Bitboard File4Mask = Bitboard(UINT64_C(0x1ff) << (9 * 3), 0);
+const Bitboard File5Mask = Bitboard(UINT64_C(0x1ff) << (9 * 4), 0);
+const Bitboard File6Mask = Bitboard(UINT64_C(0x1ff) << (9 * 5), 0);
+const Bitboard File7Mask = Bitboard(UINT64_C(0x1ff) << (9 * 6), 0);
+const Bitboard File8Mask = Bitboard(0, 0x1ff << (9 * 0));
+const Bitboard File9Mask = Bitboard(0, 0x1ff << (9 * 1));
 
-const Bitboard Rank9Mask = Bitboard(UINT64_C(0x40201008040201) << 0, 0x201 << 0);
-const Bitboard Rank8Mask = Bitboard(UINT64_C(0x40201008040201) << 1, 0x201 << 1);
-const Bitboard Rank7Mask = Bitboard(UINT64_C(0x40201008040201) << 2, 0x201 << 2);
-const Bitboard Rank6Mask = Bitboard(UINT64_C(0x40201008040201) << 3, 0x201 << 3);
+const Bitboard Rank1Mask = Bitboard(UINT64_C(0x40201008040201) << 0, 0x201 << 0);
+const Bitboard Rank2Mask = Bitboard(UINT64_C(0x40201008040201) << 1, 0x201 << 1);
+const Bitboard Rank3Mask = Bitboard(UINT64_C(0x40201008040201) << 2, 0x201 << 2);
+const Bitboard Rank4Mask = Bitboard(UINT64_C(0x40201008040201) << 3, 0x201 << 3);
 const Bitboard Rank5Mask = Bitboard(UINT64_C(0x40201008040201) << 4, 0x201 << 4);
-const Bitboard Rank4Mask = Bitboard(UINT64_C(0x40201008040201) << 5, 0x201 << 5);
-const Bitboard Rank3Mask = Bitboard(UINT64_C(0x40201008040201) << 6, 0x201 << 6);
-const Bitboard Rank2Mask = Bitboard(UINT64_C(0x40201008040201) << 7, 0x201 << 7);
-const Bitboard Rank1Mask = Bitboard(UINT64_C(0x40201008040201) << 8, 0x201 << 8);
+const Bitboard Rank6Mask = Bitboard(UINT64_C(0x40201008040201) << 5, 0x201 << 5);
+const Bitboard Rank7Mask = Bitboard(UINT64_C(0x40201008040201) << 6, 0x201 << 6);
+const Bitboard Rank8Mask = Bitboard(UINT64_C(0x40201008040201) << 7, 0x201 << 7);
+const Bitboard Rank9Mask = Bitboard(UINT64_C(0x40201008040201) << 8, 0x201 << 8);
 
 extern const Bitboard FileMask[FileNum];
 extern const Bitboard RankMask[RankNum];
@@ -290,30 +290,30 @@ extern const Bitboard InFrontMask[ColorNum][RankNum];
 
 inline Bitboard fileMask(const File f) { return FileMask[f]; }
 template <File F> inline Bitboard fileMask() {
-	static_assert(FileI <= F && F <= FileA, "");
-	return (F == FileI ? FileIMask
-			: F == FileH ? FileHMask
-			: F == FileG ? FileGMask
-			: F == FileF ? FileFMask
-			: F == FileE ? FileEMask
-			: F == FileD ? FileDMask
-			: F == FileC ? FileCMask
-			: F == FileB ? FileBMask
-			: /*F == FileA ?*/ FileAMask);
+	static_assert(File1 <= F && F <= File9, "");
+	return (F == File1 ? File1Mask
+			: F == File2 ? File2Mask
+			: F == File3 ? File3Mask
+			: F == File4 ? File4Mask
+			: F == File5 ? File5Mask
+			: F == File6 ? File6Mask
+			: F == File7 ? File7Mask
+			: F == File8 ? File8Mask
+			: /*F == File9 ?*/ File9Mask);
 }
 
 inline Bitboard rankMask(const Rank r) { return RankMask[r]; }
 template <Rank R> inline Bitboard rankMask() {
-	static_assert(Rank9 <= R && R <= Rank1, "");
-	return (R == Rank9 ? Rank9Mask
-			: R == Rank8 ? Rank8Mask
-			: R == Rank7 ? Rank7Mask
-			: R == Rank6 ? Rank6Mask
-			: R == Rank5 ? Rank5Mask
-			: R == Rank4 ? Rank4Mask
-			: R == Rank3 ? Rank3Mask
+	static_assert(Rank1 <= R && R <= Rank9, "");
+	return (R == Rank1 ? Rank1Mask
 			: R == Rank2 ? Rank2Mask
-			: /*R == Rank1 ?*/ Rank1Mask);
+			: R == Rank3 ? Rank3Mask
+			: R == Rank4 ? Rank4Mask
+			: R == Rank5 ? Rank5Mask
+			: R == Rank6 ? Rank6Mask
+			: R == Rank7 ? Rank7Mask
+			: R == Rank8 ? Rank8Mask
+			: /*R == Rank9 ?*/ Rank9Mask);
 }
 
 // 直接テーブル引きすべきだと思う。
@@ -328,48 +328,48 @@ inline Bitboard squareRankMask(const Square sq) {
 	return rankMask(r);
 }
 
-const Bitboard InFrontOfRank9Black = allZeroBB();
-const Bitboard InFrontOfRank8Black = rankMask<Rank9>();
-const Bitboard InFrontOfRank7Black = InFrontOfRank8Black | rankMask<Rank8>();
-const Bitboard InFrontOfRank6Black = InFrontOfRank7Black | rankMask<Rank7>();
-const Bitboard InFrontOfRank5Black = InFrontOfRank6Black | rankMask<Rank6>();
-const Bitboard InFrontOfRank4Black = InFrontOfRank5Black | rankMask<Rank5>();
-const Bitboard InFrontOfRank3Black = InFrontOfRank4Black | rankMask<Rank4>();
-const Bitboard InFrontOfRank2Black = InFrontOfRank3Black | rankMask<Rank3>();
-const Bitboard InFrontOfRank1Black = InFrontOfRank2Black | rankMask<Rank2>();
+const Bitboard InFrontOfRank1Black = allZeroBB();
+const Bitboard InFrontOfRank2Black = rankMask<Rank1>();
+const Bitboard InFrontOfRank3Black = InFrontOfRank2Black | rankMask<Rank2>();
+const Bitboard InFrontOfRank4Black = InFrontOfRank3Black | rankMask<Rank3>();
+const Bitboard InFrontOfRank5Black = InFrontOfRank4Black | rankMask<Rank4>();
+const Bitboard InFrontOfRank6Black = InFrontOfRank5Black | rankMask<Rank5>();
+const Bitboard InFrontOfRank7Black = InFrontOfRank6Black | rankMask<Rank6>();
+const Bitboard InFrontOfRank8Black = InFrontOfRank7Black | rankMask<Rank7>();
+const Bitboard InFrontOfRank9Black = InFrontOfRank8Black | rankMask<Rank8>();
 
-const Bitboard InFrontOfRank1White = allZeroBB();
-const Bitboard InFrontOfRank2White = rankMask<Rank1>();
-const Bitboard InFrontOfRank3White = InFrontOfRank2White | rankMask<Rank2>();
-const Bitboard InFrontOfRank4White = InFrontOfRank3White | rankMask<Rank3>();
-const Bitboard InFrontOfRank5White = InFrontOfRank4White | rankMask<Rank4>();
-const Bitboard InFrontOfRank6White = InFrontOfRank5White | rankMask<Rank5>();
-const Bitboard InFrontOfRank7White = InFrontOfRank6White | rankMask<Rank6>();
-const Bitboard InFrontOfRank8White = InFrontOfRank7White | rankMask<Rank7>();
-const Bitboard InFrontOfRank9White = InFrontOfRank8White | rankMask<Rank8>();
+const Bitboard InFrontOfRank9White = allZeroBB();
+const Bitboard InFrontOfRank8White = rankMask<Rank9>();
+const Bitboard InFrontOfRank7White = InFrontOfRank8White | rankMask<Rank8>();
+const Bitboard InFrontOfRank6White = InFrontOfRank7White | rankMask<Rank7>();
+const Bitboard InFrontOfRank5White = InFrontOfRank6White | rankMask<Rank6>();
+const Bitboard InFrontOfRank4White = InFrontOfRank5White | rankMask<Rank5>();
+const Bitboard InFrontOfRank3White = InFrontOfRank4White | rankMask<Rank4>();
+const Bitboard InFrontOfRank2White = InFrontOfRank3White | rankMask<Rank3>();
+const Bitboard InFrontOfRank1White = InFrontOfRank2White | rankMask<Rank2>();
 
 inline Bitboard inFrontMask(const Color c, const Rank r) { return InFrontMask[c][r]; }
 template <Color C, Rank R> inline Bitboard inFrontMask() {
 	static_assert(C == Black || C == White, "");
-	static_assert(Rank9 <= R && R <= Rank1, "");
-	return (C == Black ? (R == Rank9 ? InFrontOfRank9Black
-						  : R == Rank8 ? InFrontOfRank8Black
-						  : R == Rank7 ? InFrontOfRank7Black
-						  : R == Rank6 ? InFrontOfRank6Black
-						  : R == Rank5 ? InFrontOfRank5Black
-						  : R == Rank4 ? InFrontOfRank4Black
-						  : R == Rank3 ? InFrontOfRank3Black
+	static_assert(Rank1 <= R && R <= Rank9, "");
+	return (C == Black ? (R == Rank1 ? InFrontOfRank1Black
 						  : R == Rank2 ? InFrontOfRank2Black
-						  : /*R == Rank1 ?*/ InFrontOfRank1Black)
-			: (R == Rank9 ? InFrontOfRank9White
-			   : R == Rank8 ? InFrontOfRank8White
-			   : R == Rank7 ? InFrontOfRank7White
-			   : R == Rank6 ? InFrontOfRank6White
-			   : R == Rank5 ? InFrontOfRank5White
-			   : R == Rank4 ? InFrontOfRank4White
-			   : R == Rank3 ? InFrontOfRank3White
+						  : R == Rank3 ? InFrontOfRank3Black
+						  : R == Rank4 ? InFrontOfRank4Black
+						  : R == Rank5 ? InFrontOfRank5Black
+						  : R == Rank6 ? InFrontOfRank6Black
+						  : R == Rank7 ? InFrontOfRank7Black
+						  : R == Rank8 ? InFrontOfRank8Black
+						  : /*R == Rank9 ?*/ InFrontOfRank9Black)
+			: (R == Rank1 ? InFrontOfRank1White
 			   : R == Rank2 ? InFrontOfRank2White
-			   : /*R == Rank1 ?*/ InFrontOfRank1White));
+			   : R == Rank3 ? InFrontOfRank3White
+			   : R == Rank4 ? InFrontOfRank4White
+			   : R == Rank5 ? InFrontOfRank5White
+			   : R == Rank6 ? InFrontOfRank6White
+			   : R == Rank7 ? InFrontOfRank7White
+			   : R == Rank8 ? InFrontOfRank8White
+			   : /*R == Rank9 ?*/ InFrontOfRank9White));
 }
 
 // メモリ節約の為、1次元配列にして無駄が無いようにしている。
@@ -485,25 +485,25 @@ inline Bitboard goldAndSilverAttacks(const Color c, const Square sq) { return go
 // これはマクロの制約。
 // 同じ処理のコードが 2 箇所で生成されるため、コードサイズが膨れ上がる。
 // その為、あまり多用すべきでないかも知れない。
-#define FOREACH_BB(bb, sq, xxx)					\
-	do {										\
-		while (bb.p(0)) {						\
-			sq = bb.firstOneRightFromI9();		\
-			xxx;								\
-		}										\
-		while (bb.p(1)) {						\
-			sq = bb.firstOneLeftFromB9();		\
-			xxx;								\
-		}										\
+#define FOREACH_BB(bb, sq, xxx)						\
+	do {											\
+		while (bb.p(0)) {							\
+			sq = bb.firstOneRightFromSQ11();		\
+			xxx;									\
+		}											\
+		while (bb.p(1)) {							\
+			sq = bb.firstOneLeftFromSQ81();			\
+			xxx;									\
+		}											\
 	} while (false)
 
 template <typename T> FORCE_INLINE void foreachBB(Bitboard& bb, Square& sq, T t) {
 	while (bb.p(0)) {
-		sq = bb.firstOneRightFromI9();
+		sq = bb.firstOneRightFromSQ11();
 		t(0);
 	}
 	while (bb.p(1)) {
-		sq = bb.firstOneLeftFromB9();
+		sq = bb.firstOneLeftFromSQ81();
 		t(1);
 	}
 }

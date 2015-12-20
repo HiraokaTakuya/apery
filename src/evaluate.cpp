@@ -107,35 +107,35 @@ namespace {
 	Score inaniwaScoreBody(const Position& pos) {
 		Score score = ScoreZero;
 		if (pos.csearcher()->inaniwaFlag == InaniwaIsBlack) {
-			if (pos.piece(B9) == WKnight) { score += 700 * FVScale; }
-			if (pos.piece(H9) == WKnight) { score += 700 * FVScale; }
-			if (pos.piece(A7) == WKnight) { score += 700 * FVScale; }
-			if (pos.piece(I7) == WKnight) { score += 700 * FVScale; }
-			if (pos.piece(C7) == WKnight) { score += 400 * FVScale; }
-			if (pos.piece(G7) == WKnight) { score += 400 * FVScale; }
-			if (pos.piece(B5) == WKnight) { score += 700 * FVScale; }
-			if (pos.piece(H5) == WKnight) { score += 700 * FVScale; }
-			if (pos.piece(D5) == WKnight) { score += 100 * FVScale; }
-			if (pos.piece(F5) == WKnight) { score += 100 * FVScale; }
-			if (pos.piece(E3) == BPawn)   { score += 200 * FVScale; }
-			if (pos.piece(E4) == BPawn)   { score += 200 * FVScale; }
-			if (pos.piece(E5) == BPawn)   { score += 200 * FVScale; }
+			if (pos.piece(SQ81) == WKnight) { score += 700 * FVScale; }
+			if (pos.piece(SQ21) == WKnight) { score += 700 * FVScale; }
+			if (pos.piece(SQ93) == WKnight) { score += 700 * FVScale; }
+			if (pos.piece(SQ13) == WKnight) { score += 700 * FVScale; }
+			if (pos.piece(SQ73) == WKnight) { score += 400 * FVScale; }
+			if (pos.piece(SQ33) == WKnight) { score += 400 * FVScale; }
+			if (pos.piece(SQ85) == WKnight) { score += 700 * FVScale; }
+			if (pos.piece(SQ25) == WKnight) { score += 700 * FVScale; }
+			if (pos.piece(SQ65) == WKnight) { score += 100 * FVScale; }
+			if (pos.piece(SQ45) == WKnight) { score += 100 * FVScale; }
+			if (pos.piece(SQ57) == BPawn)   { score += 200 * FVScale; }
+			if (pos.piece(SQ56) == BPawn)   { score += 200 * FVScale; }
+			if (pos.piece(SQ55) == BPawn)   { score += 200 * FVScale; }
 		}
 		else {
 			assert(pos.csearcher()->inaniwaFlag == InaniwaIsWhite);
-			if (pos.piece(B1) == BKnight) { score -= 700 * FVScale; }
-			if (pos.piece(H1) == BKnight) { score -= 700 * FVScale; }
-			if (pos.piece(A3) == BKnight) { score -= 700 * FVScale; }
-			if (pos.piece(I3) == BKnight) { score -= 700 * FVScale; }
-			if (pos.piece(C3) == BKnight) { score -= 400 * FVScale; }
-			if (pos.piece(G3) == BKnight) { score -= 400 * FVScale; }
-			if (pos.piece(B5) == BKnight) { score -= 700 * FVScale; }
-			if (pos.piece(H5) == BKnight) { score -= 700 * FVScale; }
-			if (pos.piece(D5) == BKnight) { score -= 100 * FVScale; }
-			if (pos.piece(F5) == BKnight) { score -= 100 * FVScale; }
-			if (pos.piece(E7) == WPawn)   { score -= 200 * FVScale; }
-			if (pos.piece(E6) == WPawn)   { score -= 200 * FVScale; }
-			if (pos.piece(E5) == WPawn)   { score -= 200 * FVScale; }
+			if (pos.piece(SQ89) == BKnight) { score -= 700 * FVScale; }
+			if (pos.piece(SQ29) == BKnight) { score -= 700 * FVScale; }
+			if (pos.piece(SQ97) == BKnight) { score -= 700 * FVScale; }
+			if (pos.piece(SQ17) == BKnight) { score -= 700 * FVScale; }
+			if (pos.piece(SQ77) == BKnight) { score -= 400 * FVScale; }
+			if (pos.piece(SQ37) == BKnight) { score -= 400 * FVScale; }
+			if (pos.piece(SQ85) == BKnight) { score -= 700 * FVScale; }
+			if (pos.piece(SQ25) == BKnight) { score -= 700 * FVScale; }
+			if (pos.piece(SQ65) == BKnight) { score -= 100 * FVScale; }
+			if (pos.piece(SQ45) == BKnight) { score -= 100 * FVScale; }
+			if (pos.piece(SQ53) == WPawn)   { score -= 200 * FVScale; }
+			if (pos.piece(SQ54) == WPawn)   { score -= 200 * FVScale; }
+			if (pos.piece(SQ55) == WPawn)   { score -= 200 * FVScale; }
 		}
 		return score;
 	}
