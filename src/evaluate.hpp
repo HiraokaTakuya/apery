@@ -260,9 +260,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					i = ibegin + inverseFile(isq);
 					j = inverseFileIndexOnBoard(j);
 				}
-				else if (makeFile(isq) == File5) {
+				else if (makeFile(isq) == File5)
 					j = inverseFileIndexIfLefterThanMiddle(j);
-				}
 			}
 		}
 		if (j < i) std::swap(i, j);
@@ -693,9 +692,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			ksq1 = inverseFile(ksq1);
 			i = inverseFileIndexIfOnBoard(i);
 		}
-		else if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5) {
+		else if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5)
 			i = inverseFileIndexIfLefterThanMiddle(i);
-		}
 #if defined EVAL_PHASE4
 		ret[retIdx++] = std::make_pair(sign*(&kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0)), MaxWeight());
 #endif
@@ -747,9 +745,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				diff_file_k0k1 = -diff_file_k0k1;
 				diff_file_k0i = -diff_file_k0i;
 			}
-			else if (0 == diff_file_k0k1 && 0 < diff_file_k0i) {
+			else if (0 == diff_file_k0k1 && 0 < diff_file_k0i)
 				diff_file_k0i = -diff_file_k0i;
-			}
 #if defined EVAL_PHASE3
 			ret[retIdx++] = std::make_pair(sign*(&kkps.r_kkp_b[R_Mid + diff_file_k0k1][R_Mid + diff_rank_k0k1][ipiece][R_Mid + diff_file_k0i][R_Mid + diff_rank_k0i] - oneArrayKKP(0)), MaxWeight());
 #endif

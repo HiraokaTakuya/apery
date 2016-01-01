@@ -37,9 +37,8 @@ public:
 	size_t size() const { return static_cast<size_t>(last_ - moveStackList_); }
 	bool contains(const Move move) const {
 		for (const MoveStack* it(moveStackList_); it != last_; ++it) {
-			if (it->move == move) {
+			if (it->move == move)
 				return true;
-			}
 		}
 		return false;
 	}
@@ -63,9 +62,8 @@ inline Move selectedMakeMove(const PieceType pt, const Square from, const Square
 	static_assert(PM == Promote || PM == NonPromote, "");
 	assert(!((pt == Gold || pt == King || MT == Drop) && PM == Promote));
 	Move move = ((MT == NonCapture || MT == NonCaptureMinusPro) ? makeMove(pt, from, to) : makeCaptureMove(pt, from, to, pos));
-	if (PM == Promote) {
+	if (PM == Promote)
 		move |= promoteFlag();
-	}
 	return move;
 }
 

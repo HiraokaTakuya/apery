@@ -58,11 +58,10 @@ namespace {
 				const Square pawnDropCheckSquare = ksq + TDeltaS;
 				assert(isInSquare(pawnDropCheckSquare));
 				if (toBB.isSet(pawnDropCheckSquare) && pos.piece(pawnDropCheckSquare) == Empty) {
-					if (!pos.isPawnDropCheckMate(US, pawnDropCheckSquare)) {
+					if (!pos.isPawnDropCheckMate(US, pawnDropCheckSquare))
 						// ここで clearBit だけして MakeMove しないことも出来る。
 						// 指し手が生成される順番が変わり、王手が先に生成されるが、後で問題にならないか?
 						(*moveStackList++).move = makeDropMove(Pawn, pawnDropCheckSquare);
-					}
 					toBB.xorBit(pawnDropCheckSquare);
 				}
 			}
@@ -79,14 +78,14 @@ namespace {
 			int haveHandNum = 0; // 持ち駒の駒の種類の数
 
 			// 桂馬、香車、それ以外の順番で格納する。(駒を打てる位置が限定的な順)
-			if (hand.exists<HKnight>()) { haveHand[haveHandNum++] = Knight; }
+			if (hand.exists<HKnight>()) haveHand[haveHandNum++] = Knight;
 			const int noKnightIdx      = haveHandNum; // 桂馬を除く駒でループするときのループの初期値
-			if (hand.exists<HLance >()) { haveHand[haveHandNum++] = Lance;  }
+			if (hand.exists<HLance >()) haveHand[haveHandNum++] = Lance;
 			const int noKnightLanceIdx = haveHandNum; // 桂馬, 香車を除く駒でループするときのループの初期値
-			if (hand.exists<HSilver>()) { haveHand[haveHandNum++] = Silver; }
-			if (hand.exists<HGold  >()) { haveHand[haveHandNum++] = Gold;   }
-			if (hand.exists<HBishop>()) { haveHand[haveHandNum++] = Bishop; }
-			if (hand.exists<HRook  >()) { haveHand[haveHandNum++] = Rook;   }
+			if (hand.exists<HSilver>()) haveHand[haveHandNum++] = Silver;
+			if (hand.exists<HGold  >()) haveHand[haveHandNum++] = Gold;
+			if (hand.exists<HBishop>()) haveHand[haveHandNum++] = Bishop;
+			if (hand.exists<HRook  >()) haveHand[haveHandNum++] = Rook;
 
 			const Rank TRank2 = (US == Black ? Rank2 : Rank8);
 			const Rank TRank1 = (US == Black ? Rank1 : Rank9);
@@ -175,16 +174,14 @@ namespace {
 							(*moveStackList++).move = makePromoteMove<MT>(Pawn, from, to, pos);
 							if (MT == NonEvasion || ALL) {
 								const Rank TRank1 = (US == Black ? Rank1 : Rank9);
-								if (makeRank(to) != TRank1) {
+								if (makeRank(to) != TRank1)
 									(*moveStackList++).move = makeNonPromoteMove<MT>(Pawn, from, to, pos);
-								}
 							}
 						});
 				}
 			}
-			else {
+			else
 				assert(!(target & TRank123BB).isNot0());
-			}
 
 			// 残り(不成)
 			// toBB は 8~4 段目まで。
@@ -459,9 +456,8 @@ namespace {
 
 			// 両王手なら、玉を移動するしか回避方法は無い。
 			// 玉の移動は生成したので、ここで終了
-			if (1 < checkersNum) {
+			if (1 < checkersNum)
 				return moveStackList;
-			}
 
 			// 王手している駒を玉以外で取る手の生成。
 			// pin されているかどうかは movePicker か search で調べる。
@@ -475,9 +471,8 @@ namespace {
 			moveStackList = GeneratePieceMoves<Evasion, Rook,   US, ALL>()(moveStackList, pos, target2, ksq);
 			moveStackList = GeneratePieceMoves<Evasion, GoldHorseDragon,   US, ALL>()(moveStackList, pos, target2, ksq);
 
-			if (target1.isNot0()) {
+			if (target1.isNot0())
 				moveStackList = generateDropMoves<US>(moveStackList, pos, target1);
-			}
 
 			return moveStackList;
 		}
@@ -521,12 +516,10 @@ namespace {
 
 			// 玉の移動による自殺手と、pinされている駒の移動による自殺手を削除
 			while (curr != moveStackList) {
-				if (!pos.pseudoLegalMoveIsLegal<false, false>(curr->move, pinned)) {
+				if (!pos.pseudoLegalMoveIsLegal<false, false>(curr->move, pinned))
 					curr->move = (--moveStackList)->move;
-				}
-				else {
+				else
 					++curr;
-				}
 			}
 
 			return moveStackList;
@@ -545,12 +538,10 @@ namespace {
 
 			// 玉の移動による自殺手と、pinされている駒の移動による自殺手を削除
 			while (curr != moveStackList) {
-				if (!pos.pseudoLegalMoveIsLegal<false, false>(curr->move, pinned)) {
+				if (!pos.pseudoLegalMoveIsLegal<false, false>(curr->move, pinned))
 					curr->move = (--moveStackList)->move;
-				}
-				else {
+				else
 					++curr;
-				}
 			}
 
 			return moveStackList;

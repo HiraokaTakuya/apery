@@ -9,7 +9,7 @@ std::mt19937_64 g_randomTimeSeed(std::chrono::system_clock::now().time_since_epo
 
 std::ostream& operator << (std::ostream& os, SyncCout sc) {
 	static Mutex m;
-	if (sc == IOLock  ) { m.lock();   }
-	if (sc == IOUnlock) { m.unlock(); }
+	if (sc == IOLock  ) m.lock();
+	if (sc == IOUnlock) m.unlock();
 	return os;
 }

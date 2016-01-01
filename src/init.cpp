@@ -9,10 +9,10 @@ namespace {
 	// square のマスにおける、障害物を調べる必要がある場所を調べて Bitboard で返す。
 	Bitboard rookBlockMaskCalc(const Square square) {
 		Bitboard result = squareFileMask(square) ^ squareRankMask(square);
-		if (makeFile(square) != File9) { result &= ~fileMask<File9>(); }
-		if (makeFile(square) != File1) { result &= ~fileMask<File1>(); }
-		if (makeRank(square) != Rank9) { result &= ~rankMask<Rank9>(); }
-		if (makeRank(square) != Rank1) { result &= ~rankMask<Rank1>(); }
+		if (makeFile(square) != File9) result &= ~fileMask<File9>();
+		if (makeFile(square) != File1) result &= ~fileMask<File1>();
+		if (makeRank(square) != Rank9) result &= ~rankMask<Rank9>();
+		if (makeRank(square) != Rank1) result &= ~rankMask<Rank1>();
 		return result;
 	}
 

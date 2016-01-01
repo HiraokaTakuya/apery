@@ -89,12 +89,10 @@ public:
 		return table_[isDrop][pc][to];
 	}
 	void update(const bool isDrop, const Piece pc, const Square to, const Score s) {
-		if (Gain) {
+		if (Gain)
 			table_[isDrop][pc][to] = std::max(s, value(isDrop, pc, to) - 1);
-		}
-		else if (abs(value(isDrop, pc, to) + s) < MaxScore) {
+		else if (abs(value(isDrop, pc, to) + s) < MaxScore)
 			table_[isDrop][pc][to] += s;
-		}
 	}
 
 private:

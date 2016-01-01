@@ -481,9 +481,8 @@ private:
 					ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 					const Score recordScore = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
 					PRINT_PV(std::cout << ", score: " << recordScore << std::endl);
-					for (int jj = recordPVIndex - 1; 0 <= jj; --jj) {
+					for (int jj = recordPVIndex - 1; 0 <= jj; --jj)
 						pos.undoMove(bmd.pvBuffer[jj]);
-					}
 
 					std::array<double, 2> sum_dT = {{0.0, 0.0}};
 					for (int otherPVIndex = recordPVIndex + 1; otherPVIndex < static_cast<int>(bmd.pvBuffer.size()); ++otherPVIndex) {
@@ -503,9 +502,8 @@ private:
 						dT[0] = -dT[0];
 						dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
 						parse2Data.params.incParam(pos, dT);
-						for (int jj = otherPVIndex - 1; !bmd.pvBuffer[jj].isNone(); --jj) {
+						for (int jj = otherPVIndex - 1; !bmd.pvBuffer[jj].isNone(); --jj)
 							pos.undoMove(bmd.pvBuffer[jj]);
-						}
 					}
 
 					for (int jj = 0; jj < recordPVIndex; ++jj) {
@@ -514,9 +512,8 @@ private:
 					}
 					sum_dT[1] = (pos.turn() == rootColor ? sum_dT[1] : -sum_dT[1]);
 					parse2Data.params.incParam(pos, sum_dT);
-					for (int jj = recordPVIndex - 1; 0 <= jj; --jj) {
+					for (int jj = recordPVIndex - 1; 0 <= jj; --jj)
 						pos.undoMove(bmd.pvBuffer[jj]);
-					}
 				}
 				setUpStates->push(StateInfo());
 				pos.doMove(bmd.move, setUpStates->top());
@@ -536,9 +533,8 @@ private:
 			for (auto& thread : threads)
 				thread.join();
 
-			for (auto& parse2 : parse2Datum_) {
+			for (auto& parse2 : parse2Datum_)
 				parse2Data_.params += parse2.params;
-			}
 			parse2EvalBase_.clear();
 			lowerDimension(parse2EvalBase_, parse2Data_.params);
 			setUpdateMask(step);

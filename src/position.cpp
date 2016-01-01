@@ -79,9 +79,8 @@ template <bool MUSTNOTDROP, bool FROMMUSTNOTKING>
 bool Position::pseudoLegalMoveIsLegal(const Move move, const Bitboard& pinned) const {
 	// 駒打ちは、打ち歩詰めや二歩は指し手生成時や、killerをMovePicker::nextMove() 内で排除しているので、常に合法手
 	// (連続王手の千日手は省いていないけれど。)
-	if (!MUSTNOTDROP && move.isDrop()) {
+	if (!MUSTNOTDROP && move.isDrop())
 		return true;
-	}
 	assert(!move.isDrop());
 
 	const Color us = turn();
@@ -116,10 +115,9 @@ bool Position::pseudoLegalMoveIsEvasion(const Move move, const Bitboard& pinned)
 	Bitboard target = checkersBB();
 	const Square checkSq = target.firstOneFromSQ11();
 
-	if (target.isNot0()) {
+	if (target.isNot0())
 		// 両王手のとき、玉の移動以外の手は指せない。
 		return false;
-	}
 
 	const Color us = turn();
 	const Square to = move.to();
@@ -137,74 +135,64 @@ bool Position::moveIsPseudoLegal(const Move move, const bool checkPawnDrop) cons
 
 	if (move.isDrop()) {
 		const PieceType ptFrom = move.pieceTypeDropped();
-		if (!hand(us).exists(pieceTypeToHandPiece(ptFrom)) || piece(to) != Empty) {
+		if (!hand(us).exists(pieceTypeToHandPiece(ptFrom)) || piece(to) != Empty)
 			return false;
-		}
 
 		if (inCheck()) {
 			// 王手されているので、合駒でなければならない。
 			Bitboard target = checkersBB();
 			const Square checksq = target.firstOneFromSQ11();
 
-			if (target.isNot0()) {
+			if (target.isNot0())
 				// 両王手は合駒出来無い。
 				return false;
-			}
 
 			target = betweenBB(checksq, kingSquare(us));
-			if (!target.isSet(to)) {
+			if (!target.isSet(to))
 				// 玉と、王手した駒との間に駒を打っていない。
 				return false;
-			}
 		}
 
 		if (ptFrom == Pawn && checkPawnDrop) {
-			if ((bbOf(Pawn, us) & fileMask(makeFile(to))).isNot0()) {
+			if ((bbOf(Pawn, us) & fileMask(makeFile(to))).isNot0())
 				// 二歩
 				return false;
-			}
 			const SquareDelta TDeltaN = (us == Black ? DeltaN : DeltaS);
-			if (to + TDeltaN == kingSquare(them) && isPawnDropCheckMate(us, to)) {
+			if (to + TDeltaN == kingSquare(them) && isPawnDropCheckMate(us, to))
 				// 王手かつ打ち歩詰め
 				return false;
-			}
 		}
 	}
 	else {
 		const Square from = move.from();
 		const PieceType ptFrom = move.pieceTypeFrom();
-		if (piece(from) != colorAndPieceTypeToPiece(us, ptFrom) || bbOf(us).isSet(to)) {
+		if (piece(from) != colorAndPieceTypeToPiece(us, ptFrom) || bbOf(us).isSet(to))
 			return false;
-		}
 
-		if (!attacksFrom(ptFrom, us, from).isSet(to)) {
+		if (!attacksFrom(ptFrom, us, from).isSet(to))
 			return false;
-		}
 
 		if (inCheck()) {
 			if (ptFrom == King) {
 				Bitboard occ = occupiedBB();
 				occ.clearBit(from);
-				if (attackersToIsNot0(them, to, occ)) {
+				if (attackersToIsNot0(them, to, occ))
 					// 王手から逃げていない。
 					return false;
-				}
 			}
 			else {
 				// 玉以外の駒を移動させたとき。
 				Bitboard target = checkersBB();
 				const Square checksq = target.firstOneFromSQ11();
 
-				if (target.isNot0()) {
+				if (target.isNot0())
 					// 両王手なので、玉が逃げない手は駄目
 					return false;
-				}
 
 				target = betweenBB(checksq, kingSquare(us)) | checkersBB();
-				if (!target.isSet(to)) {
+				if (!target.isSet(to))
 					// 玉と、王手した駒との間に移動するか、王手した駒を取る以外は駄目。
 					return false;
-				}
 			}
 		}
 	}
@@ -332,9 +320,8 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
 		// Black と White の or を取る方が速いはず。
 		byTypeBB_[Occupied] = bbOf(Black) | bbOf(White);
 
-		if (ptTo == King) {
+		if (ptTo == King)
 			kingSquare_[us] = to;
-		}
 		else {
 			const Piece pcTo = colorAndPieceTypeToPiece(us, ptTo);
 			const int fromListIndex = evalList_.squareHandToList[from];
@@ -352,11 +339,8 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
 			st_->cl.clistpair[0].newlist[1] = evalList_.list1[fromListIndex];
 		}
 
-		if (move.isPromotion()) {
-			st_->material += (us == Black ?
-							  (pieceScore(ptTo) - pieceScore(ptFrom))
-							  : -(pieceScore(ptTo) - pieceScore(ptFrom)));
-		}
+		if (move.isPromotion())
+			st_->material += (us == Black ? (pieceScore(ptTo) - pieceScore(ptFrom)) : -(pieceScore(ptTo) - pieceScore(ptFrom)));
 
 		if (moveIsCheck) {
 			// Direct checks
@@ -431,9 +415,8 @@ void Position::undoMove(const Move move) {
 		const PieceType ptTo = move.pieceTypeTo(ptFrom);
 		const PieceType ptCaptured = move.cap(); // todo: st_->capturedType 使えば良い。
 
-		if (ptTo == King) {
+		if (ptTo == King)
 			kingSquare_[us] = from;
-		}
 		else {
 			const Piece pcFrom = colorAndPieceTypeToPiece(us, ptFrom);
 			const int toListIndex = evalList_.squareHandToList[to];
@@ -460,11 +443,10 @@ void Position::undoMove(const Move move) {
 
 			hand_[us].minusOne(hpCaptured);
 		}
-		else {
+		else
 			// 駒を取らないときは、colorAndPieceTypeToPiece(us, ptCaptured) は 0 または 16 になる。
 			// 16 になると困るので、駒を取らないときは明示的に Empty にする。
 			piece_[to] = Empty;
-		}
 		byTypeBB_[ptFrom].xorBit(from);
 		byTypeBB_[ptTo].xorBit(to);
 		byColorBB_[us].xorBit(from, to);
@@ -508,39 +490,30 @@ namespace {
 			occupied.xorBit(from);
 			// todo: 実際に移動した方向を基にattackersを更新すれば、template, inline を使用しなくても良さそう。
 			//       その場合、キャッシュに乗りやすくなるので逆に速くなるかも。
-			if (PT == Pawn || PT == Lance) {
+			if (PT == Pawn || PT == Lance)
 				attackers |= (lanceAttack(oppositeColor(turn), to, occupied) & (pos.bbOf(Rook, Dragon) | pos.bbOf(Lance, turn)));
-			}
-			if (PT == Gold || PT == ProPawn || PT == ProLance || PT == ProKnight || PT == ProSilver || PT == Horse || PT == Dragon) {
+			if (PT == Gold || PT == ProPawn || PT == ProLance || PT == ProKnight || PT == ProSilver || PT == Horse || PT == Dragon)
 				attackers |= (lanceAttack(oppositeColor(turn), to, occupied) & pos.bbOf(Lance, turn))
 					| (lanceAttack(turn, to, occupied) & pos.bbOf(Lance, oppositeColor(turn)))
 					| (rookAttack(to, occupied) & pos.bbOf(Rook, Dragon))
 					| (bishopAttack(to, occupied) & pos.bbOf(Bishop, Horse));
-			}
-			if (PT == Silver) {
+			if (PT == Silver)
 				attackers |= (lanceAttack(oppositeColor(turn), to, occupied) & pos.bbOf(Lance, turn))
 					| (rookAttack(to, occupied) & pos.bbOf(Rook, Dragon))
 					| (bishopAttack(to, occupied) & pos.bbOf(Bishop, Horse));
-			}
-			if (PT == Bishop) {
+			if (PT == Bishop)
 				attackers |= (bishopAttack(to, occupied) & pos.bbOf(Bishop, Horse));
-			}
-			if (PT == Rook) {
+			if (PT == Rook)
 				attackers |= (lanceAttack(oppositeColor(turn), to, occupied) & pos.bbOf(Lance, turn))
 					| (lanceAttack(turn, to, occupied) & pos.bbOf(Lance, oppositeColor(turn)))
 					| (rookAttack(to, occupied) & pos.bbOf(Rook, Dragon));
-			}
 
-			if (PT == Pawn || PT == Lance || PT == Knight) {
-				if (canPromote(turn, makeRank(to))) {
+			if (PT == Pawn || PT == Lance || PT == Knight)
+				if (canPromote(turn, makeRank(to)))
 					return PT + PTPromote;
-				}
-			}
-			if (PT == Silver || PT == Bishop || PT == Rook) {
-				if (canPromote(turn, makeRank(to)) || canPromote(turn, makeRank(from))) {
+			if (PT == Silver || PT == Bishop || PT == Rook)
+				if (canPromote(turn, makeRank(to)) || canPromote(turn, makeRank(from)))
 					return PT + PTPromote;
-				}
-			}
 			return PT;
 		}
 		return nextAttacker<SEENextPieceType<PT>::value>(pos, to, opponentAttackers, occupied, attackers, turn);
@@ -563,9 +536,8 @@ Score Position::see(const Move move, const int asymmThreshold) const {
 	Score swapList[32];
 	if (move.isDrop()) {
 		opponentAttackers = attackersTo(turn, to, occ);
-		if (!opponentAttackers.isNot0()) {
+		if (!opponentAttackers.isNot0())
 			return ScoreZero;
-		}
 		attackers = opponentAttackers | attackersTo(oppositeColor(turn), to, occ);
 		swapList[0] = ScoreZero;
 		ptCaptured = move.pieceTypeDropped();
@@ -603,25 +575,22 @@ Score Position::see(const Move move, const int asymmThreshold) const {
 		opponentAttackers = attackers & bbOf(turn);
 
 		if (ptCaptured == King) {
-			if (opponentAttackers.isNot0()) {
+			if (opponentAttackers.isNot0())
 				swapList[slIndex++] = CaptureKingScore;
-			}
 			break;
 		}
 	} while (opponentAttackers.isNot0());
 
 	if (asymmThreshold) {
 		for (int i = 0; i < slIndex; i += 2) {
-			if (swapList[i] < asymmThreshold) {
+			if (swapList[i] < asymmThreshold)
 				swapList[i] = -CaptureKingScore;
-			}
 		}
 	}
 
 	// nega max 的に駒の取り合いの点数を求める。
-	while (--slIndex) {
+	while (--slIndex)
 		swapList[slIndex-1] = std::min(-swapList[slIndex], swapList[slIndex-1]);
-	}
 	return swapList[0];
 }
 
@@ -629,9 +598,8 @@ Score Position::seeSign(const Move move) const {
 	if (move.isCapture()) {
 		const PieceType ptFrom = move.pieceTypeFrom();
 		const Square to = move.to();
-		if (capturePieceScore(ptFrom) <= capturePieceScore(piece(to))) {
+		if (capturePieceScore(ptFrom) <= capturePieceScore(piece(to)))
 			return static_cast<Score>(1);
-		}
 	}
 	return see(move);
 }
@@ -655,9 +623,8 @@ namespace {
 			do {
 				const Square to = kingMoveBB.firstOneFromSQ11();
 				// 玉の移動先に、us 側の利きが無ければ、true
-				if (!pos.attackersToIsNot0(us, to, tempOccupied)) {
+				if (!pos.attackersToIsNot0(us, to, tempOccupied))
 					return true;
-				}
 			} while (kingMoveBB.isNot0());
 		}
 		// 玉の移動先が無い。
@@ -672,10 +639,9 @@ namespace {
 			const Square ksq = pos.kingSquare(them);
 			do {
 				const Square from = fromBB.firstOneFromSQ11();
-				if (!pos.isDiscoveredCheck(from, sq, ksq, dcBB)) {
+				if (!pos.isDiscoveredCheck(from, sq, ksq, dcBB))
 					// them 側から見て、pin されていない駒で、打たれた駒を取れるので、true
 					return true;
-				}
 			} while (fromBB.isNot0());
 		}
 		// 玉以外の駒で、打った駒を取れない。
@@ -691,10 +657,9 @@ namespace {
 			const Bitboard dcBB = pos.discoveredCheckBB<false>();
 			do {
 				const Square from = fromBB.firstOneFromSQ11();
-				if (!pos.isDiscoveredCheck(from, sq, ksq, dcBB)) {
+				if (!pos.isDiscoveredCheck(from, sq, ksq, dcBB))
 					// them 側から見て、pin されていない駒で、打たれた駒を取れるので、true
 					return true;
-				}
 			} while (fromBB.isNot0());
 		}
 		// 玉以外の駒で、打った駒を取れない。
@@ -708,9 +673,8 @@ namespace {
 bool Position::isPawnDropCheckMate(const Color us, const Square sq) const {
 	const Color them = oppositeColor(us);
 	// 玉以外の駒で、打たれた歩が取れるなら、打ち歩詰めではない。
-	if (canPieceCapture(*this, them, sq)) {
+	if (canPieceCapture(*this, them, sq))
 		return false;
-	}
 	// todo: ここで玉の位置を求めるのは、上位で求めたものと2重になるので無駄。後で整理すること。
 	const Square ksq = kingSquare(them);
 
@@ -726,10 +690,9 @@ bool Position::isPawnDropCheckMate(const Color us, const Square sq) const {
 	assert(kingMoveBB.isNot0());
 	do {
 		const Square to = kingMoveBB.firstOneFromSQ11();
-		if (!attackersToIsNot0(us, to, tempOccupied)) {
+		if (!attackersToIsNot0(us, to, tempOccupied))
 			// 相手玉の移動先に自駒の利きがないなら、打ち歩詰めではない。
 			return false;
-		}
 	} while (kingMoveBB.isNot0());
 
 	return true;
@@ -810,13 +773,11 @@ template <Color US> Move Position::mateMoveIn1Ply() {
 	// 金打ち
 	if (ourHand.exists<HGold>()) {
 		Bitboard toBB;
-		if (ourHand.exists<HRook>()) {
+		if (ourHand.exists<HRook>())
 			// 飛車打ちを先に調べたので、尻金だけは省く。
 			toBB = dropTarget & (goldAttack(Them, ksq) ^ pawnAttack(US, ksq));
-		}
-		else {
+		else
 			toBB = dropTarget & goldAttack(Them, ksq);
-		}
 		while (toBB.isNot0()) {
 			const Square to = toBB.firstOneFromSQ11();
 			if (attackersToIsNot0(US, to)) {
@@ -834,21 +795,18 @@ template <Color US> Move Position::mateMoveIn1Ply() {
 		if (ourHand.exists<HGold>()) {
 			// 金打ちを先に調べたので、斜め後ろから打つ場合だけを調べる。
 
-			if (ourHand.exists<HBishop>()) {
+			if (ourHand.exists<HBishop>())
 				// 角打ちを先に調べたので、斜めからの王手も除外できる。銀打ちを調べる必要がない。
 				goto silver_drop_end;
-			}
 			// 斜め後ろから打つ場合を調べる必要がある。
 			toBB = dropTarget & (silverAttack(Them, ksq) & inFrontMask(US, makeRank(ksq)));
 		}
 		else {
-			if (ourHand.exists<HBishop>()) {
+			if (ourHand.exists<HBishop>())
 				// 斜め後ろを除外。前方から打つ場合を調べる必要がある。
 				toBB = dropTarget & goldAndSilverAttacks(Them, ksq);
-			}
-			else {
+			else
 				toBB = dropTarget & silverAttack(Them, ksq);
-			}
 		}
 		while (toBB.isNot0()) {
 			const Square to = toBB.firstOneFromSQ11();
@@ -1491,9 +1449,8 @@ void Position::initZobrist() {
 	// hash値の更新は普通は全て xor を使うが、持ち駒の更新の為に +, - を使用した方が都合が良い。
 	for (PieceType pt = Occupied; pt < PieceTypeNum; ++pt) {
 		for (Square sq = SQ11; sq < SquareNum; ++sq) {
-			for (Color c = Black; c < ColorNum; ++c) {
+			for (Color c = Black; c < ColorNum; ++c)
 				zobrist_[pt][sq][c] = g_mt64bit.random() & ~UINT64_C(1);
-			}
 		}
 	}
 	for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp) {
@@ -1509,9 +1466,8 @@ void Position::print() const {
 	for (Rank r = Rank1; r < RankNum; ++r) {
 		++i;
 		std::cout << "P" << i;
-		for (File f = File9; File1 <= f; --f) {
+		for (File f = File9; File1 <= f; --f)
 			std::cout << pieceToCharCSA(piece(makeSquare(f, r)));
-		}
 		std::cout << std::endl;
 	}
 	printHand(Black);
@@ -1537,12 +1493,10 @@ bool Position::isOK() const {
 
 	int failedStep = 0;
 	if (debugBitboards) {
-		if ((bbOf(Black) & bbOf(White)).isNot0()) {
+		if ((bbOf(Black) & bbOf(White)).isNot0())
 			goto incorrect_position;
-		}
-		if ((bbOf(Black) | bbOf(White)) != occupiedBB()) {
+		if ((bbOf(Black) | bbOf(White)) != occupiedBB())
 			goto incorrect_position;
-		}
 		if ((bbOf(Pawn     ) ^ bbOf(Lance    ) ^ bbOf(Knight) ^ bbOf(Silver ) ^ bbOf(Bishop  ) ^
 			 bbOf(Rook     ) ^ bbOf(Gold     ) ^ bbOf(King  ) ^ bbOf(ProPawn) ^ bbOf(ProLance) ^
 			 bbOf(ProKnight) ^ bbOf(ProSilver) ^ bbOf(Horse ) ^ bbOf(Dragon )) != occupiedBB())
@@ -1551,9 +1505,8 @@ bool Position::isOK() const {
 		}
 		for (PieceType pt1 = Pawn; pt1 < PieceTypeNum; ++pt1) {
 			for (PieceType pt2 = pt1 + 1; pt2 < PieceTypeNum; ++pt2) {
-				if ((bbOf(pt1) & bbOf(pt2)).isNot0()) {
+				if ((bbOf(pt1) & bbOf(pt2)).isNot0())
 					goto incorrect_position;
-				}
 			}
 		}
 	}
@@ -1561,26 +1514,20 @@ bool Position::isOK() const {
 	++failedStep;
 	if (debugKingCount) {
 		int kingCount[ColorNum] = {0, 0};
-		if (bbOf(King).popCount() != 2) {
+		if (bbOf(King).popCount() != 2)
 			goto incorrect_position;
-		}
-		if (!bbOf(King, Black).isOneBit()) {
+		if (!bbOf(King, Black).isOneBit())
 			goto incorrect_position;
-		}
-		if (!bbOf(King, White).isOneBit()) {
+		if (!bbOf(King, White).isOneBit())
 			goto incorrect_position;
-		}
 		for (Square sq = SQ11; sq < SquareNum; ++sq) {
-			if (piece(sq) == BKing) {
+			if (piece(sq) == BKing)
 				++kingCount[Black];
-			}
-			if (piece(sq) == WKing) {
+			if (piece(sq) == WKing)
 				++kingCount[White];
-			}
 		}
-		if (kingCount[Black] != 1 || kingCount[White] != 1) {
+		if (kingCount[Black] != 1 || kingCount[White] != 1)
 			goto incorrect_position;
-		}
 	}
 
 	++failedStep;
@@ -1589,30 +1536,26 @@ bool Position::isOK() const {
 		const Color us = turn();
 		const Color them = oppositeColor(us);
 		const Square ksq = kingSquare(them);
-		if (attackersTo(us, ksq).isNot0()) {
+		if (attackersTo(us, ksq).isNot0())
 			goto incorrect_position;
-		}
 	}
 
 	++failedStep;
 	if (debugCheckerCount) {
-		if (2 < st_->checkersBB.popCount()) {
+		if (2 < st_->checkersBB.popCount())
 			goto incorrect_position;
-		}
 	}
 
 	++failedStep;
 	if (debugKey) {
-		if (getKey() != computeKey()) {
+		if (getKey() != computeKey())
 			goto incorrect_position;
-		}
 	}
 
 	++failedStep;
 	if (debugStateHand) {
-		if (st_->hand != hand(turn())) {
+		if (st_->hand != hand(turn()))
 			goto incorrect_position;
-		}
 	}
 
 	++failedStep;
@@ -1620,23 +1563,20 @@ bool Position::isOK() const {
 		for (Square sq = SQ11; sq < SquareNum; ++sq) {
 			const Piece pc = piece(sq);
 			if (pc == Empty) {
-				if (!emptyBB().isSet(sq)) {
+				if (!emptyBB().isSet(sq))
 					goto incorrect_position;
-				}
 			}
 			else {
-				if (!bbOf(pieceToPieceType(pc), pieceToColor(pc)).isSet(sq)) {
+				if (!bbOf(pieceToPieceType(pc), pieceToColor(pc)).isSet(sq))
 					goto incorrect_position;
-				}
 			}
 		}
 	}
 
 	++failedStep;
 	if (debugMaterial) {
-		if (material() != computeMaterial()) {
+		if (material() != computeMaterial())
 			goto incorrect_position;
-		}
 	}
 
 	++failedStep;
@@ -1670,13 +1610,11 @@ int Position::debugSetEvalList() const {
 Key Position::computeBoardKey() const {
 	Key result = 0;
 	for (Square sq = SQ11; sq < SquareNum; ++sq) {
-		if (piece(sq) != Empty) {
+		if (piece(sq) != Empty)
 			result += zobrist(pieceToPieceType(piece(sq)), sq, pieceToColor(piece(sq)));
-		}
 	}
-	if (turn() == White) {
+	if (turn() == White)
 		result ^= zobTurn();
-	}
 	return result;
 }
 
@@ -1685,9 +1623,8 @@ Key Position::computeHandKey() const {
 	for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp) {
 		for (Color c = Black; c < ColorNum; ++c) {
 			const int num = hand(c).numOf(hp);
-			for (int i = 0; i < num; ++i) {
+			for (int i = 0; i < num; ++i)
 				result += zobHand(hp, c);
-			}
 		}
 	}
 	return result;
@@ -1710,12 +1647,10 @@ RepetitionType Position::isDraw(const int checkMaxPly) const {
 			// 更に 2 手戻る。
 			stp = stp->previous->previous;
 			if (stp->key() == st_->key()) {
-				if (i <= st_->continuousCheck[turn()]) {
+				if (i <= st_->continuousCheck[turn()])
 					return RepetitionLose;
-				}
-				else if (i <= st_->continuousCheck[oppositeColor(turn())]) {
+				else if (i <= st_->continuousCheck[oppositeColor(turn())])
 					return RepetitionWin;
-				}
 #if defined BAN_BLACK_REPETITION
 				return (turn() == Black ? RepetitionLose : RepetitionWin);
 #elif defined BAN_WHITE_REPETITION
@@ -1725,8 +1660,8 @@ RepetitionType Position::isDraw(const int checkMaxPly) const {
 #endif
 			}
 			else if (stp->boardKey == st_->boardKey) {
-				if (st_->hand.isEqualOrSuperior(stp->hand)) { return RepetitionSuperior; }
-				if (stp->hand.isEqualOrSuperior(st_->hand)) { return RepetitionInferior; }
+				if (st_->hand.isEqualOrSuperior(stp->hand)) return RepetitionSuperior;
+				if (stp->hand.isEqualOrSuperior(st_->hand)) return RepetitionInferior;
 			}
 			i += 2;
 		} while (i <= e);
@@ -1739,9 +1674,8 @@ namespace {
 		if (pos.hand(c).numOf(hp)) {
 			const char* sign = (c == Black ? "+" : "-");
 			std::cout << "P" << sign;
-			for (u32 i = 0; i < pos.hand(c).numOf(hp); ++i) {
+			for (u32 i = 0; i < pos.hand(c).numOf(hp); ++i)
 				std::cout << "00" << str;
-			}
 			std::cout << std::endl;
 		}
 	}
@@ -1763,7 +1697,6 @@ Position& Position::operator = (const Position& pos) {
 	nodes_ = 0;
 
 	assert(isOK());
-
 	return *this;
 }
 
@@ -1779,28 +1712,23 @@ void Position::set(const std::string& sfen, Thread* th) {
 
 	// 盤上の駒
 	while (ss.get(token) && token != ' ') {
-		if (isdigit(token)) {
+		if (isdigit(token))
 			sq += DeltaE * (token - '0');
-		}
-		else if (token == '/') {
+		else if (token == '/')
 			sq += (DeltaW * 9) + DeltaS;
-		}
-		else if (token == '+') {
+		else if (token == '+')
 			promoteFlag = Promoted;
-		}
 		else if (g_charToPieceUSI.isLegalChar(token)) {
 			if (isInSquare(sq)) {
 				setPiece(g_charToPieceUSI.value(token) + promoteFlag, sq);
 				promoteFlag = UnPromoted;
 				sq += DeltaE;
 			}
-			else {
+			else
 				goto INCORRECT;
-			}
 		}
-		else {
+		else
 			goto INCORRECT;
-		}
 	}
 	kingSquare_[Black] = bbOf(King, Black).constFirstOneFromSQ11();
 	kingSquare_[White] = bbOf(King, White).constFirstOneFromSQ11();
@@ -1808,25 +1736,20 @@ void Position::set(const std::string& sfen, Thread* th) {
 
 	// 手番
 	while (ss.get(token) && token != ' ') {
-		if (token == 'b') {
+		if (token == 'b')
 			turn_ = Black;
-		}
-		else if (token == 'w') {
+		else if (token == 'w')
 			turn_ = White;
-		}
-		else {
+		else
 			goto INCORRECT;
-		}
 	}
 
 	// 持ち駒
 	for (int digits = 0; ss.get(token) && token != ' '; ) {
-		if (token == '-') {
+		if (token == '-')
 			memset(hand_, 0, sizeof(hand_));
-		}
-		else if (isdigit(token)) {
+		else if (isdigit(token))
 			digits = digits * 10 + token - '0';
-		}
 		else if (g_charToPieceUSI.isLegalChar(token)) {
 			// 持ち駒を32bit に pack する
 			const Piece piece = g_charToPieceUSI.value(token);
@@ -1834,9 +1757,8 @@ void Position::set(const std::string& sfen, Thread* th) {
 
 			digits = 0;
 		}
-		else {
+		else
 			goto INCORRECT;
-		}
 	}
 
 	// 次の手が何手目か
@@ -1871,9 +1793,8 @@ bool Position::moveGivesCheck(const Move move, const CheckInfo& ci) const {
 	if (move.isDrop()) {
 		const PieceType ptTo = move.pieceTypeDropped();
 		// Direct Check ?
-		if (ci.checkBB[ptTo].isSet(to)) {
+		if (ci.checkBB[ptTo].isSet(to))
 			return true;
-		}
 	}
 	else {
 		const Square from = move.from();
@@ -1881,14 +1802,12 @@ bool Position::moveGivesCheck(const Move move, const CheckInfo& ci) const {
 		const PieceType ptTo = move.pieceTypeTo(ptFrom);
 		assert(ptFrom == pieceToPieceType(piece(from)));
 		// Direct Check ?
-		if (ci.checkBB[ptTo].isSet(to)) {
+		if (ci.checkBB[ptTo].isSet(to))
 			return true;
-		}
 
 		// Discovery Check ?
-		if (isDiscoveredCheck(from, to, kingSquare(oppositeColor(turn())), ci.dcBB)) {
+		if (isDiscoveredCheck(from, to, kingSquare(oppositeColor(turn())), ci.dcBB))
 			return true;
-		}
 	}
 
 	return false;

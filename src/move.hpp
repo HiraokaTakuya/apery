@@ -161,9 +161,8 @@ inline bool operator > (const MoveStack& f, const MoveStack& s) { return f.score
 // *(first - 1) に 番兵(sentinel) として MAX 値が入っていると仮定して高速化してある。
 // T には ポインタかイテレータを使用出来る。
 template <typename T, bool UseSentinel = false> inline void insertionSort(T first, T last) {
-	if (UseSentinel) {
+	if (UseSentinel)
 		assert(std::max_element(first - 1, last) == first - 1); // 番兵が最大値となることを確認
-	}
 	if (first != last) {
 		for (T curr = first + 1; curr != last; ++curr) {
 			if (*(curr - 1) < *curr) {
@@ -188,12 +187,10 @@ inline MoveStack* pickBest(MoveStack* currMove, MoveStack* lastMove) {
 }
 
 inline Move move16toMove(const Move move, const Position& pos) {
-	if (move.isNone()) {
+	if (move.isNone())
 		return Move::moveNone();
-	}
-	if (move.isDrop()) {
+	if (move.isDrop())
 		return move;
-	}
 	const Square from = move.from();
 	const PieceType ptFrom = pieceToPieceType(pos.piece(from));
 	return move | pieceType2Move(ptFrom) | capturedPieceType2Move(move.to(), pos);

@@ -32,13 +32,11 @@ void TimerThread::idleLoop() {
 	while (!exit) {
 		{
 			std::unique_lock<Mutex> lock(sleepLock);
-			if (!exit) {
+			if (!exit)
 				sleepCond.wait_for(lock, std::chrono::milliseconds(msec ? msec : INT_MAX));
-			}
 		}
-		if (msec) {
+		if (msec)
 			searcher->checkTime();
-		}
 	}
 }
 
@@ -54,9 +52,8 @@ void MainThread::idleLoop() {
 			}
 		}
 
-		if (exit) {
+		if (exit)
 			return;
-		}
 
 		searching = true;
 		searcher->think();
@@ -72,18 +69,16 @@ void Thread::notifyOne() {
 
 bool Thread::cutoffOccurred() const {
 	for (SplitPoint* sp = activeSplitPoint; sp != nullptr; sp = sp->parentSplitPoint) {
-		if (sp->cutoff) {
+		if (sp->cutoff)
 			return true;
-		}
 	}
 	return false;
 }
 
 // master と同じ thread であるかを判定
 bool Thread::isAvailableTo(Thread* master) const {
-	if (searching) {
+	if (searching)
 		return false;
-	}
 
 	// ローカルコピーし、途中で値が変わらないようにする。
 	const int spCount = splitPointsSize;
@@ -123,9 +118,8 @@ void ThreadPool::readUSIOptions(Searcher* s) {
 
 	assert(0 < requested);
 
-	while (size() < requested) {
+	while (size() < requested)
 		push_back(newThread<Thread>(s));
-	}
 
 	while (requested < size()) {
 		deleteThread(back());
@@ -135,9 +129,8 @@ void ThreadPool::readUSIOptions(Searcher* s) {
 
 Thread* ThreadPool::availableSlave(Thread* master) const {
 	for (auto elem : *this) {
-		if (elem->isAvailableTo(master)) {
+		if (elem->isAvailableTo(master))
 			return elem;
-		}
 	}
 	return nullptr;
 }

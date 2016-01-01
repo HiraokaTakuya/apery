@@ -142,9 +142,8 @@ FORCE_INLINE int firstOneFromLSB(const u64 b) {
 // 超絶遅いコードなので後で書き換えること。
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
 	for (int i = 63; 0 <= i; --i) {
-		if (b >> i) {
+		if (b >> i)
 			return 63 - i;
-		}
 	}
 	return 0;
 }
@@ -175,9 +174,8 @@ inline std::string putb(const T value, const int msb = sizeof(T)*8 - 1, const in
 	std::string str;
 	u64 tempValue = (static_cast<u64>(value) >> lsb);
 
-	for (int length = msb - lsb + 1; length; --length) {
+	for (int length = msb - lsb + 1; length; --length)
 		str += ((tempValue & (UINT64_C(1) << (length - 1))) ? "1" : "0");
-	}
 
 	return str;
 }

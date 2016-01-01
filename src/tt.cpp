@@ -8,10 +8,9 @@ void TranspositionTable::setSize(const size_t mbSize) { // Mega Byte 指定
 	const int msbIndex = 63 - firstOneFromMSB(static_cast<u64>(newSize));
 	newSize = UINT64_C(1) << msbIndex;
 
-	if (newSize == this->size()) {
+	if (newSize == this->size())
 		// 現在と同じサイズなら何も変更する必要がない。
 		return;
-	}
 
 	size_ = newSize;
 	delete [] entries_;
@@ -34,17 +33,15 @@ void TranspositionTable::store(const Key posKey, const Score score, const Bound 
 	TTEntry* replace = tte;
 	const u32 posKeyHigh32 = posKey >> 32;
 
-	if (depth < Depth0) {
+	if (depth < Depth0)
 		depth = Depth0;
-	}
 
 	for (int i = 0; i < ClusterSize; ++i, ++tte) {
 		// 置換表が空か、keyが同じな古い情報が入っているとき
 		if (!tte->key() || tte->key() == posKeyHigh32) {
 			// move が無いなら、とりあえず古い情報でも良いので、他の指し手を保存する。
-			if (move.isNone()) {
+			if (move.isNone())
 				move = tte->move();
-			}
 
 			tte->save(depth, score, move, posKeyHigh32,
 					  bound, this->generation(), evalScore);
@@ -55,9 +52,8 @@ void TranspositionTable::store(const Key posKey, const Score score, const Bound 
 		c    += (tte->generation() == this->generation() || tte->type() == BoundExact ? -2 : 0);
 		c    += (tte->depth() < replace->depth() ? 1 : 0);
 
-		if (0 < c) {
+		if (0 < c)
 			replace = tte;
-		}
 	}
 	replace->save(depth, score, move, posKeyHigh32,
 				  bound, this->generation(), evalScore);
@@ -70,9 +66,8 @@ TTEntry* TranspositionTable::probe(const Key posKey) const {
 	// firstEntry() で、posKey の下位 (size() - 1) ビットを hash key に使用した。
 	// ここでは posKey の上位 32bit が 保存されている hash key と同じか調べる。
 	for (int i = 0; i < ClusterSize; ++i, ++tte) {
-		if (tte->key() == posKeyHigh32) {
+		if (tte->key() == posKeyHigh32)
 			return tte;
-		}
 	}
 	return nullptr;
 }

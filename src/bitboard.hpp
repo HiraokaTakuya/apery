@@ -160,18 +160,16 @@ public:
 	// VC++ の _BitScanForward() は入力が 0 のときに 0 を返す仕様なので、
 	// 最初に 0 でないか判定するのは少し損。
 	FORCE_INLINE Square firstOneFromSQ11() {
-		if (this->p(0)) {
+		if (this->p(0))
 			return firstOneRightFromSQ11();
-		}
 		return firstOneLeftFromSQ81();
 	}
 	// 返す位置を 0 にしないバージョン。
 	FORCE_INLINE Square constFirstOneRightFromSQ11() const { return static_cast<Square>(firstOneFromLSB(this->p(0))); }
 	FORCE_INLINE Square constFirstOneLeftFromSQ81() const { return static_cast<Square>(firstOneFromLSB(this->p(1)) + 63); }
 	FORCE_INLINE Square constFirstOneFromSQ11() const {
-		if (this->p(0)) {
+		if (this->p(0))
 			return constFirstOneRightFromSQ11();
-		}
 		return constFirstOneLeftFromSQ81();
 	}
 	// Bitboard の 1 の bit を数える。
@@ -185,12 +183,10 @@ public:
 #if defined (HAVE_SSE42)
 		return (this->popCount<Crossover>() == 1);
 #else
-		if (!this->isNot0()) {
+		if (!this->isNot0())
 			return false;
-		}
-		else if (this->p(0)) {
+		else if (this->p(0))
 			return !((this->p(0) & (this->p(0) - 1)) | this->p(1));
-		}
 		return !(this->p(1) & (this->p(1) - 1));
 #endif
 	}
@@ -200,9 +196,8 @@ public:
 		std::cout << "   A  B  C  D  E  F  G  H  I\n";
 		for (Rank r = Rank1; r < RankNum; ++r) {
 			std::cout << (9 - r);
-			for (File f = File9; File1 <= f; --f) {
+			for (File f = File9; File1 <= f; --f)
 				std::cout << (this->isSet(makeSquare(f, r)) ? "  X" : "  .");
-			}
 			std::cout << "\n";
 		}
 
@@ -211,9 +206,8 @@ public:
 
 	void printTable(const int part) const {
 		for (Rank r = Rank1; r < RankNum; ++r) {
-			for (File f = File7; File1 <= f; --f) {
+			for (File f = File7; File1 <= f; --f)
 				std::cout << (UINT64_C(1) & (this->p(part) >> makeSquare(f, r)));
-			}
 			std::cout << std::endl;
 		}
 		std::cout << std::endl;

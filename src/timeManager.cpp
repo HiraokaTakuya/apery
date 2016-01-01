@@ -66,9 +66,8 @@ namespace {
 		const float thisMoveImportance = moveImportance(currentPly) * slowMover / 100;
 		float otherMoveImportance = 0;
 
-		for (int i = 1; i < movesToGo; ++i) {
+		for (int i = 1; i < movesToGo; ++i)
 			otherMoveImportance += moveImportance(currentPly + 2 * i);
-		}
 
 		const float ratio1 =
 			(TMaxRatio * thisMoveImportance) / static_cast<float>(TMaxRatio * thisMoveImportance + otherMoveImportance);
@@ -110,26 +109,22 @@ void TimeManager::init(LimitsType& limits, const Ply currentPly, const Color us,
 		maximumSearchTime_ = std::min(maximumSearchTime_, t2);
 	}
 
-	if (s->options["USI_Ponder"]) {
+	if (s->options["USI_Ponder"])
 		optimumSearchTime_ += optimumSearchTime_ / 4;
-	}
 
 	// こちらも minThinkingTime 以上にする。
 	optimumSearchTime_ = std::max(optimumSearchTime_, minThinkingTime);
 	optimumSearchTime_ = std::min(optimumSearchTime_, maximumSearchTime_);
 
 	if (limits.moveTime != 0) {
-		if (optimumSearchTime_ < limits.moveTime) {
+		if (optimumSearchTime_ < limits.moveTime)
 			optimumSearchTime_ = std::min(limits.time[us], limits.moveTime);
-		}
-		if (maximumSearchTime_ < limits.moveTime) {
+		if (maximumSearchTime_ < limits.moveTime)
 			maximumSearchTime_ = std::min(limits.time[us], limits.moveTime);
-		}
 		optimumSearchTime_ += limits.moveTime;
 		maximumSearchTime_ += limits.moveTime;
-		if (limits.time[us] != 0) {
+		if (limits.time[us] != 0)
 			limits.moveTime = 0;
-		}
 	}
 	SYNCCOUT << "info string optimum_search_time = " << optimumSearchTime_ << SYNCENDL;
 	SYNCCOUT << "info string maximum_search_time = " << maximumSearchTime_ << SYNCENDL;

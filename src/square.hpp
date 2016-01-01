@@ -158,9 +158,8 @@ inline bool isAligned(const Square from, const Square to, const Square ksq) {
 		assert(direc != DirecMisc);
 		return (direc == squareRelation(from, to));
 	}
-	else {
+	else
 		return (direc != DirecMisc && direc == squareRelation(from, to));
-	}
 }
 
 inline char fileToCharUSI(const File f) { return '1' + f; }
