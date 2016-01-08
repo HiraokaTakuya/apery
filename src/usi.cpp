@@ -414,8 +414,8 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		cmd += std::string(argv[i]) + " ";
 
 	do {
-		if (argc == 1)
-			std::getline(std::cin, cmd);
+		if (argc == 1 && !std::getline(std::cin, cmd))
+			cmd = "quit";
 
 		std::istringstream ssCmd(cmd);
 
