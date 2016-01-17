@@ -135,6 +135,7 @@ class GameManager
       win_r = win_rate(w, l, d)
       conf_interval = confidence_interval(w, l, d)
       printf "(%5d/%5d) W: %5d L: %5d D: %5d  WR: %6.2f +-%6.2f\n", w + l + d, @game_num, w, l, d, (win_r*100).round(2), (conf_interval*100).round(2)
+      STDOUT.flush
     end
   end
 
