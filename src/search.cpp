@@ -61,18 +61,15 @@ namespace {
 		return static_cast<Score>(512 + 16 * static_cast<int>(d));
 	}
 
-	Score FutilityMargins[16][64]; // [depth][moveCount]
-	inline Score futilityMargin(const Depth depth, const int moveCount) {
-		return (depth < 7 * OnePly ?
-				FutilityMargins[std::max(depth, Depth1)][std::min(moveCount, 63)]
-				: 2 * ScoreInfinite);
+	inline Score futilityMargin(const Depth depth) {
+		return static_cast<Score>(100 * depth);
 	}
 
 	int FutilityMoveCounts[32];    // [depth]
 
-	s8 Reductions[2][64][64]; // [pv][depth][moveNumber]
-	template <bool PVNode> inline Depth reduction(const Depth depth, const int moveCount) {
-		return static_cast<Depth>(Reductions[PVNode][std::min(Depth(depth/OnePly), Depth(63))][std::min(moveCount, 63)]);
+	s8 Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
+	template <bool PVNode> inline Depth reduction(const bool improving, const Depth depth, const int moveCount) {
+		return static_cast<Depth>(Reductions[PVNode][improving][std::min(Depth(depth/OnePly), Depth(63))][std::min(moveCount, 63)]);
 	}
 
 	// checkTime() を呼び出す最大間隔(msec)
@@ -514,7 +511,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 
 // iterative deepening loop
 void Searcher::idLoop(Position& pos) {
-	SearchStack ss[MaxPlyPlus2];
+	SearchStack ss[MaxPlyPlus3];
 	Ply depth;
 	Ply prevBestMoveChanges;
 	Score bestScore = -ScoreInfinite;
@@ -524,7 +521,7 @@ void Searcher::idLoop(Position& pos) {
 	bool bestMoveNeverChanged = true;
 	int lastInfoTime = -1; // 将棋所のコンソールが詰まる問題への対処用
 
-	memset(ss, 0, 4 * sizeof(SearchStack));
+	memset(ss, 0, 5 * sizeof(SearchStack));
 	bestMoveChanges = 0;
 #if defined LEARN
 	// 高速化の為に浅い探索は反復深化しないようにする。学習時は浅い探索をひたすら繰り返す為。
@@ -533,7 +530,7 @@ void Searcher::idLoop(Position& pos) {
 	depth = 0;
 #endif
 
-	ss[0].currentMove = Move::moveNull(); // skip update gains
+	ss[0].currentMove = ss[1].currentMove = Move::moveNull(); // skip update gains
 	tt.newSearch();
 	history.clear();
 	gains.clear();
@@ -593,13 +590,13 @@ void Searcher::idLoop(Position& pos) {
 			// fail high/low になったなら、今度は window 幅を広げて、再探索を行う。
 			while (true) {
 				// 探索を行う。
-				ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
-				bestScore = search<Root>(pos, ss + 1, alpha, beta, static_cast<Depth>(depth * OnePly), false);
+				ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+				bestScore = search<Root>(pos, ss + 2, alpha, beta, static_cast<Depth>(depth * OnePly), false);
 				// 先頭が最善手になるようにソート
 				insertionSort(rootMoves.begin() + pvIdx, rootMoves.end());
 
 				for (size_t i = 0; i <= pvIdx; ++i) {
-					ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+					ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 					rootMoves[i].insertPvInTT(pos);
 				}
 
@@ -689,12 +686,12 @@ void Searcher::idLoop(Position& pos) {
 					|| timeManager.availableTime() * 40 / 100 < searchTimer.elapsed()))
 			{
 				const Score rBeta = bestScore - 2 * CapturePawnScore;
-				(ss+1)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
-				(ss+1)->excludedMove = rootMoves[0].pv_[0];
-				(ss+1)->skipNullMove = true;
-				const Score s = search<NonPV>(pos, ss+1, rBeta-1, rBeta, (depth - 3) * OnePly, true);
-				(ss+1)->skipNullMove = false;
-				(ss+1)->excludedMove = Move::moveNone();
+				(ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+				(ss+2)->excludedMove = rootMoves[0].pv_[0];
+				(ss+2)->skipNullMove = true;
+				const Score s = search<NonPV>(pos, ss+2, rBeta-1, rBeta, (depth - 3) * OnePly, true);
+				(ss+2)->skipNullMove = false;
+				(ss+2)->excludedMove = Move::moveNone();
 
 				if (s < rBeta) {
 					stop = true;
@@ -941,10 +938,10 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	if (!PVNode
 		&& !ss->skipNullMove
 		&& depth < 4 * OnePly
-		&& beta <= eval - FutilityMargins[depth][0]
+		&& beta <= eval - futilityMargin(depth)
 		&& abs(beta) < ScoreMateInMaxPly)
 	{
-		return eval - FutilityMargins[depth][0];
+		return eval - futilityMargin(depth);
 	}
 
 	// step8
@@ -1053,6 +1050,9 @@ iid_start:
 split_point_start:
 	MovePicker mp(pos, ttMove, depth, history, ss, PVNode ? -ScoreInfinite : beta);
 	const CheckInfo ci(pos);
+	bool improving = (ss->staticEval >= (ss-2)->staticEval
+					  || ss->staticEval == ScoreNone
+					  || (ss-2)->staticEval == ScoreNone);
 	score = bestScore;
 	singularExtensionNode =
 		!RootNode
@@ -1152,19 +1152,20 @@ split_point_start:
 			}
 
 			// score based pruning
-			const Depth predictedDepth = newDepth - reduction<PVNode>(depth, moveCount);
-			// gain を 2倍にする。
-			const Score futilityScore = ss->staticEval + futilityMargin(predictedDepth, moveCount)
-				+ 2 * gains.value(move.isDrop(), colorAndPieceTypeToPiece(pos.turn(), move.pieceTypeFromOrDropped()), move.to());
+			const Depth predictedDepth = newDepth - reduction<PVNode>(improving, depth, moveCount);
 
-			if (futilityScore < beta) {
-				bestScore = std::max(bestScore, futilityScore);
-				if (SPNode) {
-					splitPoint->mutex.lock();
-					if (splitPoint->bestScore < bestScore)
-						splitPoint->bestScore = bestScore;
+			if (predictedDepth < 7 * OnePly) {
+				// gain を 2倍にする。
+				const Score futilityScore = ss->staticEval + futilityMargin(predictedDepth);
+				if (futilityScore < beta) {
+					bestScore = std::max(bestScore, futilityScore);
+					if (SPNode) {
+						splitPoint->mutex.lock();
+						if (splitPoint->bestScore < bestScore)
+							splitPoint->bestScore = bestScore;
+					}
+					continue;
 				}
-				continue;
 			}
 
 			if (predictedDepth < 4 * OnePly
@@ -1200,7 +1201,7 @@ split_point_start:
 			&& ss->killers[0] != move
 			&& ss->killers[1] != move)
 		{
-			ss->reduction = reduction<PVNode>(depth, moveCount);
+			ss->reduction = reduction<PVNode>(improving, depth, moveCount);
 			if (!PVNode && cutNode)
 				ss->reduction += OnePly;
 			const Depth d = std::max(newDepth - ss->reduction, OnePly);
@@ -1341,7 +1342,7 @@ split_point_start:
 }
 
 void RootMove::extractPvFromTT(Position& pos) {
-	StateInfo state[MaxPlyPlus2];
+	StateInfo state[MaxPlyPlus3];
 	StateInfo* st = state;
 	TTEntry* tte;
 	Ply ply = 0;
@@ -1371,7 +1372,7 @@ void RootMove::extractPvFromTT(Position& pos) {
 }
 
 void RootMove::insertPvInTT(Position& pos) {
-	StateInfo state[MaxPlyPlus2];
+	StateInfo state[MaxPlyPlus3];
 	StateInfo* st = state;
 	TTEntry* tte;
 	Ply ply = 0;
@@ -1391,30 +1392,23 @@ void RootMove::insertPvInTT(Position& pos) {
 }
 
 void initSearchTable() {
-	// todo: パラメータは改善の余地あり。
-	int d;  // depth (ONE_PLY == 2)
-	int hd; // half depth (ONE_PLY == 1)
-	int mc; // moveCount
-
 	// Init reductions array
-	for (hd = 1; hd < 64; hd++) {
-		for (mc = 1; mc < 64; mc++) {
-			double    pvRed = log(double(hd)) * log(double(mc)) / 3.0;
-			double nonPVRed = 0.33 + log(double(hd)) * log(double(mc)) / 2.25;
-			Reductions[1][hd][mc] = (int8_t) (   pvRed >= 1.0 ? floor(   pvRed * int(OnePly)) : 0);
-			Reductions[0][hd][mc] = (int8_t) (nonPVRed >= 1.0 ? floor(nonPVRed * int(OnePly)) : 0);
+	for (int improving = 0; improving < 2; ++improving) {
+		for (int hd = 1; hd < 64; hd++) {
+			for (int mc = 1; mc < 64; mc++) {
+				double    pvRed = log(double(hd)) * log(double(mc)) / 3.0;
+				double nonPVRed = 0.33 + log(double(hd)) * log(double(mc)) / 2.25;
+				Reductions[1][improving][hd][mc] = (int8_t) (   pvRed >= 1.0 ? floor(   pvRed * int(OnePly)) : 0);
+				Reductions[0][improving][hd][mc] = (int8_t) (nonPVRed >= 1.0 ? floor(nonPVRed * int(OnePly)) : 0);
+				if (!improving && Reductions[0][improving][hd][mc] >= 2 * OnePly)
+					Reductions[0][improving][hd][mc] += OnePly;
+			}
 		}
 	}
 
-	for (d = 1; d < 16; ++d) {
-		for (mc = 0; mc < 64; ++mc)
-			FutilityMargins[d][mc] = static_cast<Score>(112 * static_cast<int>(log(static_cast<double>(d*d)/2) / log(2.0) + 1.001)
-														- 8 * mc + 45);
-	}
-
 	// init futility move counts
-	for (d = 0; d < 32; ++d)
-		FutilityMoveCounts[d] = static_cast<int>(3.001 + 0.3 * pow(static_cast<double>(d), 1.8));
+	for (int d = 0; d < 32; ++d)
+		FutilityMoveCounts[d] = static_cast<int>(3.001 + 0.3 * pow(d, 1.8));
 }
 
 // 入玉勝ちかどうかを判定
@@ -1643,11 +1637,11 @@ void Thread::idleLoop() {
 			SplitPoint* sp = activeSplitPoint;
 			searcher->threads.mutex_.unlock();
 
-			SearchStack ss[MaxPlyPlus2];
+			SearchStack ss[MaxPlyPlus3];
 			Position pos(*sp->pos, this);
 
-			memcpy(ss, sp->ss - 1, 4 * sizeof(SearchStack));
-			(ss+1)->splitPoint = sp;
+			memcpy(ss, sp->ss - 2, 5 * sizeof(SearchStack));
+			(ss+2)->splitPoint = sp;
 
 			sp->mutex.lock();
 
@@ -1656,9 +1650,9 @@ void Thread::idleLoop() {
 			activePosition = &pos;
 
 			switch (sp->nodeType) {
-			case Root : searcher->search<SplitPointRoot >(pos, ss + 1, sp->alpha, sp->beta, sp->depth, sp->cutNode); break;
-			case PV   : searcher->search<SplitPointPV   >(pos, ss + 1, sp->alpha, sp->beta, sp->depth, sp->cutNode); break;
-			case NonPV: searcher->search<SplitPointNonPV>(pos, ss + 1, sp->alpha, sp->beta, sp->depth, sp->cutNode); break;
+			case Root : searcher->search<SplitPointRoot >(pos, ss + 2, sp->alpha, sp->beta, sp->depth, sp->cutNode); break;
+			case PV   : searcher->search<SplitPointPV   >(pos, ss + 2, sp->alpha, sp->beta, sp->depth, sp->cutNode); break;
+			case NonPV: searcher->search<SplitPointNonPV>(pos, ss + 2, sp->alpha, sp->beta, sp->depth, sp->cutNode); break;
 			default   : UNREACHABLE;
 			}
 
