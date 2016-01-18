@@ -27,16 +27,20 @@ end
 class GameManager
   def initialize argv
     thread_num = 1
-    thread_num = argv[2].to_i if 2 < argv.size
     @game_num = 3000
-    @game_num = argv[3].to_i if 3 < argv.size
     @movetime = 100.to_s
-    @movetime = argv[4] if 4 < argv.size
-
     @win = [0, 0]
     @draw = 0
-    @game_index = 0
     #@mutex = Mutex.new
+
+    thread_num = argv[2].to_i if 2 < argv.size
+    @game_num = argv[3].to_i if 3 < argv.size
+    @movetime = argv[4] if 4 < argv.size
+    @win[0] = argv[5].to_i if 5 < argv.size
+    @win[1] = argv[6].to_i if 6 < argv.size
+    @draw = argv[7].to_i if 7 < argv.size
+
+    @game_index = @win[0] + @win[1] + @draw
 
     enginess = []
     thread_num.times do
@@ -44,7 +48,7 @@ class GameManager
     end
     threads = []
     thread_num.times do |i|
-      threads << Thread.new { selfplay(enginess[i]) }
+      threads << Thread.new { selfplay(enginess[i], i%2) }
     end
     threads.each do |t|
       t.join
@@ -123,10 +127,9 @@ class GameManager
     end
   end
 
-  def selfplay engines
+  def selfplay engines, first_player
     usiok?(engines)
     setoption(engines)
-    first_player = 0
     while @game_index < @game_num
       @game_index += 1
       selfplay_one(engines, first_player)
@@ -159,7 +162,7 @@ end
 
 def main argv
   if argv.size < 2
-    puts "USAGE: " + __FILE__ + " <engine1> <engine2> <thread num> <game num> <movetime>"
+    puts "USAGE: " + __FILE__ + " <engine1> <engine2> <thread num> <game num> <movetime> <init win> <init lose> <init draw>"
     puts "This program does selfplay matches."
     exit
   end
