@@ -923,13 +923,14 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	// razoring
 	if (!PVNode
 		&& depth < 4 * OnePly
-		&& eval + razorMargin(depth) < beta
-		&& ttMove.isNone()
-		&& abs(beta) < ScoreMateInMaxPly)
+		&& eval + razorMargin(depth) <= alpha
+		&& ttMove.isNone())
 	{
-		const Score rbeta = beta - razorMargin(depth);
-		const Score s = qsearch<NonPV, false>(pos, ss, rbeta-1, rbeta, Depth0);
-		if (s < rbeta)
+		if (depth <= OnePly && eval + razorMargin(3 * OnePly) <= alpha)
+			return qsearch<NonPV, false>(pos, ss, alpha, beta, Depth0);
+		const Score ralpha = alpha - razorMargin(depth);
+		const Score s = qsearch<NonPV, false>(pos, ss, ralpha, ralpha+1, Depth0);
+		if (s <= ralpha)
 			return s;
 	}
 
