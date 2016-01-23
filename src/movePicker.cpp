@@ -161,6 +161,8 @@ void MovePicker::scoreCaptures() {
 	for (MoveStack* curr = currMove(); curr != lastMove(); ++curr) {
 		const Move move = curr->move;
 		curr->score = Position::pieceScore(pos().piece(move.to())) - LVA(move.pieceTypeFrom());
+		if (move.isPromotion())
+			++curr->score;
 	}
 }
 
@@ -172,6 +174,8 @@ template <bool IsDrop> void MovePicker::scoreNonCapturesMinusPro() {
 							colorAndPieceTypeToPiece(pos().turn(),
 													 (IsDrop ? move.pieceTypeDropped() : move.pieceTypeFrom())),
 							move.to());
+		if (!IsDrop && move.isPromotion())
+			++curr->score;
 	}
 }
 
