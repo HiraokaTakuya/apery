@@ -575,10 +575,10 @@ void Searcher::idLoop(Position& pos) {
 #else
 			// aspiration search
 			// alpha, beta をある程度絞ることで、探索効率を上げる。
-			if (5 <= depth && abs(rootMoves[pvIdx].prevScore_) < ScoreKnownWin) {
-				delta = static_cast<Score>(16);
-				alpha = rootMoves[pvIdx].prevScore_ - delta;
-				beta  = rootMoves[pvIdx].prevScore_ + delta;
+			if (5 <= depth) {
+				delta = static_cast<Score>(18);
+				alpha = std::max(rootMoves[pvIdx].prevScore_ - delta, -ScoreInfinite);
+				beta  = std::min(rootMoves[pvIdx].prevScore_ + delta, ScoreInfinite);
 			}
 			else {
 				alpha = -ScoreInfinite;
@@ -627,22 +627,19 @@ void Searcher::idLoop(Position& pos) {
 				}
 
 				// fail high/low のとき、aspiration window を広げる。
-				if (ScoreKnownWin <= abs(bestScore)) {
-					// 勝ち(負け)だと判定したら、最大の幅で探索を試してみる。
-					alpha = -ScoreInfinite;
-					beta = ScoreInfinite;
-				}
-				else if (beta <= bestScore) {
-					beta += delta;
-					delta += delta / 2;
-				}
-				else {
+				if (bestScore <= alpha) {
+					beta = (alpha + beta) / 2;
+					alpha = std::max(bestScore - delta, -ScoreInfinite);
 					signals.failedLowAtRoot = true;
 					signals.stopOnPonderHit = false;
-
-					alpha -= delta;
-					delta += delta / 2;
 				}
+				else if (beta <= bestScore) {
+					alpha = (alpha + beta) / 2;
+					beta = std::min(bestScore + delta, ScoreInfinite);
+				}
+				else
+					break;
+				delta += delta / 4 + 5;
 
 				assert(-ScoreInfinite <= alpha && beta <= ScoreInfinite);
 			}
