@@ -951,7 +951,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 		&& abs(beta) < ScoreMateInMaxPly)
 	{
 		ss->currentMove = Move::moveNull();
-		Depth reduction = static_cast<Depth>(3) * OnePly + depth / 4;
+		Depth reduction = static_cast<Depth>(4) * OnePly + depth / 4;
 
 		if (beta < eval - PawnScore)
 			reduction += OnePly;
