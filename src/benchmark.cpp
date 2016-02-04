@@ -7,8 +7,6 @@
 // 今はベンチマークというより、PGO ビルドの自動化の為にある。
 void benchmark(Position& pos) {
 	std::string token;
-	LimitsType limits;
-
 	std::string options[] = {"name Threads value 1",
 							 "name MultiPV value 1",
 							 "name OwnBook value false",
@@ -26,6 +24,6 @@ void benchmark(Position& pos) {
 		setPosition(pos, ss_sfen);
 		std::istringstream ss_go("byoyomi 10000");
 		go(pos, ss_go);
-		pos.searcher()->threads.waitForThinkFinished();
+		pos.searcher()->threads.mainThread()->waitForSearchFinished();       
 	}
 }

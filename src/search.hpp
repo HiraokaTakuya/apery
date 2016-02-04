@@ -25,10 +25,8 @@ struct SearchStack {
 };
 
 struct SignalsType {
-	bool stopOnPonderHit;
-	bool firstRootMove;
-	bool stop;
-	bool failedLowAtRoot;
+	std::atomic_bool stop;
+	std::atomic_bool stopOnPonderHit;
 };
 
 enum InaniwaFlag {
@@ -49,59 +47,35 @@ enum BishopInDangerFlag {
 	BishopInDangerFlagNum
 };
 
-class RootMove {
-public:
-	RootMove() {}
-	explicit RootMove(const Move m) : score_(-ScoreInfinite), prevScore_(-ScoreInfinite) {
-		pv_.push_back(m);
-		pv_.push_back(Move::moveNone());
-	}
-	explicit RootMove(const std::tuple<Move, Score> m) : score_(std::get<1>(m)), prevScore_(-ScoreInfinite) {
-		pv_.push_back(std::get<0>(m));
-		pv_.push_back(Move::moveNone());
+struct EasyMoveManager {
+	void clear() {
+		stableCount = 0;
+		expectedPosKey = 0;
+		pv[0] = pv[1] = pv[2] = Move::moveNone();
 	}
 
-	bool operator < (const RootMove& m) const {
-		return score_ < m.score_;
-	}
-	bool operator == (const Move& m) const {
-		return pv_[0] == m;
+	Move get(Key key) const {
+		return expectedPosKey == key ? pv[2] : Move::moveNone();
 	}
 
-	void extractPvFromTT(Position& pos);
-	void insertPvInTT(Position& pos);
+	void update(Position& pos, const std::vector<Move>& newPv) {
+		assert(newPv.size() >= 3);
+		stableCount = (newPv[2] == pv[2]) ? stableCount + 1 : 0;
+		if (!std::equal(std::begin(newPv), std::begin(newPv) + 3, pv)) {
+			std::copy(std::begin(newPv), std::begin(newPv) + 3, pv);
+			StateInfo st[2];
+			pos.doMove(newPv[0], st[0]);
+			pos.doMove(newPv[1], st[1]);
+			expectedPosKey = pos.getKey();
+			pos.undoMove(newPv[1]);
+			pos.undoMove(newPv[0]);
+		}
+	}
 
-public:
-	Score score_;
-	Score prevScore_;
-	std::vector<Move> pv_;
+	int stableCount;
+	Key expectedPosKey;
+	Move pv[3];
 };
-
-template <bool Gain>
-class Stats {
-public:
-	static const Score MaxScore = static_cast<Score>(2000);
-
-	void clear() { memset(table_, 0, sizeof(table_)); }
-	Score value(const bool isDrop, const Piece pc, const Square to) const {
-		assert(0 < pc && pc < PieceNone);
-		assert(isInSquare(to));
-		return table_[isDrop][pc][to];
-	}
-	void update(const bool isDrop, const Piece pc, const Square to, const Score s) {
-		if (Gain)
-			table_[isDrop][pc][to] = std::max(s, value(isDrop, pc, to) - 1);
-		else if (abs(value(isDrop, pc, to) + s) < MaxScore)
-			table_[isDrop][pc][to] += s;
-	}
-
-private:
-	// [isDrop][piece][square] とする。
-	Score table_[2][PieceNone][SquareNum];
-};
-
-using History = Stats<false>;
-using Gains   = Stats<true>;
 
 class TranspositionTable;
 
@@ -109,36 +83,29 @@ struct Searcher {
 	// static メンバ関数からだとthis呼べないので代わりに thisptr を使う。
 	// static じゃないときは this を入れることにする。
 	STATIC Searcher* thisptr;
-	STATIC volatile SignalsType signals;
+	STATIC SignalsType signals;
 	STATIC LimitsType limits;
 	STATIC std::vector<Move> searchMoves;
-	STATIC Time searchTimer;
 	STATIC StateStackPtr setUpStates;
-	STATIC std::vector<RootMove> rootMoves;
+	STATIC StateStackPtr usiSetUpStates;
 
 #if defined LEARN
 	STATIC Score alpha;
 	STATIC Score beta;
 #endif
 
-	STATIC size_t pvSize;
-	STATIC size_t pvIdx;
 	STATIC TimeManager timeManager;
-	STATIC Ply bestMoveChanges;
-	STATIC History history;
-	STATIC Gains gains;
 	STATIC TranspositionTable tt;
 
 #if defined INANIWA_SHIFT
 	STATIC InaniwaFlag inaniwaFlag;
 #endif
-	STATIC Position rootPosition;
 	STATIC ThreadPool threads;
 	STATIC OptionsMap options;
+	STATIC EasyMoveManager easyMove;
 
 	STATIC void init();
-	STATIC void idLoop(Position& pos);
-	STATIC std::string pvInfoToUSI(Position& pos, const Ply depth, const Score alpha, const Score beta);
+	STATIC void clear();
 	template <NodeType NT, bool INCHECK>
 	STATIC Score qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta, const Depth depth);
 #if defined INANIWA_SHIFT

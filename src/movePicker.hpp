@@ -23,7 +23,7 @@ public:
 			   const History& history, SearchStack* searchStack, const Score beta);
 	MovePicker(const Position& pos, Move ttm, const Depth depth, const History& history, const Square sq);
 	MovePicker(const Position& pos, const Move ttm, const History& history, const PieceType pt);
-	template <bool SPNODE> Move nextMove();
+	Move nextMove();
 
 private:
 	void scoreCaptures();

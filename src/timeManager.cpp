@@ -90,6 +90,7 @@ void TimeManager::init(LimitsType& limits, const Ply currentPly, const Color us,
 	const int minThinkingTime      = s->options["Minimum_Thinking_Time"];
     const int slowMover            = s->options["Slow_Mover"];
 
+	startTime = limits.startTime;
 	unstablePVExtraTime_ = 0;
 	optimumSearchTime_ = maximumSearchTime_ = limits.time[us];
 

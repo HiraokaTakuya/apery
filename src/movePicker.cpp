@@ -75,7 +75,7 @@ MovePicker::MovePicker(const Position& pos, const Move ttm, const History& histo
 	lastMove_ += !ttMove_.isNone();
 }
 
-template <> Move MovePicker::nextMove<false>() {
+Move MovePicker::nextMove() {
 	MoveStack* ms;
 	Move move;
 	do {
@@ -149,10 +149,6 @@ template <> Move MovePicker::nextMove<false>() {
 			UNREACHABLE;
 		}
 	} while (true);
-}
-
-template <> Move MovePicker::nextMove<true>() {
-	return ss_->splitPoint->movePicker->nextMove<false>();
 }
 
 const Score LVATable[PieceTypeNum] = {

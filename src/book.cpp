@@ -216,13 +216,12 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 
 					std::istringstream ssCmd("byoyomi 1000");
 					go(pos, ssCmd);
-					pos.searcher()->threads.waitForThinkFinished();
 
 					pos.undoMove(move);
 					SetUpStates->pop();
 
 					// doMove してから search してるので点数が反転しているので直す。
-					const Score score = -pos.csearcher()->rootMoves[0].score_;
+					const Score score = -pos.thisThread()->rootMoves[0].score_;
 #else
 					const Score score = ScoreZero;
 #endif

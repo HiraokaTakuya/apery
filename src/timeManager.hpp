@@ -11,8 +11,11 @@ public:
 	void pvInstability(const int currChanges, const int prevChanges);
 	int availableTime() const { return optimumSearchTime_ + unstablePVExtraTime_; }
 	int maximumTime() const { return maximumSearchTime_; }
+	int optimumSearchTime() const { return optimumSearchTime_; } // todo: 後で消す。
+	int elapsed() const { return startTime.elapsed(); }
 
 private:
+	Timer startTime;
 	int optimumSearchTime_;
 	int maximumSearchTime_;
 	int unstablePVExtraTime_;

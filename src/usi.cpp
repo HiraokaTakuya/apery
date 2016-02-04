@@ -87,7 +87,6 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Emergency_Move_Time"]         = USIOption(70, 0, 5000);
 	(*this)["Slow_Mover"]                  = USIOption(100, 10, 1000);
 	(*this)["Minimum_Thinking_Time"]       = USIOption(1500, 0, INT_MAX);
-	(*this)["Max_Threads_per_Split_Point"] = USIOption(5, 4, 8, onThreads, s);
 	(*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
 	(*this)["Use_Sleeping_Threads"]        = USIOption(false);
 }
@@ -149,8 +148,9 @@ std::ostream& operator << (std::ostream& os, const OptionsMap& om) {
 
 void go(const Position& pos, std::istringstream& ssCmd) {
 	LimitsType limits;
-	std::vector<Move> moves;
 	std::string token;
+
+	limits.startTime.restart();
 
 	while (ssCmd >> token) {
 		if      (token == "ponder"     ) limits.ponder = true;
@@ -166,21 +166,20 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 		else if (token == "nodes"      ) { ssCmd >> limits.nodes; }
 		else if (token == "searchmoves") {
 			while (ssCmd >> token)
-				moves.push_back(usiToMove(pos, token));
+				limits.searchmoves.push_back(usiToMove(pos, token));
 		}
 	}
-	pos.searcher()->searchMoves = moves;
-	pos.searcher()->threads.startThinking(pos, limits, moves);
+	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
 }
 
 #if defined LEARN
 // 学習用。通常の go 呼び出しは文字列を扱って高コストなので、大量に探索の開始、終了を行う学習では別の呼び出し方にする。
 void go(const Position& pos, const Ply depth, const Move move) {
 	LimitsType limits;
-	std::vector<Move> moves;
 	limits.depth = depth;
-	moves.push_back(move);
-	pos.searcher()->threads.startThinking(pos, limits, moves);
+	limits.searchmoves.push_back(move);
+	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
+	pos.searcher()->threads.mainThread()->waitForSearchFinished();
 }
 #endif
 
@@ -314,14 +313,14 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 		return;
 
 	pos.set(sfen, pos.searcher()->threads.mainThread());
-	pos.searcher()->setUpStates = StateStackPtr(new std::stack<StateInfo>());
+	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
 
 	Ply currentPly = pos.gamePly();
 	while (ssCmd >> token) {
 		const Move move = usiToMove(pos, token);
 		if (move.isNone()) break;
-		pos.searcher()->setUpStates->push(StateInfo());
-		pos.doMove(move, pos.searcher()->setUpStates->top());
+		pos.searcher()->usiSetUpStates->push(StateInfo());
+		pos.doMove(move, pos.searcher()->usiSetUpStates->top());
 		++currentPly;
 	}
 	pos.setStartPosPly(currentPly);
@@ -360,7 +359,7 @@ void measureGenerateMoves(const Position& pos) {
 	for (int i = 0; i < MaxLegalMoves; ++i) legalMoves[i].move = moveNone();
 	MoveStack* pms = &legalMoves[0];
 	const u64 num = 5000000;
-	Time t = Time::currentTime();
+	Timer t = Timer::currentTime();
 	if (pos.inCheck()) {
 		for (u64 i = 0; i < num; ++i) {
 			pms = &legalMoves[0];
@@ -424,15 +423,16 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		if (token == "quit" || token == "stop" || token == "ponderhit" || token == "gameover") {
 			if (token != "ponderhit" || signals.stopOnPonderHit) {
 				signals.stop = true;
-				threads.mainThread()->notifyOne();
+				threads.mainThread()->startSearching(true);
 			}
 			else
 				limits.ponder = false;
 			if (token == "ponderhit" && limits.moveTime != 0)
-				limits.moveTime += searchTimer.elapsed();
+				limits.moveTime += timeManager.elapsed();
 		}
 		else if (token == "usinewgame") {
 			tt.clear();
+			threads.mainThread()->previousScore = ScoreInfinite;
 #if defined INANIWA_SHIFT
 			inaniwaFlag = NotInaniwa;
 #endif
@@ -468,8 +468,8 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		else                           SYNCCOUT << "unknown command: " << cmd << SYNCENDL;
 	} while (token != "quit" && argc == 1);
 
+	threads.mainThread()->waitForSearchFinished();
+
 	if (options["Write_Synthesized_Eval"])
 		Evaluater::writeSynthesized(options["Eval_Dir"]);
-
-	threads.waitForThinkFinished();
 }

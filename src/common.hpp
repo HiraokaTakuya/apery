@@ -263,7 +263,7 @@ private:
 };
 
 // ミリ秒単位の時間を表すクラス
-class Time {
+class Timer {
 public:
 	void restart() { t_ = std::chrono::system_clock::now(); }
 	int elapsed() const {
@@ -271,8 +271,8 @@ public:
 		using std::chrono::milliseconds;
 		return static_cast<int>(duration_cast<milliseconds>(std::chrono::system_clock::now() - t_).count());
 	}
-	static Time currentTime() {
-		Time t;
+	static Timer currentTime() {
+		Timer t;
 		t.restart();
 		return t;
 	}

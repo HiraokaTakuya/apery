@@ -346,13 +346,13 @@ private:
 					pos.searcher()->alpha = -ScoreMaxEvaluate;
 					pos.searcher()->beta  =  ScoreMaxEvaluate;
 					go(pos, dist(mt), bmd.move);
-					const Score recordScore = pos.searcher()->rootMoves[0].score_;
+					const Score recordScore = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
 					++moveCount_;
 					bmd.otherPVExist = false;
 					bmd.pvBuffer.clear();
 					if (abs(recordScore) < ScoreMaxEvaluate) {
 						int recordIsNth = 0; // 正解の手が何番目に良い手か。0から数える。
-						auto& recordPv = pos.searcher()->rootMoves[0].pv_;
+						auto& recordPv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
 						bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordPv), std::end(recordPv));
 						const auto recordPVSize = bmd.pvBuffer.size();
 						for (MoveList<LegalAll> ml(pos); !ml.end(); ++ml) {
@@ -360,9 +360,9 @@ private:
 								pos.searcher()->alpha = recordScore - FVWindow;
 								pos.searcher()->beta  = recordScore + FVWindow;
 								go(pos, dist(mt), ml.move());
-								const Score score = pos.searcher()->rootMoves[0].score_;
+								const Score score = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
 								if (pos.searcher()->alpha < score && score < pos.searcher()->beta) {
-									auto& pv = pos.searcher()->rootMoves[0].pv_;
+									auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
 									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
 								}
 								if (recordScore < score)
@@ -380,7 +380,7 @@ private:
 		}
 	}
 	void learnParse1(Position& pos) {
-		Time t = Time::currentTime();
+		Timer t = Timer::currentTime();
 		// 棋譜をシャッフルすることで、先頭 gameNum_ 個の学習に使うデータをランダムに選ぶ。
 		std::shuffle(std::begin(bookMovesDatum_), std::end(bookMovesDatum_), mt_);
 		std::cout << "shuffle elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
@@ -519,7 +519,7 @@ private:
 		}
 	}
 	void learnParse2(Position& pos) {
-		Time t;
+		Timer t;
 		for (int step = 1; step <= stepNum_; ++step) {
 			t.restart();
 			std::cout << "step " << step << "/" << stepNum_ << " " << std::flush;
