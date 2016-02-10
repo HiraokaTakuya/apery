@@ -1311,8 +1311,8 @@ split_point_start:
 		tt.store(posKey, scoreToTT(bestScore, ss->ply), BoundLower, depth,
 				 bestMove, ss->staticEval);
 
-		if (!bestMove.isCaptureOrPawnPromotion() && !inCheck) {
-			if (bestMove != ss->killers[0]) {
+		if (!bestMove.isCaptureOrPawnPromotion()) {
+			if (!inCheck && bestMove != ss->killers[0]) {
 				ss->killers[1] = ss->killers[0];
 				ss->killers[0] = bestMove;
 			}
