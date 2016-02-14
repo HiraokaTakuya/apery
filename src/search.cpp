@@ -1194,7 +1194,8 @@ split_point_start:
 		// LMR
 		if (3 * OnePly <= depth
 			&& !isPVMove
-			&& !(st.continuousCheck[oppositeColor(pos.turn())] > 4) // !(連続王手)
+			&& !(pos.gamePly() > 100 // todo: 進行度などに変えた方が良いだろう。
+				 && st.continuousCheck[oppositeColor(pos.turn())] > 4) // !(連続王手)
 			&& !captureOrPawnPromotion
 			&& move != ttMove
 			&& ss->killers[0] != move
