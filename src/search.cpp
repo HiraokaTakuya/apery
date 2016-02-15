@@ -973,8 +973,9 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 				return nullScore;
 
 			ss->skipNullMove = true;
-			assert(Depth0 < depth - reduction);
-			const Score s = search<NonPV>(pos, ss, alpha, beta, depth - reduction, false);
+			const Score s = (depth - reduction < OnePly ?
+							 qsearch<NonPV, false>(pos, ss, alpha, beta, Depth0)
+							 : search<NonPV>(pos, ss, alpha, beta, depth - reduction, false));
 			ss->skipNullMove = false;
 
 			if (beta <= s)
