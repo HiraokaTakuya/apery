@@ -17,43 +17,48 @@ OverloadEnumOperators(Depth);
 
 class TTEntry {
 public:
-	u32   key() const        { return key32_; }
-	Depth depth() const      { return static_cast<Depth>(depth16_); }
+	u16   key() const        { return key16_; }
+	Depth depth() const      { return static_cast<Depth>(depth8_); }
 	Score score() const      { return static_cast<Score>(score16_); }
 	Move  move() const       { return static_cast<Move>(move16_); }
-	Bound type() const       { return static_cast<Bound>(bound_); }
-	u8    generation() const { return generation8_; }
+	Bound bound() const      { return static_cast<Bound>(genBound8_ & 0x3); }
+	u8    generation() const { return genBound8_ & 0xfc; }
 	Score evalScore() const  { return static_cast<Score>(evalScore_); }
-	void setGeneration(const u8 g) { generation8_ = g; }
 
-	void save(const Depth depth, const Score score, const Move move,
-			  const u32 posKeyHigh32, const Bound bound, const u8 generation,
-			  const Score evalScore)
+	void save(const Key posKey, const Score score, const Bound bound, const Depth depth,
+			  const Move move, const Score evalScore, const u8 generation)
 	{
-		key32_ = posKeyHigh32;
-		move16_ = static_cast<u16>(move.value());
-		bound_ = static_cast<u8>(bound);
-		generation8_ = generation;
-		score16_ = static_cast<s16>(score);
-		depth16_ = static_cast<s16>(depth);
-		evalScore_ = static_cast<s16>(evalScore);
+		if (!move.isNone() || (posKey>>48) != key16_)
+			move16_ = static_cast<u16>(move.value());
+
+		if ((posKey>>48) != key16_
+			|| depth > depth8_ - 4
+			|| bound == BoundExact)
+		{
+			key16_ = static_cast<u16>(posKey>>48);
+			score16_ = static_cast<s16>(score);
+			evalScore_ = static_cast<s16>(evalScore);
+			genBound8_ = static_cast<u8>(generation | bound);
+			depth8_ = static_cast<s8>(depth);
+		}
 	}
 
 private:
-	u32 key32_;
+    friend class TranspositionTable;
+
+	u16 key16_;
 	u16 move16_;
-	u8 bound_;
-	u8 generation8_;
 	s16 score16_;
-	s16 depth16_;
 	s16 evalScore_;
+	u8 genBound8_;
+	s8 depth8_;
 };
 
-const int ClusterSize = CacheLineSize / sizeof(TTEntry);
-static_assert(0 < ClusterSize, "");
+const int ClusterSize = 3;
 
 struct TTCluster {
-	TTEntry data[ClusterSize];
+	TTEntry entry[ClusterSize];
+    s8 padding[2];
 };
 
 class TranspositionTable {
@@ -62,51 +67,40 @@ public:
 	~TranspositionTable();
 	void setSize(const size_t mbSize); // Mega Byte 指定
 	void clear();
-	void store(const Key posKey, const Score score, const Bound bound, Depth depth,
-			   Move move, const Score evalScore);
-	TTEntry* probe(const Key posKey) const;
+	TTEntry* probe(const Key posKey, bool& found) const;
 	void newSearch();
 	TTEntry* firstEntry(const Key posKey) const;
-	void refresh(const TTEntry* tte) const;
 
-	size_t size() const { return size_; }
-	TTCluster* entries() const { return entries_; }
 	u8 generation() const { return generation_; }
 
 private:
 	TranspositionTable(const TranspositionTable&);
 	TranspositionTable& operator = (const TranspositionTable&);
 
-	size_t size_; // 置換表のバイト数。2のべき乗である必要がある。
-	TTCluster* entries_;
+	size_t clusterCount_;
+	TTCluster* table_;
+	void* mem_;
 	// iterative deepening していくとき、過去の探索で調べたものかを判定する。
 	u8 generation_;
 };
 
 inline TranspositionTable::TranspositionTable()
-	: size_(0), entries_(nullptr), generation_(0) {}
+	: clusterCount_(0), table_(nullptr), mem_(nullptr), generation_(0) {}
 
 inline TranspositionTable::~TranspositionTable() {
-	delete [] entries_;
+	free(mem_);
 }
 
 inline TTEntry* TranspositionTable::firstEntry(const Key posKey) const {
-	// (size() - 1) は置換表で使用するバイト数のマスク
-	// posKey の下位 (size() - 1) ビットを hash key として使用。
+	// (clusterCount_ - 1) は置換表で使用するバイト数のマスク
+	// posKey の下位 (clusterCount_ - 1) ビットを hash key として使用。
 	// ここで posKey の下位ビットの一致を確認。
-	// posKey の上位32ビットとの一致は probe, store 内で確認するので、
-	// ここでは下位32bit 以上が確認出来れば完璧。
-	// 置換表のサイズを小さく指定しているときは下位32bit の一致は確認出来ないが、
-	// 仕方ない。
-	return entries_[posKey & (size() - 1)].data;
-}
-
-inline void TranspositionTable::refresh(const TTEntry* tte) const {
-	const_cast<TTEntry*>(tte)->setGeneration(this->generation());
+	// posKey の上位16ビットとの一致は probe 内で確認する。
+	return &table_[posKey & (clusterCount_ - 1)].entry[0];
 }
 
 inline void TranspositionTable::newSearch() {
-	++generation_;
+	generation_ += 4; // TTEntry::genBound8_ の Bound の部分を書き換えないように。
 }
 
 #endif // #ifndef APERY_TT_HPP
