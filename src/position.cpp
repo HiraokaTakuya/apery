@@ -126,9 +126,7 @@ bool Position::pseudoLegalMoveIsEvasion(const Move move, const Bitboard& pinned)
 	return target.isSet(to) && pseudoLegalMoveIsLegal<false, true>(move, pinned);
 }
 
-// checkPawnDrop : 二歩と打ち歩詰めも調べるなら true
-//                 これが true のとき、駒打ちの場合のみ Legal であることが確定する。
-bool Position::moveIsPseudoLegal(const Move move, const bool checkPawnDrop) const {
+bool Position::moveIsPseudoLegal(const Move move) const {
 	const Color us = turn();
 	const Color them = oppositeColor(us);
 	const Square to = move.to();
@@ -153,7 +151,7 @@ bool Position::moveIsPseudoLegal(const Move move, const bool checkPawnDrop) cons
 				return false;
 		}
 
-		if (ptFrom == Pawn && checkPawnDrop) {
+		if (ptFrom == Pawn) {
 			if ((bbOf(Pawn, us) & fileMask(makeFile(to))).isNot0())
 				// 二歩
 				return false;

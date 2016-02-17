@@ -100,7 +100,7 @@ template <> Move MovePicker::nextMove<false>() {
 			move = (currMove_++)->move;
 			if (!move.isNone()
 				&& move != ttMove_
-				&& pos().moveIsPseudoLegal(move, true)
+				&& pos().moveIsPseudoLegal(move)
 				&& pos().piece(move.to()) == Empty)
 			{
 				return move;

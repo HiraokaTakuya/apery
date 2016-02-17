@@ -200,8 +200,7 @@ public:
 	template <bool MUSTNOTDROP, bool FROMMUSTNOTBEKING>
 	bool pseudoLegalMoveIsLegal(const Move move, const Bitboard& pinned) const;
 	bool pseudoLegalMoveIsEvasion(const Move move, const Bitboard& pinned) const;
-	// checkPawnDrop : 二歩と打ち歩詰めも調べるなら true
-	bool moveIsPseudoLegal(const Move move, const bool checkPawnDrop = false) const;
+	bool moveIsPseudoLegal(const Move move) const;
 #if !defined NDEBUG
 	bool moveIsLegal(const Move move) const;
 #endif
