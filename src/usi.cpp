@@ -220,7 +220,7 @@ Move usiToMoveBody(const Position& pos, const std::string& moveStr) {
 			return Move::moveNone();
 	}
 
-	if (pos.moveIsPseudoLegal(move)
+	if (pos.moveIsPseudoLegal<false>(move)
 		&& pos.pseudoLegalMoveIsLegal<false, false>(move, pos.pinnedBB()))
 	{
 		return move;
@@ -283,7 +283,7 @@ Move csaToMoveBody(const Position& pos, const std::string& moveStr) {
 			return Move::moveNone();
 	}
 
-	if (pos.moveIsPseudoLegal(move)
+	if (pos.moveIsPseudoLegal<false>(move)
 		&& pos.pseudoLegalMoveIsLegal<false, false>(move, pos.pinnedBB()))
 	{
 		return move;

@@ -126,7 +126,11 @@ bool Position::pseudoLegalMoveIsEvasion(const Move move, const Bitboard& pinned)
 	return target.isSet(to) && pseudoLegalMoveIsLegal<false, true>(move, pinned);
 }
 
-bool Position::moveIsPseudoLegal(const Move move) const {
+// Searching: true なら探索時に内部で生成した手の合法手判定を行う。
+//            ttMove で hash 値が衝突した時などで、大駒の不成など明らかに価値の低い手が生成される事がある。
+//            これは非合法手として省いて良い。
+//            false なら、外部入力の合法手判定なので、ルールと同一の条件になる事が望ましい。
+template <bool Searching> bool Position::moveIsPseudoLegal(const Move move) const {
 	const Color us = turn();
 	const Color them = oppositeColor(us);
 	const Square to = move.to();
@@ -170,6 +174,36 @@ bool Position::moveIsPseudoLegal(const Move move) const {
 		if (!attacksFrom(ptFrom, us, from).isSet(to))
 			return false;
 
+		if (Searching) {
+			// 内部で生成した move は、from, to, promotion だけで矛盾が生じる事はない。
+			assert(!move.isPromotion() || (canPromote(us, makeRank(from)) || canPromote(us, makeRank(to))));
+
+			switch (ptFrom) {
+			case Pawn  :
+				if (!move.isPromotion() && canPromote(us, makeRank(to)))
+					return false;
+				break;
+			case Lance :
+				if (!move.isPromotion()) {
+					// 1段目の不成は非合法なので省く。2段目の不成と3段目の駒を取らない不成もついでに省く。
+					const Rank toRank = makeRank(to);
+					if (us == Black ? isInFrontOf<Black, Rank3, Rank7>(toRank) : isInFrontOf<White, Rank3, Rank7>(toRank))
+						return false;
+					if (canPromote(us, toRank) && !move.isCapture())
+						return false;
+				}
+				break;
+			case Knight:
+				// hash 値が衝突して別の局面の合法手の ttMove が入力されても、桂馬である事は確定。(桂馬は移動元、移動先が特殊なので。)
+				// よって、行きどころの無い駒になる move は生成されない。
+				// 特にチェックすべき事は無いので、以下の 銀、角、飛と同じように break
+			case Silver: case Bishop: case Rook  : break;
+			default: // 成れない駒
+				if (move.isPromotion())
+					return false;
+			}
+		}
+
 		if (inCheck()) {
 			if (ptFrom == King) {
 				Bitboard occ = occupiedBB();
@@ -197,6 +231,9 @@ bool Position::moveIsPseudoLegal(const Move move) const {
 
 	return true;
 }
+
+template bool Position::moveIsPseudoLegal<true >(const Move move) const;
+template bool Position::moveIsPseudoLegal<false>(const Move move) const;
 
 #if !defined NDEBUG
 // 過去(又は現在)に生成した指し手が現在の局面でも有効か判定。
