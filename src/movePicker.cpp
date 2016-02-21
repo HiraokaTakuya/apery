@@ -42,8 +42,12 @@ MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const H
 	if (pos.inCheck())
 		phase_ = QEvasionSearch;
 	// todo: ここで Stockfish は qcheck がある。
-	else if (DepthQRecaptures < depth)
+	else if (DepthQNoTT < depth)
 		phase_ = QSearch;
+	else if (DepthQRecaptures < depth) {
+		phase_ = QSearchNoTT;
+		ttm = Move::moveNone();
+	}
 	else {
 		phase_ = QRecapture;
 		recaptureSquare_ = sq;
@@ -121,7 +125,7 @@ template <> Move MovePicker::nextMove<false>() {
 		case PH_BadCaptures:
 			return (currMove_--)->move;
 
-		case PH_Evasions: case PH_QEvasions: case PH_QCaptures0:
+		case PH_Evasions: case PH_QEvasions: case PH_QCaptures0: case PH_QCaptures2:
 			move = pickBest(currMove_++, lastMove())->move;
 			if (move != ttMove_)
 				return move;
@@ -245,7 +249,7 @@ void MovePicker::goNextPhase() {
 			scoreEvasions();
 		return;
 
-	case PH_QCaptures0:
+	case PH_QCaptures0: case PH_QCaptures2:
 		lastMove_ = generateMoves<CapturePlusPro>(firstMove(), pos());
 		scoreCaptures();
 		return;
@@ -255,7 +259,7 @@ void MovePicker::goNextPhase() {
 		scoreCaptures();
 		return;
 
-	case EvasionSearch: case QSearch: case QEvasionSearch: case QRecapture: case ProbCut:
+	case EvasionSearch: case QSearch: case QEvasionSearch: case QRecapture: case ProbCut: case QSearchNoTT:
 		// これが無いと、MainSearch の後に EvasionSearch が始まったりしてしまう。
 		phase_ = PH_Stop;
 

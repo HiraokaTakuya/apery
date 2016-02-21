@@ -12,6 +12,7 @@ enum GenerateMovePhase {
 	QEvasionSearch, PH_QEvasions,
 	ProbCut, PH_TacticalMoves1,
 	QRecapture, PH_QCaptures1,
+	QSearchNoTT, PH_QCaptures2,
 	PH_Stop
 };
 OverloadEnumOperators(GenerateMovePhase); // ++phase_ の為。
