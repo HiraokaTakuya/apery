@@ -174,14 +174,14 @@ public:
 		std::string recordFileName;
 		std::string blackRecordFileName;
 		std::string whiteRecordFileName;
-		size_t threadNum;
 		s64 updateMax;
 		s64 updateMin;
 		ssCmd >> recordFileName;
 		ssCmd >> blackRecordFileName;
 		ssCmd >> whiteRecordFileName;
 		ssCmd >> gameNum;
-		ssCmd >> threadNum;
+		ssCmd >> parse1ThreadNum_;
+		ssCmd >> parse2ThreadNum_;
 		ssCmd >> minDepth_;
 		ssCmd >> maxDepth_;
 		ssCmd >> stepNum_;
@@ -198,11 +198,17 @@ public:
 			updateMin = updateMax;
 			std::cout << "you can set update_min [1, update_max]" << std::endl;
 		}
+		if (parse1ThreadNum_ < 1)
+			std::cout << "you can set parse1_thread_num [1, 64]" << std::endl;
+		if (parse2ThreadNum_ < 1)
+			std::cout << "you can set parse2_thread_num [1, 64]" << std::endl;
+
 		std::cout << "record_file: " << recordFileName
 				  << "\nblack record_file: " << blackRecordFileName
 				  << "\nwhite record_file: " << whiteRecordFileName
 				  << "\nread games: " << (gameNum == 0 ? "all" : std::to_string(gameNum))
-				  << "\nthread_num: " << threadNum
+				  << "\nparse1_thread_num: " << parse1ThreadNum_
+				  << "\nparse2_thread_num: " << parse2ThreadNum_
 				  << "\nsearch_depth min, max: " << minDepth_ << ", " << maxDepth_
 				  << "\nstep_num: " << stepNum_
 				  << "\ngame_num_for_iteration: " << gameNumForIteration_
@@ -213,20 +219,19 @@ public:
 		updateMaxMask_ = (UINT64_C(1) << updateMax) - 1;
 		updateMinMask_ = (UINT64_C(1) << updateMin) - 1;
 		setUpdateMask(stepNum_);
-		readBook(pos, recordFileName, blackRecordFileName, whiteRecordFileName, gameNum);
 		// 既に 1 つのSearcher, Positionが立ち上がっているので、指定した数 - 1 の Searcher, Position を立ち上げる。
-		threadNum = std::max<size_t>(0, threadNum - 1);
+		const size_t threadNum = std::max(parse1ThreadNum_, parse2ThreadNum_) - 1;
 		std::vector<Searcher> searchers(threadNum);
 		for (auto& s : searchers) {
 			s.init();
 			setLearnOptions(s);
 			positions_.push_back(Position(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr));
 			mts_.push_back(std::mt19937(std::chrono::system_clock::now().time_since_epoch().count()));
-			// ここでデフォルトコンストラクタでpush_backすると、
-			// 一時オブジェクトのParse2Dataがスタックに出来ることでプログラムが落ちるので、コピーコンストラクタにする。
-			parse2Datum_.push_back(parse2Data_);
 		}
+		for (size_t i = 0; i < parse2ThreadNum_ - 1; ++i)
+			parse2Datum_.emplace_back();
 		setLearnOptions(*pos.searcher());
+		readBook(pos, recordFileName, blackRecordFileName, whiteRecordFileName, gameNum);
 		mt_ = std::mt19937(std::chrono::system_clock::now().time_since_epoch().count());
 		mt64_ = std::mt19937_64(std::chrono::system_clock::now().time_since_epoch().count());
 		for (int i = 0; ; ++i) {
@@ -388,8 +393,8 @@ private:
 		moveCount_.store(0);
 		for (auto& pred : predictions_)
 			pred.store(0);
-		std::vector<std::thread> threads(positions_.size());
-		for (size_t i = 0; i < positions_.size(); ++i)
+		std::vector<std::thread> threads(parse1ThreadNum_ - 1);
+		for (size_t i = 0; i < parse1ThreadNum_ - 1; ++i)
 			threads[i] = std::thread([this, i] { learnParse1Body(positions_[i], mts_[i]); });
 		learnParse1Body(pos, mt_);
 		for (auto& thread : threads)
@@ -524,8 +529,8 @@ private:
 			t.restart();
 			std::cout << "step " << step << "/" << stepNum_ << " " << std::flush;
 			index_ = 0;
-			std::vector<std::thread> threads(positions_.size());
-			for (size_t i = 0; i < positions_.size(); ++i)
+			std::vector<std::thread> threads(parse2ThreadNum_ - 1);
+			for (size_t i = 0; i < parse2ThreadNum_ - 1; ++i)
 				threads[i] = std::thread([this, i] { learnParse2Body(positions_[i], parse2Datum_[i]); });
 			learnParse2Body(pos, parse2Data_);
 			for (auto& thread : threads)
@@ -582,6 +587,7 @@ private:
 	u64 updateMaxMask_;
 	u64 updateMinMask_;
 	u64 updateMask_;
+	size_t parse1ThreadNum_, parse2ThreadNum_;
 };
 
 #endif
