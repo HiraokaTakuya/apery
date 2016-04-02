@@ -33,12 +33,13 @@ class GameManager
     @draw = 0
     #@mutex = Mutex.new
 
-    thread_num = argv[2].to_i if 2 < argv.size
-    @game_num = argv[3].to_i if 3 < argv.size
-    @movetime = argv[4] if 4 < argv.size
-    @win[0] = argv[5].to_i if 5 < argv.size
-    @win[1] = argv[6].to_i if 6 < argv.size
-    @draw = argv[7].to_i if 7 < argv.size
+    @file = File.open(argv[2], "a") if 2 < argv.size && argv[2] != '-'
+    thread_num = argv[3].to_i if 3 < argv.size
+    @game_num = argv[4].to_i if 4 < argv.size
+    @movetime = argv[5] if 5 < argv.size
+    @win[0] = argv[6].to_i if 6 < argv.size
+    @win[1] = argv[7].to_i if 7 < argv.size
+    @draw = argv[8].to_i if 8 < argv.size
 
     @game_index = @win[0] + @win[1] + @draw
 
@@ -82,6 +83,13 @@ class GameManager
     end
   end
 
+  def write_record sfen, moves
+    if @file
+      @file.write "position " + sfen + " moves " + moves + "\n"
+      @file.flush
+    end
+  end
+
   def selfplay_one engines, first_player
     key_hash = Hash.new
     moves = ""
@@ -93,6 +101,7 @@ class GameManager
     loop do
       if ply == 257
         @draw += 1
+        write_record "startpos", moves
         return
       end
       position = "position startpos moves " + moves
@@ -106,6 +115,7 @@ class GameManager
         if (key_hash[key] == 4)
           # sennichite
           @draw += 1
+          write_record "startpos", moves
           return
         end
       end
@@ -116,6 +126,7 @@ class GameManager
           move = line.split[1] # 次の手の文字列
           if (move == "resign")
             @win[1 ^ turn] += 1
+            write_record "startpos", moves
             return
           end
           moves += move + " "
@@ -162,7 +173,7 @@ end
 
 def main argv
   if argv.size < 2
-    puts "USAGE: " + __FILE__ + " <engine1> <engine2> <thread num> <game num> <movetime> <init win> <init lose> <init draw>"
+    puts "USAGE: " + __FILE__ + " <engine1> <engine2> <output kifu file ('-' is no output)> <thread num> <game num> <movetime> <init win> <init lose> <init draw>"
     puts "This program does selfplay matches."
     exit
   end
