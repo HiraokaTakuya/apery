@@ -56,7 +56,7 @@ class GameManager
     end
   end
 
-  def usiok? engines
+  def usiok engines
     engines.each do |engine|
       engine.stdin.puts "usi"
     end
@@ -109,7 +109,7 @@ class GameManager
       engines[turn].stdin.puts "key"
       key = engines[turn].stdout.readline.chomp.to_i
       if key_hash[key] == nil
-        key_hash[key] = 0
+        key_hash[key] = 1
       else
         key_hash[key] += 1
         if (key_hash[key] == 4)
@@ -139,7 +139,7 @@ class GameManager
   end
 
   def selfplay engines, first_player
-    usiok?(engines)
+    usiok(engines)
     setoption(engines)
     while @game_index < @game_num
       @game_index += 1
