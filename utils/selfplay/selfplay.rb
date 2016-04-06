@@ -124,8 +124,12 @@ class GameManager
         line = engines[turn].stdout.readline.chomp
         if line.include?("bestmove")
           move = line.split[1] # 次の手の文字列
-          if (move == "resign")
+          if move == "resign"
             @win[1 ^ turn] += 1
+            write_record "startpos", moves
+            return
+          elsif move == "win"
+            @win[turn] += 1
             write_record "startpos", moves
             return
           end
