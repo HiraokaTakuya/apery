@@ -32,9 +32,9 @@ bool CaseInsensitiveLess::operator () (const std::string& s1, const std::string&
 namespace {
 	// 論理的なコア数の取得
 	inline int cpuCoreCount() {
-        // todo: boost::thread::physical_concurrency() を使うこと。
 		// std::thread::hardware_concurrency() は 0 を返す可能性がある。
-		return std::max(static_cast<int>(std::thread::hardware_concurrency()/2), 1);
+		// HyperThreading が有効なら論理コア数だけ thread 生成した方が強い。
+		return std::max(static_cast<int>(std::thread::hardware_concurrency()), 1);
 	}
 
 	class StringToPieceTypeCSA : public std::map<std::string, PieceType> {
