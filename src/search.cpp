@@ -1236,8 +1236,9 @@ iid_start:
 		// LMR
 		if (3 * OnePly <= depth
 			&& !isPVMove
-			&& !(pos.gamePly() > 100 // todo: 進行度などに変えた方が良いだろう。
-				 && st.continuousCheck[oppositeColor(pos.turn())] > 4) // !(連続王手)
+			&& !(pos.gamePly() > 70 // todo: 進行度などに変えた方が良いだろう。
+				 && thisThread == pos.searcher()->threads.mainThread()
+				 && st.continuousCheck[oppositeColor(pos.turn())] >= 4) // !(70手以上 && mainThread && 連続王手)
 			&& !captureOrPawnPromotion
 			&& move != ttMove
 			&& ss->killers[0] != move
