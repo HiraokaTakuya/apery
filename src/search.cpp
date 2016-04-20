@@ -1237,7 +1237,7 @@ iid_start:
 		if (3 * OnePly <= depth
 			&& !isPVMove
 			&& !(pos.gamePly() > 70 // todo: 進行度などに変えた方が良いだろう。
-				 && thisThread == pos.searcher()->threads.mainThread()
+				 && thisThread == pos.searcher()->threads.back()
 				 && st.continuousCheck[oppositeColor(pos.turn())] >= 4) // !(70手以上 && mainThread && 連続王手)
 			&& !captureOrPawnPromotion
 			&& move != ttMove
