@@ -426,7 +426,7 @@ private:
 		}
 	}
 	template <bool UsePenalty>
-	void updateEval(const std::string& dirName) {
+	void updateEval(const std::string& dirName, const bool writeBase = true) {
 		for (size_t i = 0; i < eval_.kpps_end_index(); ++i)
 			updateFV<UsePenalty>(*eval_.oneArrayKPP(i), *parse2EvalBase_.oneArrayKPP(i));
 		for (size_t i = 0; i < eval_.kkps_end_index(); ++i)
@@ -436,8 +436,9 @@ private:
 
 		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
 		// updateFV()で学習しないパラメータに入ったノイズを無くす。
-		eval_.write(dirName);
-		eval_.init(dirName, false);
+		if (writeBase)
+			eval_.write(dirName);
+		eval_.init(dirName, false, writeBase);
 		g_evalTable.clear();
 	}
 	double sigmoid(const double x) const {
@@ -542,8 +543,9 @@ private:
 			lowerDimension(parse2EvalBase_, parse2Data_.params);
 			setUpdateMask(step);
 			std::cout << "update eval ... " << std::flush;
-			if (usePenalty_) updateEval<true >(pos.searcher()->options["Eval_Dir"]);
-			else             updateEval<false>(pos.searcher()->options["Eval_Dir"]);
+			const bool writeReadBase = (step == stepNum_);
+			if (usePenalty_) updateEval<true >(pos.searcher()->options["Eval_Dir"], writeReadBase);
+			else             updateEval<false>(pos.searcher()->options["Eval_Dir"], writeReadBase);
 			std::cout << "done" << std::endl;
 			std::cout << "parse2 1 step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 			print();

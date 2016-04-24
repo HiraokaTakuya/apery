@@ -822,15 +822,17 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 			ret += "/";
 		return ret;
 	}
-	void init(const std::string& dirName, const bool Synthesized) {
+	void init(const std::string& dirName, const bool Synthesized, const bool readBase = true) {
 		// 合成された評価関数バイナリがあればそちらを使う。
 		if (Synthesized) {
 			if (readSynthesized(dirName))
 				return;
 		}
-		clear();
+		if (readBase)
+			clear();
 		readSomeSynthesized(dirName);
-		read(dirName);
+		if (readBase)
+			read(dirName);
 		setEvaluate();
 	}
 
