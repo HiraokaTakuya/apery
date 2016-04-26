@@ -376,6 +376,9 @@ std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Ply depth, con
 		const Ply d = (update ? depth : depth - 1);
 		const Score s = (update ? rootMoves[i].score_ : rootMoves[i].prevScore_);
 
+		if (ss.rdbuf()->in_avail()) // 空以外は真
+			ss << "\n";
+
 		ss << "info depth " << d
 		   << " seldepth " << selDepth
 		   << " score " << (i == pos.thisThread()->pvIdx ? scoreToUSI(s, alpha, beta) : scoreToUSI(s))
@@ -387,8 +390,6 @@ std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Ply depth, con
 
 		for (int j = 0; !rootMoves[i].pv_[j].isNone(); ++j)
 			ss << " " << rootMoves[i].pv_[j].toUSI();
-
-		ss << std::endl;
 	}
 	return ss.str();
 }
