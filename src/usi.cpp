@@ -156,6 +156,8 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 		if      (token == "ponder"     ) limits.ponder = true;
 		else if (token == "btime"      ) ssCmd >> limits.time[Black];
 		else if (token == "wtime"      ) ssCmd >> limits.time[White];
+		else if (token == "binc"       ) ssCmd >> limits.increment[Black];
+		else if (token == "winc"       ) ssCmd >> limits.increment[White];
 		else if (token == "infinite"   ) limits.infinite = true;
 		else if (token == "byoyomi" || token == "movetime") {
 			// btime wtime の後に byoyomi が来る前提になっているので良くない。
