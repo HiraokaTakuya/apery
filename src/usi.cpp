@@ -78,6 +78,7 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
+	(*this)["Inc_Margin"]                  = USIOption(4500, 0, INT_MAX);
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
 	(*this)["Skill_Level"]                 = USIOption(20, 0, 20);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
@@ -159,11 +160,7 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 		else if (token == "binc"       ) ssCmd >> limits.increment[Black];
 		else if (token == "winc"       ) ssCmd >> limits.increment[White];
 		else if (token == "infinite"   ) limits.infinite = true;
-		else if (token == "byoyomi" || token == "movetime") {
-			// btime wtime の後に byoyomi が来る前提になっているので良くない。
-			ssCmd >> limits.moveTime;
-			if (limits.moveTime != 0) { limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"]; }
-		}
+		else if (token == "byoyomi" || token == "movetime") ssCmd >> limits.moveTime;
 		else if (token == "depth"      ) { ssCmd >> limits.depth; }
 		else if (token == "nodes"      ) { ssCmd >> limits.nodes; }
 		else if (token == "searchmoves") {
@@ -171,6 +168,10 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 				limits.searchmoves.push_back(usiToMove(pos, token));
 		}
 	}
+	if      (limits.moveTime != 0)
+		limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"];
+	else if (limits.increment[pos.turn()] != 0)
+		limits.time[pos.turn()] -= pos.searcher()->options["Inc_Margin"];
 	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
 }
 
