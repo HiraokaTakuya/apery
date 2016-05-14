@@ -375,7 +375,7 @@ private:
 									auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
 									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
 								}
-								if (recordScore < score)
+								if (recordScore <= score)
 									++recordIsNth;
 							}
 						}
