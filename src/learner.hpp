@@ -174,11 +174,13 @@ public:
 		std::string recordFileName;
 		std::string blackRecordFileName;
 		std::string whiteRecordFileName;
+		std::string testRecordFileName;
 		s64 updateMax;
 		s64 updateMin;
 		ssCmd >> recordFileName;
 		ssCmd >> blackRecordFileName;
 		ssCmd >> whiteRecordFileName;
+		ssCmd >> testRecordFileName;
 		ssCmd >> gameNum;
 		ssCmd >> parse1ThreadNum_;
 		ssCmd >> parse2ThreadNum_;
@@ -231,13 +233,15 @@ public:
 		for (size_t i = 0; i < parse2ThreadNum_ - 1; ++i)
 			parse2Datum_.emplace_back();
 		setLearnOptions(*pos.searcher());
-		readBook(pos, recordFileName, blackRecordFileName, whiteRecordFileName, gameNum);
+		readBook(pos, recordFileName, blackRecordFileName, whiteRecordFileName, testRecordFileName, gameNum);
 		mt_ = std::mt19937(std::chrono::system_clock::now().time_since_epoch().count());
 		mt64_ = std::mt19937_64(std::chrono::system_clock::now().time_since_epoch().count());
 		for (int i = 0; ; ++i) {
 			std::cout << "iteration " << i << std::endl;
+			std::cout << "test start" << std::endl;
+			learnParse1(pos, testBookMovesDatum_, true);
 			std::cout << "parse1 start" << std::endl;
-			learnParse1(pos);
+			learnParse1(pos, bookMovesDatum_, false);
 			std::cout << "parse2 start" << std::endl;
 			learnParse2(pos);
 		}
@@ -246,9 +250,10 @@ private:
 	// 学習に使う棋譜から、手と手に対する補助的な情報を付けでデータ保持する。
 	// 50000局程度に対して10秒程度で終わるからシングルコアで良い。
 	void setLearnMoves(Position& pos, std::set<std::pair<Key, Move> >& dict, std::string& s0, std::string& s1,
-					   const std::array<bool, ColorNum>& useTurnMove)
+					   const std::array<bool, ColorNum>& useTurnMove, const bool testRecord)
 	{
-		bookMovesDatum_.push_back(std::vector<BookMoveData>());
+		auto& bmds = (testRecord ? testBookMovesDatum_ : bookMovesDatum_);
+		bmds.emplace_back(std::vector<BookMoveData>());
 		BookMoveData bmdBase[ColorNum];
 		bmdBase[Black].move = bmdBase[White].move = Move::moveNone();
 		std::stringstream ss(s0);
@@ -281,14 +286,14 @@ private:
 			else
 				bmd.useLearning = false;
 
-			bookMovesDatum_.back().push_back(bmd);
+			bmds.back().emplace_back(bmd);
 			s1.erase(0, 6);
 
 			setUpStates->push(StateInfo());
 			pos.doMove(move, setUpStates->top());
 		}
 	}
-	void readBookBody(std::set<std::pair<Key, Move> >& dict, Position& pos, const std::string& record, const std::array<bool, ColorNum>& useTurnMove, const s64 gameNum)
+	void readBookBody(std::set<std::pair<Key, Move> >& dict, Position& pos, const std::string& record, const std::array<bool, ColorNum>& useTurnMove, const s64 gameNum, const bool testRecord)
 	{
 		if (record == "-") // "-" なら棋譜ファイルを読み込まない。
 			return;
@@ -300,25 +305,25 @@ private:
 		std::string s0;
 		std::string s1;
 		// 0 なら全部の棋譜を読む
-		s64 tmpGameNum = (gameNum == 0 ? std::numeric_limits<s64>::max() : gameNum);
+		s64 tmpGameNum = (gameNum == 0 || testRecord ? std::numeric_limits<s64>::max() : gameNum);
 		for (s64 i = 0; i < tmpGameNum; ++i) {
 			std::getline(ifs, s0);
 			std::getline(ifs, s1);
 			if (!ifs) break;
-			setLearnMoves(pos, dict, s0, s1, useTurnMove);
+			setLearnMoves(pos, dict, s0, s1, useTurnMove, testRecord);
 		}
 		std::cout << "games existed: " << bookMovesDatum_.size() << std::endl;
 	}
-	void readBook(Position& pos,
-				  const std::string& recordFileName,
-				  const std::string& blackRecordFileName,
-				  const std::string& whiteRecordFileName, const s64 gameNum)
+	void readBook(Position& pos, const std::string& recordFileName, const std::string& blackRecordFileName,
+				  const std::string& whiteRecordFileName, const std::string& testRecordFileName, const s64 gameNum)
 	{
 		std::set<std::pair<Key, Move> > dict;
-		readBookBody(dict, pos,      recordFileName, {true , true }, gameNum);
-		readBookBody(dict, pos, blackRecordFileName, {true , false}, gameNum);
-		readBookBody(dict, pos, whiteRecordFileName, {false, true }, gameNum);
+		readBookBody(dict, pos,      recordFileName, {true , true }, gameNum, false);
+		readBookBody(dict, pos, blackRecordFileName, {true , false}, gameNum, false);
+		readBookBody(dict, pos, whiteRecordFileName, {false, true }, gameNum, false);
+		readBookBody(dict, pos,  testRecordFileName, {true , true }, gameNum, true ); // テスト局面も dict を使ってユニークな(局面 || 指し手)にしておく。
 		gameNumForIteration_ = std::min(gameNumForIteration_, bookMovesDatum_.size());
+		testGameNumForIteration_ = testBookMovesDatum_.size();
 	}
 	void setLearnOptions(Searcher& s) {
 		std::string options[] = {"name Threads value 1",
@@ -339,13 +344,13 @@ private:
 		}
 		return index_++;
 	}
-	void learnParse1Body(Position& pos, std::mt19937& mt) {
+	void learnParse1Body(Position& pos, std::mt19937& mt, std::vector<std::vector<BookMoveData> >& bmds, const size_t gameNumForIteration) {
 		std::uniform_int_distribution<Ply> dist(minDepth_, maxDepth_);
 		pos.searcher()->tt.clear();
-		for (size_t i = lockingIndexIncrement<true>(); i < gameNumForIteration_; i = lockingIndexIncrement<true>()) {
+		for (size_t i = lockingIndexIncrement<true>(); i < gameNumForIteration; i = lockingIndexIncrement<true>()) {
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
 			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
-			auto& gameMoves = bookMovesDatum_[i];
+			auto& gameMoves = bmds[i];
 			for (auto& bmd : gameMoves) {
 				if (bmd.useLearning) {
 					pos.searcher()->alpha = -ScoreMaxEvaluate;
@@ -384,29 +389,38 @@ private:
 			}
 		}
 	}
-	void learnParse1(Position& pos) {
+	void learnParse1(Position& pos, std::vector<std::vector<BookMoveData> >& bmds, const bool testRecord) {
 		Timer t = Timer::currentTime();
-		// 棋譜をシャッフルすることで、先頭 gameNum_ 個の学習に使うデータをランダムに選ぶ。
-		std::shuffle(std::begin(bookMovesDatum_), std::end(bookMovesDatum_), mt_);
-		std::cout << "shuffle elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
+		if (!testRecord) {
+			// 棋譜をシャッフルすることで、先頭 gameNum_ 個の学習に使うデータをランダムに選ぶ。
+			std::shuffle(std::begin(bmds), std::end(bmds), mt_);
+			std::cout << "shuffle elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
+		}
 		index_ = 0;
+		const size_t gameNumForIt = (testRecord ? testGameNumForIteration_ : gameNumForIteration_);
 		moveCount_.store(0);
 		for (auto& pred : predictions_)
 			pred.store(0);
 		std::vector<std::thread> threads(parse1ThreadNum_ - 1);
 		for (size_t i = 0; i < parse1ThreadNum_ - 1; ++i)
-			threads[i] = std::thread([this, i] { learnParse1Body(positions_[i], mts_[i]); });
-		learnParse1Body(pos, mt_);
+			threads[i] = std::thread([this, i, &bmds, gameNumForIt] { learnParse1Body(positions_[i], mts_[i], bmds, gameNumForIt); });
+		learnParse1Body(pos, mt_, bmds, gameNumForIt);
 		for (auto& thread : threads)
 			thread.join();
 
-		std::cout << "\nGames = " << bookMovesDatum_.size()
-				  << "\nTotal Moves = " << moveCount_
-				  << "\nPrediction = ";
+		if (testRecord)
+			std::cout << "\ntest prediction = ";
+		else
+			std::cout << "\nGames = " << bmds.size()
+					  << "\nTotal Moves = " << moveCount_
+					  << "\nPrediction = ";
 		for (auto& pred : predictions_)
 			std::cout << static_cast<double>(pred.load()*100) / moveCount_.load() << ", ";
 		std::cout << std::endl;
-		std::cout << "parse1 elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
+		if (testRecord)
+			std::cout << "test elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
+		else
+			std::cout << "parse1 elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 	}
 	double FVPenalty(const int v) { return (0.2/static_cast<double>(FVScale)/300.0)*v; }
 	template <bool UsePenalty, typename T>
@@ -576,6 +590,7 @@ private:
 	std::vector<std::mt19937> mts_;
 	std::vector<Position> positions_;
 	std::vector<std::vector<BookMoveData> > bookMovesDatum_;
+	std::vector<std::vector<BookMoveData> > testBookMovesDatum_;
 	std::atomic<s64> moveCount_;
 	std::atomic<s64> predictions_[PredSize];
 	Parse2Data parse2Data_;
@@ -586,6 +601,7 @@ private:
 	Evaluater eval_;
 	int stepNum_;
 	size_t gameNumForIteration_;
+	size_t testGameNumForIteration_;
 	u64 updateMaxMask_;
 	u64 updateMinMask_;
 	u64 updateMask_;
