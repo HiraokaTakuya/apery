@@ -422,14 +422,16 @@ private:
 		else
 			std::cout << "parse1 elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 	}
-	double FVPenalty(const int v) { return (0.2/static_cast<double>(FVScale)/300.0)*v; }
+	static constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
 	template <bool UsePenalty, typename T>
 	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& dvRef) {
 		std::array<float, 2> dv = {dvRef[0].load(), dvRef[1].load()};
 		const int step = count1s(mt64_() & updateMask_);
 		for (int i = 0; i < 2; ++i) {
-			if (UsePenalty)
-				dv[i] -= static_cast<float>(FVPenalty(v[i]));
+			if (UsePenalty) {
+				if      (0 < v[i]) dv[i] -= static_cast<float>(FVPenalty());
+				else if (v[i] < 0) dv[i] += static_cast<float>(FVPenalty());
+			}
 
 			// T が enum だと 0 になることがある。
 			// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
