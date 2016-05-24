@@ -64,4 +64,12 @@ const HandPiece PieceTypeToHandPieceTable[PieceTypeNum] = {
 };
 inline HandPiece pieceTypeToHandPiece(const PieceType pt) { return PieceTypeToHandPieceTable[pt]; }
 
+const PieceType HandPieceToPieceTypeTable[HandPieceNum] = {
+	Pawn, Lance, Knight, Silver, Gold, Bishop, Rook
+};
+inline PieceType handPieceToPieceType(const HandPiece hp) { return HandPieceToPieceTypeTable[hp]; }
+inline Piece colorAndHandPieceToPiece(const Color c, const HandPiece hp) {
+	return colorAndPieceTypeToPiece(c, handPieceToPieceType(hp));
+}
+
 #endif // #ifndef APERY_PIECE_HPP

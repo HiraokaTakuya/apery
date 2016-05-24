@@ -19,6 +19,13 @@ namespace {
 	inline const char* pieceToCharCSA(const Piece pc) {
 		return PieceToCharCSATable[pc];
 	}
+	const char* PieceToCharUSITable[PieceNone] = {
+		"", "P", "L", "N", "S", "B", "R", "G", "K", "+P", "+L", "+N", "+S", "+B", "+R", "", "",
+		"p", "l", "n", "s", "b", "r", "g", "k", "+p", "+l", "+n", "+s", "+b", "+r"
+	};
+	inline const char* pieceToCharUSI(const Piece pc) {
+		return PieceToCharUSITable[pc];
+	}
 }
 
 CheckInfo::CheckInfo(const Position& pos) {
@@ -1510,6 +1517,52 @@ void Position::print() const {
 	std::cout << "key = " << getKey() << std::endl;
 }
 
+std::string Position::toSFEN(const Ply ply) const {
+	std::stringstream ss;
+	ss << "sfen ";
+	int space = 0;
+	for (Rank rank = Rank1; rank <= Rank9; ++rank) {
+		for (File file = File9; file >= File1; --file) {
+			const Square sq = makeSquare(file, rank);
+			const Piece pc = piece(sq);
+			if (pc == Empty)
+				++space;
+			else {
+				if (space) {
+					ss << space;
+					space = 0;
+				}
+				ss << pieceToCharUSI(pc);
+			}
+		}
+		if (space) {
+			ss << space;
+			space = 0;
+		}
+		if (rank != Rank9)
+			ss << "/";
+	}
+	ss << (turn() == Black ? " b " : " w ");
+	if (hand(Black).value() == 0 && hand(White).value() == 0)
+		ss << "- ";
+	else {
+		for (Color color = Black; color < ColorNum; ++color) {
+			for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp) {
+				const int num = hand(color).numOf(hp);
+				if (num == 0)
+					continue;
+				if (num != 1)
+					ss << num;
+				const Piece pc = colorAndHandPieceToPiece(color, hp);
+				ss << pieceToCharUSI(pc);
+			}
+		}
+		ss << " ";
+	}
+	ss << ply;
+	return ss.str();
+}
+
 #if !defined NDEBUG
 bool Position::isOK() const {
 	static Key prevKey;
@@ -1796,7 +1849,6 @@ void Position::set(const std::string& sfen, Thread* th) {
 
 	// 次の手が何手目か
 	ss >> gamePly_;
-	gamePly_ = std::max(2 * (gamePly_ - 1), 0) + static_cast<int>(turn() == White);
 
 	// 残り時間, hash key, (もし実装するなら)駒番号などをここで設定
 	st_->boardKey = computeBoardKey();

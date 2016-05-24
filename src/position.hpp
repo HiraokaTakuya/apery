@@ -227,6 +227,8 @@ public:
 		return getKey() >> 1;
 	}
 	void print() const;
+	std::string toSFEN(const Ply ply) const;
+	std::string toSFEN() const { return toSFEN(gamePly()); }
 
 	u64 nodesSearched() const          { return nodes_; }
 	void setNodesSearched(const u64 n) { nodes_ = n; }
