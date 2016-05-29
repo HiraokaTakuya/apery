@@ -4,11 +4,6 @@
 #if 0
 // 機械学習を行う際に使う。
 #define LEARN
-#if 0
-// MPI で複数台のPCを使って学習する。
-// todo: 実装はまだ。
-#define MPI_LEARN
-#endif
 #endif
 
 #define EVAL_PHASE1

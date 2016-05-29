@@ -398,15 +398,6 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 	std::string cmd;
 	std::string token;
 
-#if defined MPI_LEARN
-	boost::mpi::environment  env(argc, argv);
-	boost::mpi::communicator world;
-	if (world.rank() != 0) {
-		learn(pos, env, world);
-		return;
-	}
-#endif
-
 	for (int i = 1; i < argc; ++i)
 		cmd += std::string(argv[i]) + " ";
 
@@ -447,11 +438,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 #if defined LEARN
 		else if (token == "l"        ) {
 			auto learner = std::unique_ptr<Learner>(new Learner);
-#if defined MPI_LEARN
-			learner->learn(pos, env, world);
-#else
 			learner->learn(pos, ssCmd);
-#endif
 		}
 #endif
 #if !defined MINIMUL
