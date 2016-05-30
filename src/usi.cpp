@@ -179,6 +179,117 @@ void go(const Position& pos, const Ply depth, const Move move) {
 	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
 	pos.searcher()->threads.mainThread()->waitForSearchFinished();
 }
+void go(const Position& pos, const Ply depth) {
+	LimitsType limits;
+	limits.depth = depth;
+	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
+	pos.searcher()->threads.mainThread()->waitForSearchFinished();
+}
+#endif
+
+#if defined USE_GLOBAL
+#else
+void make_teacher(Position& pos, std::istringstream& ssCmd) {
+	std::string recordFileName;
+	std::string outputFileName;
+	int threadNum;
+	ssCmd >> recordFileName;
+	ssCmd >> outputFileName;
+	ssCmd >> threadNum;
+	if (threadNum <= 0)
+		exit(EXIT_FAILURE);
+	std::vector<Searcher> searchers(threadNum);
+	std::vector<Position> positions;
+	for (auto& s : searchers) {
+		s.init();
+		const std::string options[] = {"name Threads value 1",
+									   "name MultiPV value 1",
+									   "name USI_Hash value 256",
+									   "name OwnBook value false",
+									   "name Max_Random_Score_Diff value 0"};
+		for (auto& str : options) {
+			std::istringstream is(str);
+			s.setOption(is);
+		}
+		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
+	}
+	if (recordFileName == "-") // "-" なら棋譜ファイルを読み込まない。
+		exit(EXIT_FAILURE);
+	std::ifstream ifs(recordFileName.c_str(), std::ios::binary);
+	if (!ifs)
+		exit(EXIT_FAILURE);
+	std::string sfen;
+	std::vector<std::string> sfens;
+	while (std::getline(ifs, sfen))
+		sfens.emplace_back(sfen);
+
+	Mutex mutex;
+	std::ofstream ofs(outputFileName.c_str(), std::ios::binary);
+	std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
+	std::shuffle(std::begin(sfens), std::end(sfens), mt);
+	auto func = [&mutex, &ofs, &sfens](Position& pos, std::atomic<s64>& idx) {
+		for (s64 i = idx++; i < static_cast<s64>(sfens.size()); i = idx++) {
+			if (i >= static_cast<s64>(sfens.size()))
+				return;
+			std::istringstream ss(sfens[i]);
+			setPosition(pos, ss);
+			std::unordered_set<Key> keyHash;
+			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
+			for (Ply ply = pos.gamePly(); ply < 300; ++ply) { // 300 手くらいで終了しておく。
+				const Key key = pos.getKey();
+				if (keyHash.find(key) == std::end(keyHash))
+					keyHash.insert(key);
+				else // 同一局面 2 回目で千日手判定とする。
+					break;
+				pos.searcher()->alpha = -ScoreMaxEvaluate;
+				pos.searcher()->beta  =  ScoreMaxEvaluate;
+				go(pos, static_cast<Depth>(6));
+				const Score score = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
+				const Move bestMove = pos.searcher()->threads.mainThread()->rootMoves[0].pv_[0];
+				if (2000 < abs(score)) // 差が付いたので投了した事にする。
+					break;
+				else if (bestMove.isNone()) // 勝ち宣言など
+					break;
+
+				{
+					std::ostringstream oss;
+					oss << pos.toSFEN(ply) << "\n";
+					auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
+					Ply tmpPly = 0;
+					StateInfo state[MaxPlyPlus4];
+					StateInfo* st = state;
+					while (!pv[tmpPly].isNone()) {
+						oss << pv[tmpPly].toUSI() << " ";
+						pos.doMove(pv[tmpPly++], *st++);
+					}
+					oss << "\n";
+					// evaluate() の差分計算を無効化する。
+					SearchStack ss[2];
+					ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+					const Score eval = evaluate(pos, ss+1);
+					oss << pos.toSFEN(ply + tmpPly) << "\n";
+					oss << eval << "\n";
+
+					while (tmpPly)
+						pos.undoMove(pv[--tmpPly]);
+
+					std::unique_lock<Mutex> lock(mutex);
+					ofs << oss.str();
+				}
+
+				setUpStates->push(StateInfo());
+				pos.doMove(bestMove, setUpStates->top());
+			}
+		}
+	};
+	std::atomic<s64> index;
+	index = 0;
+	std::vector<std::thread> threads(threadNum);
+	for (int i = 0; i < threadNum; ++i)
+		threads[i] = std::thread([&positions, &index, i, &func] { func(positions[i], index); });
+	for (int i = 0; i < threadNum; ++i)
+		threads[i].join();
+}
 #endif
 
 Move usiToMoveBody(const Position& pos, const std::string& moveStr) {
@@ -436,6 +547,9 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		else if (token == "l"        ) {
 			auto learner = std::unique_ptr<Learner>(new Learner);
 			learner->learn(pos, ssCmd);
+		}
+		else if (token == "make_teacher") { // 良いコマンド名にしたい。
+			make_teacher(pos, ssCmd);//
 		}
 #endif
 #if !defined MINIMUL
