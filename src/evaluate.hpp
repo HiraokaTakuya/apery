@@ -150,6 +150,10 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
 	return lhs;
 }
 
+const int KPPIndicesMax = 3000;
+const int KKPIndicesMax = 130;
+const int KKIndicesMax = 7;
+
 template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterBase {
 	static const int R_Mid = 8; // 相対位置の中心のindex
 	constexpr int MaxWeight() const { return 1 << 22; } // KPE自体が1/32の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚)
@@ -228,9 +232,6 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(KKPType); }
 	constexpr size_t kks_end_index() const { return sizeof(kks)/sizeof(KKType); }
 
-	static const int KPPIndicesMax = 3000;
-	static const int KKPIndicesMax = 130;
-	static const int KKIndicesMax = 7;
 	// KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
 	// 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
 	// 0 の時だけは正負が不明だが、0 は歩の持ち駒 0 枚を意味していて無効な値なので問題なし。
