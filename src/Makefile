@@ -1,15 +1,22 @@
 COMPILER = g++
 #COMPILER = mpicxx
 CFLAGS   = -std=c++11 -fno-exceptions -fno-rtti -Wextra -Ofast -MMD -MP -fopenmp
-CFLAGS   += -march=native
+CFLAGS   += -march=native # make publish の時はここをコメントアウトする必要がある。
 LDFLAGS  = -lpthread #-lboost_mpi -lboost_serialization
 LIBS     =
 INCLUDE  = #-I../include
+TARGET   = apery
+TARGET_BMI2  = $(TARGET)_bmi2
+TARGET_SSE42 = $(TARGET)_sse42
+TARGET_SSE41 = $(TARGET)_sse41
+TARGET_SSE2  = $(TARGET)_sse2
 ifeq ($(OS),Windows_NT)
-  TARGET = apery.exe
+  TARGET = $(TARGET).exe
+  TARGET_BMI2 = $(TARGET_BMI2).exe
+  TARGET_SSE42 = $(TARGET_SSE42).exe
+  TARGET_SSE41 = $(TARGET_SSE41).exe
+  TARGET_SSE2 = $(TARGET_SSE2).exe
   LDFLAGS += -static
-else
-  TARGET = apery
 endif
 OBJDIR   = ../obj
 ifeq "$(strip $(OBJDIR))" ""
@@ -56,11 +63,58 @@ profgen:
 profuse:
 	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-use -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-use -lgcov' bmi2
 
+profgen_sse:
+	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-generate -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-generate -lgcov' sse
+
+profuse_sse:
+	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-use -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-use -lgcov' sse
+
+profgen_sse41:
+	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-generate -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-generate -lgcov' sse41
+
+profuse_sse41:
+	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-use -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-use -lgcov' sse41
+
+profgen_sse2:
+	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-generate -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-generate -lgcov' sse2
+
+profuse_sse2:
+	$(MAKE) CFLAGS='$(CFLAGS) -fprofile-use -lgcov' LDFLAGS='$(LDFLAGS) -fprofile-use -lgcov' sse2
+
 pgo:
 	$(MAKE) profgen
 	@./$(TARGET) bench
 	@touch $(SOURCES)
 	$(MAKE) profuse
+
+publish:
+	$(MAKE) profgen
+	@./$(TARGET) bench
+	@touch $(SOURCES)
+	$(MAKE) profuse
+	@strip $(TARGET)
+	@mv $(TARGET) $(TARGET_BMI2)
+	$(MAKE) clean
+	$(MAKE) profgen_sse
+	@./$(TARGET) bench
+	@touch $(SOURCES)
+	$(MAKE) profuse_sse
+	@strip $(TARGET)
+	@mv $(TARGET) $(TARGET_SSE42)
+	$(MAKE) clean
+	$(MAKE) profgen_sse41
+	@./$(TARGET) bench
+	@touch $(SOURCES)
+	$(MAKE) profuse_sse41
+	@strip $(TARGET)
+	@mv $(TARGET) $(TARGET_SSE41)
+	$(MAKE) clean
+	$(MAKE) profgen_sse2
+	@./$(TARGET) bench
+	@touch $(SOURCES)
+	$(MAKE) profuse_sse2
+	@strip $(TARGET)
+	@mv $(TARGET) $(TARGET_SSE2)
 
 clean:
 	rm -f $(OBJECTS) $(DEPENDS) $(TARGET) ${OBJECTS:.o=.gcda}
