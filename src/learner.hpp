@@ -139,6 +139,37 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 #undef FOO
 }
 
+const Score FVWindow = static_cast<Score>(256);
+
+inline double sigmoid(const double x) {
+	const double a = 7.0/static_cast<double>(FVWindow);
+	const double clipx = std::max(static_cast<double>(-FVWindow), std::min(static_cast<double>(FVWindow), x));
+	return 1.0 / (1.0 + exp(-a * clipx));
+}
+inline double dsigmoid(const double x) {
+	if (x <= -FVWindow || FVWindow <= x) { return 0.0; }
+#if 1
+	// 符号だけが大切なので、定数掛ける必要は無い。
+	const double a = 7.0/static_cast<double>(FVWindow);
+	return a * sigmoid(x) * (1 - sigmoid(x));
+#else
+	// 定数掛けない方を使う。
+	return sigmoid(x) * (1 - sigmoid(x));
+#endif
+}
+
+inline void printEvalTable(const Square ksq, const int p0, const int p1_base, const bool isTurn) {
+	for (Rank r = Rank1; r < RankNum; ++r) {
+		for (File f = File9; File1 <= f; --f) {
+			const Square sq = makeSquare(f, r);
+			printf("%5d", Evaluater::KPP[ksq][p0][p1_base + sq][isTurn]);
+		}
+		printf("\n");
+	}
+	printf("\n");
+	fflush(stdout);
+}
+
 struct Parse2Data {
 	RawEvaluater params;
 
@@ -457,22 +488,6 @@ private:
 		eval_.init(dirName, false, writeBase);
 		g_evalTable.clear();
 	}
-	double sigmoid(const double x) const {
-		const double a = 7.0/static_cast<double>(FVWindow);
-		const double clipx = std::max(static_cast<double>(-FVWindow), std::min(static_cast<double>(FVWindow), x));
-		return 1.0 / (1.0 + exp(-a * clipx));
-	}
-	double dsigmoid(const double x) const {
-		if (x <= -FVWindow || FVWindow <= x) { return 0.0; }
-#if 1
-		// 符号だけが大切なので、定数掛ける必要は無い。
-		const double a = 7.0/static_cast<double>(FVWindow);
-		return a * sigmoid(x) * (1 - sigmoid(x));
-#else
-		// 定数掛けない方を使う。
-		return sigmoid(x) * (1 - sigmoid(x));
-#endif
-	}
 	void setUpdateMask(const int step) {
 		const int stepMax = stepNum_;
 		const int max = count1s(updateMaxMask_);
@@ -567,20 +582,9 @@ private:
 			print();
 		}
 	}
-	void print() {
-		for (Rank r = Rank1; r < RankNum; ++r) {
-			for (File f = File9; File1 <= f; --f) {
-				const Square sq = makeSquare(f, r);
-				printf("%5d", Evaluater::KPP[SQ88][f_gold + SQ78][f_gold + sq][0]);
-			}
-			printf("\n");
-		}
-		printf("\n");
-		fflush(stdout);
-	}
+	void print() const { printEvalTable(SQ88, f_gold + SQ78, f_gold, false); }
 
 	static const int PredSize = 8;
-	static const Score FVWindow = static_cast<Score>(256);
 
 	Mutex mutex_;
 	size_t index_;

@@ -189,7 +189,7 @@ void go(const Position& pos, const Ply depth) {
 
 #if defined USE_GLOBAL
 #else
-void make_teacher(Position& pos, std::istringstream& ssCmd) {
+void make_teacher(std::istringstream& ssCmd) {
 	std::string recordFileName;
 	std::string outputFileName;
 	int threadNum;
@@ -289,6 +289,186 @@ void make_teacher(Position& pos, std::istringstream& ssCmd) {
 		threads[i] = std::thread([&positions, &index, i, &func] { func(positions[i], index); });
 	for (int i = 0; i < threadNum; ++i)
 		threads[i].join();
+}
+
+namespace {
+	// Learner とほぼ同じもの。todo: Learner と共通化する。
+
+	using EvalBaseType = EvaluaterBase<std::array<std::atomic<float>, 2>,
+									   std::array<std::atomic<float>, 2>,
+									   std::array<std::atomic<float>, 2> >;
+
+	constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
+	template <bool UsePenalty, typename T>
+	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& dvRef) {
+		const u64 updateMask = 3;
+		static MT64bit mt64(std::chrono::system_clock::now().time_since_epoch().count());
+
+		std::array<float, 2> dv = {dvRef[0].load(), dvRef[1].load()};
+		const int step = count1s(mt64() & updateMask);
+		for (int i = 0; i < 2; ++i) {
+			if (UsePenalty) {
+				if      (0 < v[i]) dv[i] -= static_cast<float>(FVPenalty());
+				else if (v[i] < 0) dv[i] += static_cast<float>(FVPenalty());
+			}
+
+			// T が enum だと 0 になることがある。
+			// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
+			static_assert(std::numeric_limits<T>::max() != 0, "");
+			static_assert(std::numeric_limits<T>::min() != 0, "");
+			if      (0.0 <= dv[i] && v[i] <= std::numeric_limits<T>::max() - step) v[i] += step;
+			else if (dv[i] <= 0.0 && std::numeric_limits<T>::min() + step <= v[i]) v[i] -= step;
+		}
+	}
+	template <bool UsePenalty>
+	void updateEval(Evaluater& eval, EvalBaseType& evalBase, const std::string& dirName, const bool writeBase = true) {
+		for (size_t i = 0; i < eval.kpps_end_index(); ++i)
+			updateFV<UsePenalty>(*eval.oneArrayKPP(i), *evalBase.oneArrayKPP(i));
+		for (size_t i = 0; i < eval.kkps_end_index(); ++i)
+			updateFV<UsePenalty>(*eval.oneArrayKKP(i), *evalBase.oneArrayKKP(i));
+		for (size_t i = 0; i < eval.kks_end_index(); ++i)
+			updateFV<UsePenalty>(*eval.oneArrayKK(i), *evalBase.oneArrayKK(i));
+
+		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
+		// updateFV()で学習しないパラメータに入ったノイズを無くす。
+		if (writeBase)
+			eval.write(dirName);
+		eval.init(dirName, false, writeBase);
+		g_evalTable.clear();
+	}
+}
+void use_teacher(Position& pos, std::istringstream& ssCmd) {
+	std::string teacherFileName;
+	int threadNum;
+	int stepNum;
+	ssCmd >> teacherFileName;
+	ssCmd >> threadNum;
+	ssCmd >> stepNum;
+	if (threadNum <= 0)
+		exit(EXIT_FAILURE);
+	std::vector<Searcher> searchers(threadNum);
+	std::vector<Position> positions;
+	std::vector<RawEvaluater> rawEvaluaters;
+	// rawEvaluaters(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
+	for (int i = 0; i < threadNum; ++i)
+		rawEvaluaters.emplace_back();
+	for (auto& s : searchers) {
+		s.init();
+		const std::string options[] = {"name Threads value 1",
+									   "name MultiPV value 1",
+									   "name USI_Hash value 256",
+									   "name OwnBook value false",
+									   "name Max_Random_Score_Diff value 0"};
+		for (auto& str : options) {
+			std::istringstream is(str);
+			s.setOption(is);
+		}
+		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
+	}
+	if (teacherFileName == "-") // "-" なら棋譜ファイルを読み込まない。
+		exit(EXIT_FAILURE);
+	std::ifstream ifs(teacherFileName.c_str(), std::ios::binary);
+	if (!ifs)
+		exit(EXIT_FAILURE);
+
+	Mutex mutex;
+	auto func = [&mutex, &ifs](Position& pos, RawEvaluater& rawEvaluater, double& dsigSumNorm) {
+		SearchStack ss[2];
+		std::string sfen;
+		std::string sfenLeaf;
+		std::string pvStr;
+		std::string evalLeafStr;
+		std::string token;
+		rawEvaluater.clear();
+		pos.searcher()->tt.clear();
+		while (true) {
+			{
+				std::unique_lock<Mutex> lock(mutex);
+				if (std::getline(ifs, sfen)) { // 4行で1組としている。
+					std::getline(ifs, pvStr);
+					std::getline(ifs, sfenLeaf);
+					std::getline(ifs, evalLeafStr);
+				}
+				else
+					return;
+			}
+			auto setpos = [](const std::string sfenStr, Position& pos) {
+				std::istringstream iss(sfenStr);
+				setPosition(pos, iss);
+			};
+			setpos(sfen, pos);
+			const Color rootColor = pos.turn();
+			std::istringstream issPV(pvStr);
+			issPV >> token;
+			const Move teacherMove = usiToMove(pos, token);
+			pos.searcher()->alpha = -ScoreMaxEvaluate;
+			pos.searcher()->beta  =  ScoreMaxEvaluate;
+			go(pos, static_cast<Depth>(1));
+			const Move shallowSearchedMove = pos.searcher()->threads.mainThread()->rootMoves[0].pv_[0];
+			if (shallowSearchedMove == teacherMove) // 教師と同じ手を指せたら学習しない。
+				continue;
+			// pv を辿って評価値を返す。pos は pv を辿る為に状態が変わる。
+			auto pvEval = [&ss](Position& pos) {
+				auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
+				const Color rootColor = pos.turn();
+				Ply ply = 0;
+				StateInfo state[MaxPlyPlus4];
+				StateInfo* st = state;
+				while (!pv[ply].isNone())
+					pos.doMove(pv[ply++], *st++);
+				ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+				const Score eval = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
+				return eval;
+			};
+			const Score eval = pvEval(pos);
+
+			// 教師手で探索する。
+			setpos(sfen, pos);
+			pos.searcher()->alpha = -ScoreMaxEvaluate;
+			pos.searcher()->beta  =  ScoreMaxEvaluate;
+			go(pos, static_cast<Depth>(1), teacherMove);
+			const Score teacherEval = pvEval(pos);
+
+			auto diff = eval - teacherEval;
+			const double dsig = dsigmoid(diff);
+			dsigSumNorm += fabs(dsig);
+			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == pos.turn() ? -dsig : dsig)}};
+			rawEvaluater.incParam(pos, dT);
+
+			setpos(sfenLeaf, pos);
+			dT[0] = -dT[0];
+			dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
+			rawEvaluater.incParam(pos, dT);
+		}
+	};
+
+	auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType);
+	auto eval = std::unique_ptr<Evaluater>(new Evaluater);
+	eval->init(pos.searcher()->options["Eval_Dir"], false);
+	Timer t;
+	for (int step = 1; step <= stepNum; ++step) {
+		t.restart();
+		std::cout << "step " << step << "/" << stepNum << " " << std::flush;
+		ifs.clear(); // 読み込み完了をクリアする。
+		ifs.seekg(0, std::ios::beg); // ストリームポインタを先頭に戻す。
+		std::vector<std::thread> threads(threadNum);
+		std::vector<double> dsigSumNorms(threadNum, 0.0);
+		for (int i = 0; i < threadNum; ++i)
+			threads[i] = std::thread([&positions, i, &func, &rawEvaluaters, &dsigSumNorms] { func(positions[i], rawEvaluaters[i], dsigSumNorms[i]); });
+		for (int i = 0; i < threadNum; ++i)
+			threads[i].join();
+
+		for (size_t size = 1; size < rawEvaluaters.size(); ++size)
+			rawEvaluaters[0] += rawEvaluaters[size];
+		evalBase->clear();
+		lowerDimension(*evalBase, rawEvaluaters[0]);
+		std::cout << "update eval ... " << std::flush;
+		updateEval<true>(*eval, *evalBase, pos.searcher()->options["Eval_Dir"], true);
+		std::cout << "done" << std::endl;
+		std::cout << "step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
+		std::cout << "dsigSumNorm = " << std::accumulate(std::begin(dsigSumNorms), std::end(dsigSumNorms), 0.0) << std::endl;
+		printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
+	}
 }
 #endif
 
@@ -548,9 +728,8 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 			auto learner = std::unique_ptr<Learner>(new Learner);
 			learner->learn(pos, ssCmd);
 		}
-		else if (token == "make_teacher") { // 良いコマンド名にしたい。
-			make_teacher(pos, ssCmd);//
-		}
+		else if (token == "make_teacher") make_teacher(ssCmd);
+		else if (token == "use_teacher") use_teacher(pos, ssCmd);
 #endif
 #if !defined MINIMUL
 		// 以下、デバッグ用
