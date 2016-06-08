@@ -781,13 +781,19 @@ void Thread::search() {
 #if defined INANIWA_SHIFT
 // 稲庭判定
 void Searcher::detectInaniwa(const Position& pos) {
-	if (inaniwaFlag == NotInaniwa && 20 <= pos.gamePly()) {
+	const auto prevInaniwaFlag = inaniwaFlag;
+	inaniwaFlag = NotInaniwa;
+	if (70 <= pos.gamePly()) {
 		const Rank Trank3 = (pos.turn() == Black ? Rank3 : Rank7); // not constant
 		const Bitboard mask = rankMask(Trank3) & ~fileMask<File9>() & ~fileMask<File1>();
-		if ((pos.bbOf(Pawn, oppositeColor(pos.turn())) & mask) == mask) {
+		if ((pos.bbOf(Pawn, oppositeColor(pos.turn())) & mask) == mask)
 			inaniwaFlag = (pos.turn() == Black ? InaniwaIsWhite : InaniwaIsBlack);
-			tt.clear();
-		}
+	}
+	// 稲庭判定の結果が変わったら、過去に探索した評価値は使えないのでクリアする必要がある。
+	// 稲庭判定をした後に全く別の対局の sfen を送られても対応出来るようにする。
+	if (prevInaniwaFlag != inaniwaFlag) {
+		tt.clear();
+		g_evalTable.clear();
 	}
 }
 #endif

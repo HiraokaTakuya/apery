@@ -120,6 +120,10 @@ namespace {
 			if (pos.piece(SQ57) == BPawn)   score += 200 * FVScale;
 			if (pos.piece(SQ56) == BPawn)   score += 200 * FVScale;
 			if (pos.piece(SQ55) == BPawn)   score += 200 * FVScale;
+			if (pos.material() <= ScoreZero) {
+				const Bitboard mask = inFrontMask<Black, Rank7>() & inFrontMask<White, Rank2>() & ~fileMask(File1) & ~fileMask(File9);
+				score += (pos.bbOf(Pawn, White) & mask).popCount() * 100 * FVScale;
+			}
 		}
 		else {
 			assert(pos.csearcher()->inaniwaFlag == InaniwaIsWhite);
@@ -136,6 +140,10 @@ namespace {
 			if (pos.piece(SQ53) == WPawn)   score -= 200 * FVScale;
 			if (pos.piece(SQ54) == WPawn)   score -= 200 * FVScale;
 			if (pos.piece(SQ55) == WPawn)   score -= 200 * FVScale;
+			if (pos.material() >= ScoreZero) {
+				const Bitboard mask = inFrontMask<Black, Rank8>() & inFrontMask<White, Rank3>() & ~fileMask(File1) & ~fileMask(File9);
+				score -= (pos.bbOf(Pawn, Black) & mask).popCount() * 100 * FVScale;
+			}
 		}
 		return score;
 	}

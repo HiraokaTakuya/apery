@@ -422,9 +422,6 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		else if (token == "usinewgame") {
 			tt.clear();
 			threads.mainThread()->previousScore = ScoreInfinite;
-#if defined INANIWA_SHIFT
-			inaniwaFlag = NotInaniwa;
-#endif
 			for (int i = 0; i < 100; ++i) g_randomTimeSeed(); // 最初は乱数に偏りがあるかも。少し回しておく。
 		}
 		else if (token == "usi"      ) SYNCCOUT << "id name " << MyName
