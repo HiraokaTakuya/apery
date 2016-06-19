@@ -9,7 +9,7 @@ require 'open3'
 require 'timeout'
 require 'thread'
 
-TimeoutSec = 60 # usi コマンドに usiok を返すまでの制限時間
+TimeoutSec = 60 # isready コマンドに readyok を返すまでの制限時間
 
 class USIEngine
   attr_accessor :stdin, :stdout, :path
@@ -27,19 +27,18 @@ end
 class GameManager
   def initialize argv
     thread_num = 1
-    @game_num = 3000
-    @movetime = 100.to_s
-    @win = [0, 0]
-    @draw = 0
-    #@mutex = Mutex.new
+    @game_num  = 3000
+    @movetime  = 100.to_s
+    @win       = [0, 0]
+    @draw      = 0
 
-    @file = File.open(argv[2], "a") if 2 < argv.size && argv[2] != '-'
-    thread_num = argv[3].to_i if 3 < argv.size
-    @game_num = argv[4].to_i if 4 < argv.size
-    @movetime = argv[5] if 5 < argv.size
-    @win[0] = argv[6].to_i if 6 < argv.size
-    @win[1] = argv[7].to_i if 7 < argv.size
-    @draw = argv[8].to_i if 8 < argv.size
+    @file      = File.open(argv[2], "a") if 2 < argv.size && argv[2] != '-'
+    thread_num = argv[3].to_i            if 3 < argv.size
+    @game_num  = argv[4].to_i            if 4 < argv.size
+    @movetime  = argv[5]                 if 5 < argv.size
+    @win[0]    = argv[6].to_i            if 6 < argv.size
+    @win[1]    = argv[7].to_i            if 7 < argv.size
+    @draw      = argv[8].to_i            if 8 < argv.size
 
     @game_index = @win[0] + @win[1] + @draw
 
@@ -56,16 +55,16 @@ class GameManager
     end
   end
 
-  def usiok engines
+  def isready engines
     engines.each do |engine|
-      engine.stdin.puts "usi"
+      engine.stdin.puts "isready"
     end
     engines.each do |engine|
       begin
         Timeout::timeout(TimeoutSec) do
           loop do
             line = engine.stdout.readline.chomp
-            break if (line == "usiok")
+            break if (line == "readyok")
           end
         end
       rescue Timeout::Error
@@ -75,6 +74,7 @@ class GameManager
     end
   end
 
+  # 対局時のエンジンの設定。必要であれば設定を変えて実験する。秒読みはスクリプト起動時の引数で設定出来る。
   def setoption engines
     engines.each do |engine|
       engine.stdin.puts "setoption name Threads value 1"
@@ -93,9 +93,7 @@ class GameManager
   def selfplay_one engines, first_player
     key_hash = Hash.new
     moves = ""
-    engines.each do |engine|
-      engine.stdin.puts "usinewgame"
-    end
+    isready(engines)
     turn = first_player
     ply = 1
     loop do
@@ -113,7 +111,7 @@ class GameManager
       else
         key_hash[key] += 1
         if (key_hash[key] == 4)
-          # sennichite
+          # 千日手
           @draw += 1
           write_record "startpos", moves
           return
@@ -143,7 +141,6 @@ class GameManager
   end
 
   def selfplay engines, first_player
-    usiok(engines)
     setoption(engines)
     while @game_index < @game_num
       @game_index += 1
@@ -162,8 +159,8 @@ class GameManager
   end
 
   def confidence_interval win, lose, draw
-    # 95%: 1.96
-    # 99%: 2.58
+    # 95% 信頼区間: 1.96
+    # 99% 信頼区間: 2.58
     games = win + lose + draw
     win_r = win_rate(win, lose, draw)
     1.96*(win_r*(1.0 - win_r)/games)**0.5

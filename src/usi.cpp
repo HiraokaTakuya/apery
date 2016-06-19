@@ -14,9 +14,6 @@ namespace {
 	void onThreads(Searcher* s, const USIOption&)      { s->threads.readUSIOptions(s); }
 	void onHashSize(Searcher* s, const USIOption& opt) { s->tt.setSize(opt); }
 	void onClearHash(Searcher* s, const USIOption&)    { s->tt.clear(); }
-	void onEvalDir(Searcher*, const USIOption& opt)    {
-		std::unique_ptr<Evaluater>(new Evaluater)->init(opt, true);
-	}
 }
 
 bool CaseInsensitiveLess::operator () (const std::string& s1, const std::string& s2) const {
@@ -74,7 +71,6 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
-	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
 	(*this)["Inc_Margin"]                  = USIOption(4500, 0, INT_MAX);
@@ -751,6 +747,7 @@ const std::string MyName = "Apery Debug Build";
 #endif
 
 void Searcher::doUSICommandLoop(int argc, char* argv[]) {
+	bool evalTableIsRead = false;
 	Position pos(DefaultStartPositionSFEN, threads.mainThread(), thisptr);
 
 	std::string cmd;
@@ -777,19 +774,30 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 			if (token == "ponderhit" && limits.moveTime != 0)
 				limits.moveTime += timeManager.elapsed();
 		}
-		else if (token == "usinewgame") {
-			tt.clear();
-			threads.mainThread()->previousScore = ScoreInfinite;
-			for (int i = 0; i < 100; ++i) g_randomTimeSeed(); // 最初は乱数に偏りがあるかも。少し回しておく。
-		}
+		else if (token == "go"       ) go(pos, ssCmd);
+		else if (token == "position" ) setPosition(pos, ssCmd);
+		else if (token == "usinewgame"); // isready で準備は出来たので、対局開始時に特にする事はない。
 		else if (token == "usi"      ) SYNCCOUT << "id name " << MyName
 												<< "\nid author Hiraoka Takuya"
 												<< "\n" << options
 												<< "\nusiok" << SYNCENDL;
-		else if (token == "go"       ) go(pos, ssCmd);
-		else if (token == "isready"  ) SYNCCOUT << "readyok" << SYNCENDL;
-		else if (token == "position" ) setPosition(pos, ssCmd);
+		else if (token == "isready"  ) { // 対局開始前の準備。
+			tt.clear();
+			threads.mainThread()->previousScore = ScoreInfinite;
+			if (!evalTableIsRead) {
+				// 一時オブジェクトを生成して Evaluater::init() を呼んだ直後にオブジェクトを破棄する。
+				// 評価関数の次元下げをしたデータを格納する分のメモリが無駄な為、
+				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				evalTableIsRead = true;
+			}
+			SYNCCOUT << "readyok" << SYNCENDL;
+		}
 		else if (token == "setoption") setOption(ssCmd);
+		else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
+			if (!evalTableIsRead)
+				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+			Evaluater::writeSynthesized(Evaluater::evalDir);
+		}
 #if defined LEARN
 		else if (token == "l"        ) {
 			auto learner = std::unique_ptr<Learner>(new Learner);
@@ -813,7 +821,4 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 	} while (token != "quit" && argc == 1);
 
 	threads.mainThread()->waitForSearchFinished();
-
-	if (options["Write_Synthesized_Eval"])
-		Evaluater::writeSynthesized(Evaluater::evalDir);
 }
