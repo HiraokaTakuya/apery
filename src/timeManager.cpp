@@ -84,9 +84,9 @@ void TimeManager::pvInstability(const int currChanges, const int prevChanges) {
 }
 
 void TimeManager::init(LimitsType& limits, const Ply currentPly, const Color us, Searcher* s) {
-	const int emergencyMoveHorizon = s->options["Emergency_Move_Horizon"];
-	const int emergencyBaseTime    = s->options["Emergency_Base_Time"];
-	const int emergencyMoveTime    = s->options["Emergency_Move_Time"];
+	const int emergencyMoveHorizon = 40;
+	const int emergencyBaseTime    = 200;
+	const int emergencyMoveTime    = 70;
 	const int minThinkingTime      = s->options["Minimum_Thinking_Time"];
     const int slowMover            = s->options["Slow_Mover"];
 

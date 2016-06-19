@@ -46,6 +46,8 @@ void Searcher::clear() {
 }
 
 namespace {
+	const int SkillLevel = 20; // [0, 20] 大きいほど強くする予定。現状 20 以外未対応。
+
 	inline Score razorMargin(const Depth d) {
 		return static_cast<Score>(512 + 16 * static_cast<int>(d));
 	}
@@ -601,7 +603,7 @@ void Thread::search() {
 	gains.clear();
 
 	size_t pvSize = searcher->options["MultiPV"];
-	Skill skill(searcher->options["Skill_Level"], searcher->options["Max_Random_Score_Diff"]);
+	Skill skill(SkillLevel, searcher->options["Max_Random_Score_Diff"]);
 
 	if (searcher->options["Max_Random_Score_Diff_Ply"] < rootPosition.gamePly()) {
 		skill.max_random_score_diff = ScoreZero;
@@ -1581,7 +1583,7 @@ finalize:
 	if (searched
 		&& !this->easyMovePlayed
 		&& searcher->options["MultiPV"] == 1
-		&& !Skill(searcher->options["Skill_Level"], searcher->options["Max_Random_Score_Diff"]).enabled())
+		&& !Skill(SkillLevel, searcher->options["Max_Random_Score_Diff"]).enabled())
 	{
 		for (Thread* th : searcher->threads)
 			if (th->completedDepth > bestThread->completedDepth

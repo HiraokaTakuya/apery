@@ -80,16 +80,11 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
 	(*this)["Inc_Margin"]                  = USIOption(4500, 0, INT_MAX);
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
-	(*this)["Skill_Level"]                 = USIOption(20, 0, 20);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
 	(*this)["Max_Random_Score_Diff_Ply"]   = USIOption(SHRT_MAX, 0, SHRT_MAX);
-	(*this)["Emergency_Move_Horizon"]      = USIOption(40, 0, 50);
-	(*this)["Emergency_Base_Time"]         = USIOption(200, 0, 30000);
-	(*this)["Emergency_Move_Time"]         = USIOption(70, 0, 5000);
 	(*this)["Slow_Mover"]                  = USIOption(100, 10, 1000);
 	(*this)["Minimum_Thinking_Time"]       = USIOption(1500, 0, INT_MAX);
 	(*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
-	(*this)["Use_Sleeping_Threads"]        = USIOption(false);
 }
 
 USIOption::USIOption(const char* v, Fn* f, Searcher* s) :
