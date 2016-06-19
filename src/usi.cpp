@@ -74,7 +74,6 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
-	(*this)["Eval_Dir"]                    = USIOption("20160307", onEvalDir);
 	(*this)["Write_Synthesized_Eval"]      = USIOption(false);
 	(*this)["USI_Ponder"]                  = USIOption(true);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
@@ -512,7 +511,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 
 	auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType);
 	auto eval = std::unique_ptr<Evaluater>(new Evaluater);
-	eval->init(pos.searcher()->options["Eval_Dir"], false);
+	eval->init(Evaluater::evalDir, false);
 	Timer t;
 	for (int step = 1; step <= stepNum; ++step) {
 		t.restart();
@@ -531,7 +530,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 		evalBase->clear();
 		lowerDimension(*evalBase, rawEvaluaters[0]);
 		std::cout << "update eval ... " << std::flush;
-		updateEval<true>(*eval, *evalBase, pos.searcher()->options["Eval_Dir"], true);
+		updateEval<true>(*eval, *evalBase, Evaluater::evalDir, true);
 		std::cout << "done" << std::endl;
 		std::cout << "step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 		std::cout << "dsigSumNorm = " << std::accumulate(std::begin(dsigSumNorms), std::end(dsigSumNorms), 0.0) << std::endl;
@@ -816,5 +815,5 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 	threads.mainThread()->waitForSearchFinished();
 
 	if (options["Write_Synthesized_Eval"])
-		Evaluater::writeSynthesized(options["Eval_Dir"]);
+		Evaluater::writeSynthesized(Evaluater::evalDir);
 }

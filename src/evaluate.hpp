@@ -808,6 +808,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 };
 
 struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, std::array<s32, 2> > {
+	static std::string evalDir;
 	// 探索時に参照する評価関数テーブル
 	static std::array<s16, 2> KPP[SquareNum][fe_end][fe_end];
 	static std::array<s32, 2> KKP[SquareNum][SquareNum][fe_end];
