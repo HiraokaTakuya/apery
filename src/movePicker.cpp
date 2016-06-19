@@ -258,6 +258,7 @@ void MovePicker::goNextPhase() {
 	case EvasionSearch: case QSearch: case QEvasionSearch: case QRecapture: case ProbCut: case QSearchNoTT:
 		// これが無いと、MainSearch の後に EvasionSearch が始まったりしてしまう。
 		phase_ = PH_Stop;
+		// fallthrough
 
 	case PH_Stop:
 		lastMove_ = currMove() + 1;

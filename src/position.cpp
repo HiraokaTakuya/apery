@@ -63,10 +63,8 @@ Bitboard Position::attacksFrom(const PieceType pt, const Color c, const Square s
 	case King:      return kingAttack(sq);
 	case Horse:     return horseAttack(sq, occupied);
 	case Dragon:    return dragonAttack(sq, occupied);
-	default:        UNREACHABLE;
+	default:        UNREACHABLE; return allOneBB();
 	}
-	UNREACHABLE;
-	return allOneBB();
 }
 
 // 実際に指し手が合法手かどうか判定

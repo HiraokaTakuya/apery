@@ -45,12 +45,14 @@ enum File {
 	FileNoLeftNum = File6
 };
 OverloadEnumOperators(File);
+inline int abs(const File f) { return std::abs(static_cast<int>(f)); }
 
 // 段
 enum Rank {
 	Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9, RankNum
 };
 OverloadEnumOperators(Rank);
+inline int abs(const Rank r) { return std::abs(static_cast<int>(r)); }
 
 // 先手のときは BRANK, 後手のときは WRANK より target が前の段にあるなら true を返す。
 template <Color US, Rank BRANK, Rank WRANK>
