@@ -803,8 +803,20 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 			auto learner = std::unique_ptr<Learner>(new Learner);
 			learner->learn(pos, ssCmd);
 		}
-		else if (token == "make_teacher") make_teacher(ssCmd);
-		else if (token == "use_teacher") use_teacher(pos, ssCmd);
+		else if (token == "make_teacher") {
+			if (!evalTableIsRead) {
+				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				evalTableIsRead = true;
+			}
+			make_teacher(ssCmd);
+		}
+		else if (token == "use_teacher") {
+			if (!evalTableIsRead) {
+				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				evalTableIsRead = true;
+			}
+			use_teacher(pos, ssCmd);
+		}
 #endif
 #if !defined MINIMUL
 		// 以下、デバッグ用
