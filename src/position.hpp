@@ -61,6 +61,104 @@ struct StateInfo : public StateInfoMin {
 
 using StateStackPtr = std::unique_ptr<std::stack<StateInfo> >;
 
+class BitStream {
+public:
+	// 読み込む先頭データのポインタをセットする。
+	BitStream(u8* d) : data_(d), curr_() {}
+	// 読み込む先頭データのポインタをセットする。
+	void set(u8* d) {
+		data_ = d;
+		curr_ = 0;
+	}
+	// １ bit 読み込む。どこまで読み込んだかを表す bit の位置を 1 個進める。
+	u8 getBit() {
+		const u8 result = (*data_ & (1 << curr_++)) ? 1 : 0;
+		if (curr_ == 8) {
+			++data_;
+			curr_ = 0;
+		}
+		return result;
+	}
+	// numOfBits bit読み込む。どこまで読み込んだかを表す bit の位置を numOfBits 個進める。
+	u8 getBits(const int numOfBits) {
+		assert(numOfBits <= 8);
+		u8 result = 0;
+		for (int i = 0; i < numOfBits; ++i)
+			result |= getBit() << i;
+		return result;
+	}
+	// 1 bit 書き込む。
+	void putBit(const u8 bit) {
+		assert(bit <= 1);
+		*data_ |= bit << curr_++;
+		if (curr_ == 8) {
+			++data_;
+			curr_ = 0;
+		}
+	}
+	// val の値を numOfBits bit 書き込む。8 bit まで。
+	void putBits(u8 val, const int numOfBits) {
+		assert(numOfBits <= 8);
+		for (int i = 0; i < numOfBits; ++i) {
+			const u8 bit = val & 1;
+			val >>= 1;
+			putBit(bit);
+		}
+	}
+	u8* data() const { return data_; }
+	int curr() const { return curr_; }
+
+private:
+	u8* data_;
+	int curr_; // 1byte 中の bit の位置
+};
+
+union HuffmanCode {
+	struct {
+		u8 code;      // 符号化時の bit 列
+		u8 numOfBits; // 使用 bit 数
+	};
+	u16 key; // std::unordered_map の key として使う。
+};
+
+struct HuffmanCodeToPieceHash : public std::unordered_map<u16, Piece> {
+	Piece value(const u16 key) const {
+		const auto it = find(key);
+		if (it == std::end(*this))
+			return PieceNone;
+		return it->second;
+	}
+};
+
+// Huffman 符号化された局面のデータ構造。256 bit で局面を表す。
+struct HuffmanCodedPos {
+	static const HuffmanCode boardCodeTable[PieceNone];
+	static const HuffmanCode handCodeTable[HandPieceNum][ColorNum];
+	static HuffmanCodeToPieceHash boardCodeToPieceHash;
+	static HuffmanCodeToPieceHash handCodeToPieceHash;
+	static void init() {
+		for (Piece pc = Empty; pc <= BDragon; ++pc)
+			if (pieceToPieceType(pc) != King) // 玉は位置で符号化するので、駒の種類では符号化しない。
+				boardCodeToPieceHash[boardCodeTable[pc].key] = pc;
+		for (Piece pc = WPawn; pc <= WDragon; ++pc)
+			if (pieceToPieceType(pc) != King) // 玉は位置で符号化するので、駒の種類では符号化しない。
+				boardCodeToPieceHash[boardCodeTable[pc].key] = pc;
+		for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp)
+			for (Color c = Black; c < ColorNum; ++c)
+				handCodeToPieceHash[handCodeTable[hp][c].key] = colorAndPieceTypeToPiece(c, handPieceToPieceType(hp));
+	}
+	void clear() { std::fill(std::begin(data), std::end(data), 0); }
+
+	u8 data[32];
+};
+static_assert(sizeof(HuffmanCodedPos) == 32, "");
+
+struct HuffmanCodedPosAndEval {
+	HuffmanCodedPos hcp;
+	s16 eval;
+};
+static_assert(sizeof(HuffmanCodedPosAndEval) == 34, "");
+
 class Move;
 struct Thread;
 struct Searcher;
@@ -81,6 +179,7 @@ public:
 
 	Position& operator = (const Position& pos);
 	void set(const std::string& sfen, Thread* th);
+	void set(const HuffmanCodedPos& hcp, Thread* th);
 
 	Bitboard bbOf(const PieceType pt) const                                            { return byTypeBB_[pt]; }
 	Bitboard bbOf(const Color c) const                                                 { return byColorBB_[c]; }
@@ -229,6 +328,8 @@ public:
 	void print() const;
 	std::string toSFEN(const Ply ply) const;
 	std::string toSFEN() const { return toSFEN(gamePly()); }
+
+	HuffmanCodedPos toHuffmanCodedPos() const;
 
 	u64 nodesSearched() const          { return nodes_; }
 	void setNodesSearched(const u64 n) { nodes_ = n; }

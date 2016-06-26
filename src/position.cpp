@@ -9,6 +9,55 @@ Key Position::zobrist_[PieceTypeNum][SquareNum][ColorNum];
 Key Position::zobHand_[HandPieceNum][ColorNum];
 Key Position::zobExclusion_;
 
+const HuffmanCode HuffmanCodedPos::boardCodeTable[PieceNone] = {
+	{Binary<         0>::value, 1}, // Empty
+	{Binary<         1>::value, 4}, // BPawn
+	{Binary<        11>::value, 6}, // BLance
+	{Binary<       111>::value, 6}, // BKnight
+	{Binary<      1011>::value, 6}, // BSilver
+	{Binary<     11111>::value, 8}, // BBishop
+	{Binary<    111111>::value, 8}, // BRook
+	{Binary<      1111>::value, 6}, // BGold
+	{Binary<         0>::value, 0}, // BKing 玉の位置は別途、位置を符号化する。使用しないので numOfBit を 0 にしておく。
+	{Binary<      1001>::value, 4}, // BProPawn
+	{Binary<    100011>::value, 6}, // BProLance
+	{Binary<    100111>::value, 6}, // BProKnight
+	{Binary<    101011>::value, 6}, // BProSilver
+	{Binary<  10011111>::value, 8}, // BHorse
+	{Binary<  10111111>::value, 8}, // BDragona
+	{Binary<         0>::value, 0}, // 使用しないので numOfBit を 0 にしておく。
+	{Binary<         0>::value, 0}, // 使用しないので numOfBit を 0 にしておく。
+	{Binary<       101>::value, 4}, // WPawn
+	{Binary<     10011>::value, 6}, // WLance
+	{Binary<     10111>::value, 6}, // WKnight
+	{Binary<     11011>::value, 6}, // WSilver
+	{Binary<   1011111>::value, 8}, // WBishop
+	{Binary<   1111111>::value, 8}, // WRook
+	{Binary<    101111>::value, 6}, // WGold
+	{Binary<         0>::value, 0}, // WKing 玉の位置は別途、位置を符号化する。
+	{Binary<      1101>::value, 4}, // WProPawn
+	{Binary<    110011>::value, 6}, // WProLance
+	{Binary<    110111>::value, 6}, // WProKnight
+	{Binary<    111011>::value, 6}, // WProSilver
+	{Binary<  11011111>::value, 8}, // WHorse
+	{Binary<  11111111>::value, 8}, // WDragon
+};
+
+// 盤上の bit 数 - 1 で表現出来るようにする。持ち駒があると、盤上には Empty の 1 bit が増えるので、
+// これで局面の bit 数が固定化される。
+const HuffmanCode HuffmanCodedPos::handCodeTable[HandPieceNum][ColorNum] = {
+	{{Binary<        0>::value, 3}, {Binary<      100>::value, 3}}, // HPawn
+	{{Binary<        1>::value, 5}, {Binary<    10001>::value, 5}}, // HLance
+	{{Binary<       11>::value, 5}, {Binary<    10011>::value, 5}}, // HKnight
+	{{Binary<      101>::value, 5}, {Binary<    10101>::value, 5}}, // HSilver
+	{{Binary<      111>::value, 5}, {Binary<    10111>::value, 5}}, // HGold
+	{{Binary<    11111>::value, 7}, {Binary<  1011111>::value, 7}}, // HBishop
+	{{Binary<   111111>::value, 7}, {Binary<  1111111>::value, 7}}, // HRook
+};
+
+HuffmanCodeToPieceHash HuffmanCodedPos::boardCodeToPieceHash;
+HuffmanCodeToPieceHash HuffmanCodedPos::handCodeToPieceHash;
+
 const CharToPieceUSI g_charToPieceUSI;
 
 namespace {
@@ -1563,6 +1612,40 @@ std::string Position::toSFEN(const Ply ply) const {
 	return ss.str();
 }
 
+HuffmanCodedPos Position::toHuffmanCodedPos() const {
+	HuffmanCodedPos result;
+	result.clear();
+	BitStream bs(result.data);
+	// 手番 (1bit)
+	bs.putBit(turn());
+
+	// 玉の位置 (7bit * 2)
+	bs.putBits(kingSquare(Black), 7);
+	bs.putBits(kingSquare(White), 7);
+
+	// 盤上の駒
+	for (Square sq = SQ11; sq < SquareNum; ++sq) {
+		Piece pc = piece(sq);
+		if (pieceToPieceType(pc) == King)
+			continue;
+		const auto hc = HuffmanCodedPos::boardCodeTable[pc];
+		bs.putBits(hc.code, hc.numOfBits);
+	}
+
+	// 持ち駒
+	for (Color c = Black; c < ColorNum; ++c) {
+		const Hand h = hand(c);
+		for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp) {
+			const auto hc = HuffmanCodedPos::handCodeTable[hp][c];
+			for (u32 n = 0; n < h.numOf(hp); ++n)
+				bs.putBits(hc.code, hc.numOfBits);
+		}
+	}
+	assert(bs.data() == std::end(result.data));
+	assert(bs.curr() == 0);
+	return result;
+}
+
 #if !defined NDEBUG
 bool Position::isOK() const {
 	static Key prevKey;
@@ -1863,6 +1946,74 @@ void Position::set(const std::string& sfen, Thread* th) {
 	return;
 INCORRECT:
 	std::cout << "incorrect SFEN string : " << sfen << std::endl;
+}
+
+void Position::set(const HuffmanCodedPos& hcp, Thread* th) {
+	Searcher* s = std::move(searcher_);
+	clear();
+	setSearcher(s);
+
+	HuffmanCodedPos tmp = hcp; // ローカルにコピー
+	BitStream bs(tmp.data);
+
+	// 手番
+	turn_ = static_cast<Color>(bs.getBit());
+
+	// 玉の位置
+	Square sq0 = (Square)bs.getBits(7);
+	Square sq1 = (Square)bs.getBits(7);
+	setPiece(BKing, static_cast<Square>(sq0));
+	setPiece(WKing, static_cast<Square>(sq1));
+
+	// 盤上の駒
+	for (Square sq = SQ11; sq < SquareNum; ++sq) {
+		if (pieceToPieceType(piece(sq)) == King) // piece(sq) は BKing, WKing, Empty のどれか。
+			continue;
+		HuffmanCode hc = {0, 0};
+		while (hc.numOfBits <= 8) {
+			hc.code |= bs.getBit() << hc.numOfBits++;
+			if (HuffmanCodedPos::boardCodeToPieceHash.value(hc.key) != PieceNone) {
+				const Piece pc = HuffmanCodedPos::boardCodeToPieceHash.value(hc.key);
+				if (pc != Empty)
+					setPiece(HuffmanCodedPos::boardCodeToPieceHash.value(hc.key), sq);
+				break;
+			}
+		}
+		if (HuffmanCodedPos::boardCodeToPieceHash.value(hc.key) == PieceNone)
+			goto INCORRECT_HUFFMAN_CODE;
+	}
+	while (bs.data() != std::end(tmp.data)) {
+		HuffmanCode hc = {0, 0};
+		while (hc.numOfBits <= 8) {
+			hc.code |= bs.getBit() << hc.numOfBits++;
+			const Piece pc = HuffmanCodedPos::handCodeToPieceHash.value(hc.key);
+			if (pc != PieceNone) {
+				hand_[pieceToColor(pc)].plusOne(pieceTypeToHandPiece(pieceToPieceType(pc)));
+				break;
+			}
+		}
+		if (HuffmanCodedPos::handCodeToPieceHash.value(hc.key) == PieceNone)
+			goto INCORRECT_HUFFMAN_CODE;
+	}
+
+	kingSquare_[Black] = bbOf(King, Black).constFirstOneFromSQ11();
+	kingSquare_[White] = bbOf(King, White).constFirstOneFromSQ11();
+	goldsBB_ = bbOf(Gold, ProPawn, ProLance, ProKnight, ProSilver);
+
+	gamePly_ = 1; // ply の情報は持っていないので 1 にしておく。
+
+	st_->boardKey = computeBoardKey();
+	st_->handKey = computeHandKey();
+	st_->hand = hand(turn());
+
+	setEvalList();
+	findCheckers();
+	st_->material = computeMaterial();
+	thisThread_ = th;
+
+	return;
+INCORRECT_HUFFMAN_CODE:
+	std::cout << "incorrect Huffman code." << std::endl;
 }
 
 bool Position::moveGivesCheck(const Move move) const {

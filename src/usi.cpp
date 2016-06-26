@@ -185,8 +185,7 @@ void go(const Position& pos, const Ply depth) {
 #if defined USE_GLOBAL
 #else
 // 教師局面を増やす為、適当に駒を動かす。玉の移動を多めに。王手が掛かっている時は呼ばない事にする。
-// 駒を動かした場合は true, 何もしなかった場合は false を返す。
-bool randomMove(Position& pos, std::mt19937& mt) {
+void randomMove(Position& pos, std::mt19937& mt) {
 	assert(!pos.inCheck());
 	StateInfo state[MaxPlyPlus4];
 	StateInfo* st = state;
@@ -220,7 +219,7 @@ bool randomMove(Position& pos, std::mt19937& mt) {
 			}
 		}
 		else
-			return false;
+			return;
 		break;
 	}
 	case 1: { // 玉も含めた全ての合法手
@@ -234,7 +233,7 @@ bool randomMove(Position& pos, std::mt19937& mt) {
 			}
 		}
 		if (!moved)
-			return false;
+			return;
 		break;
 	}
 	default: UNREACHABLE;
@@ -245,15 +244,24 @@ bool randomMove(Position& pos, std::mt19937& mt) {
 	std::istringstream ss(sfen);
 	setPosition(pos, ss);
 }
+// 教師局面を作成する。100万局面で34MB。
 void make_teacher(std::istringstream& ssCmd) {
 	std::string recordFileName;
 	std::string outputFileName;
 	int threadNum;
+	s64 teacherNodes; // 教師局面数
 	ssCmd >> recordFileName;
 	ssCmd >> outputFileName;
 	ssCmd >> threadNum;
-	if (threadNum <= 0)
+	ssCmd >> teacherNodes;
+	if (threadNum <= 0) {
+		std::cerr << "Error: thread num = " << threadNum << std::endl;
 		exit(EXIT_FAILURE);
+	}
+	if (teacherNodes <= 0) {
+		std::cerr << "Error: teacher nodes = " << teacherNodes << std::endl;
+		exit(EXIT_FAILURE);
+	}
 	std::vector<Searcher> searchers(threadNum);
 	std::vector<Position> positions;
 	for (auto& s : searchers) {
@@ -269,33 +277,37 @@ void make_teacher(std::istringstream& ssCmd) {
 		}
 		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
 	}
-	if (recordFileName == "-") // "-" なら棋譜ファイルを読み込まない。
+	std::ifstream ifs(recordFileName.c_str(), std::ifstream::in | std::ifstream::binary | std::ios::ate);
+	if (!ifs) {
+		std::cerr << "Error: cannot open " << recordFileName << std::endl;
 		exit(EXIT_FAILURE);
-	std::ifstream ifs(recordFileName.c_str(), std::ios::binary);
-	if (!ifs)
-		exit(EXIT_FAILURE);
-	std::string sfen;
-	std::vector<std::string> sfens;
-	while (std::getline(ifs, sfen))
-		sfens.emplace_back(sfen);
+	}
+	const size_t entryNum = ifs.tellg() / sizeof(HuffmanCodedPos);
+	std::uniform_int_distribution<s64> inputFileDist(0, entryNum-1);
 
-	Mutex mutex;
+	Mutex imutex;
+	Mutex omutex;
 	std::ofstream ofs(outputFileName.c_str(), std::ios::binary);
-	std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
-	std::shuffle(std::begin(sfens), std::end(sfens), mt);
-	auto func = [&mutex, &ofs, &sfens](Position& pos, std::atomic<s64>& idx) {
-		std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
+	if (!ofs) {
+		std::cerr << "Error: cannot open " << outputFileName << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	auto func = [&omutex, &ofs, &imutex, &ifs, &inputFileDist, &teacherNodes](Position& pos, std::atomic<s64>& idx, const int threadID) {
+		std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count() + threadID);
 		std::uniform_real_distribution<double> doRandomMoveDist(0.0, 1.0);
-		for (s64 i = idx++; i < static_cast<s64>(sfens.size()); i = idx++) {
-			if (i >= static_cast<s64>(sfens.size()))
-				return;
-			std::istringstream ss(sfens[i]);
-			setPosition(pos, ss);
+		HuffmanCodedPos hcp;
+		while (idx < teacherNodes) {
+			{
+				std::unique_lock<Mutex> lock(imutex);
+				ifs.seekg(inputFileDist(mt) * sizeof(HuffmanCodedPos), std::ios_base::beg);
+				ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
+			}
+			setPosition(pos, hcp);
 			randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
 			double randomMoveRateThresh = 0.2;
 			std::unordered_set<Key> keyHash;
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
-			for (Ply ply = pos.gamePly(); ply < 400; ++ply) { // 400 手くらいで終了しておく。
+			for (Ply ply = pos.gamePly(); ply < 400; ++ply, ++idx) { // 400 手くらいで終了しておく。
 				if (!pos.inCheck() && doRandomMoveDist(mt) <= randomMoveRateThresh) { // 王手が掛かっていない局面で、randomMoveRateThresh の確率でランダムに局面を動かす。
 					randomMove(pos, mt);
 					ply = 0;
@@ -317,29 +329,27 @@ void make_teacher(std::istringstream& ssCmd) {
 					break;
 
 				{
-					std::ostringstream oss;
-					oss << pos.toSFEN(ply) << "\n";
+					HuffmanCodedPosAndEval hcpe;
+					hcpe.hcp = pos.toHuffmanCodedPos();
 					auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
 					Ply tmpPly = 0;
+					const Color rootTurn = pos.turn();
 					StateInfo state[MaxPlyPlus4];
 					StateInfo* st = state;
-					while (!pv[tmpPly].isNone()) {
-						oss << pv[tmpPly].toUSI() << " ";
+					while (!pv[tmpPly].isNone())
 						pos.doMove(pv[tmpPly++], *st++);
-					}
-					oss << "\n";
 					// evaluate() の差分計算を無効化する。
 					SearchStack ss[2];
 					ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 					const Score eval = evaluate(pos, ss+1);
-					oss << pos.toSFEN(ply + tmpPly) << "\n";
-					oss << eval << "\n";
+					// root の手番から見た評価値に直す。
+					hcpe.eval = (rootTurn == pos.turn() ? eval : -eval);
 
 					while (tmpPly)
 						pos.undoMove(pv[--tmpPly]);
 
-					std::unique_lock<Mutex> lock(mutex);
-					ofs << oss.str();
+					std::unique_lock<Mutex> lock(omutex);
+					ofs.write(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
 				}
 
 				setUpStates->push(StateInfo());
@@ -347,13 +357,32 @@ void make_teacher(std::istringstream& ssCmd) {
 			}
 		}
 	};
+	auto progressFunc = [&teacherNodes] (std::atomic<s64>& index, Timer& t) {
+		while (true) {
+			std::this_thread::sleep_for(std::chrono::seconds(5)); // 指定秒だけ待機し、進捗を表示する。
+			const s64 madeTeacherNodes = index;
+			const double progress = static_cast<double>(madeTeacherNodes) / teacherNodes;
+			auto elapsed_msec = t.elapsed();
+			if (progress > 0.0) // 0 除算を回避する。
+				std::cout << std::fixed << "Progress: " << std::setprecision(2) << std::min(100.0, progress * 100.0)
+						  << "%, Elapsed: " << elapsed_msec/1000
+						  << "[s], Remaining: " << std::max<s64>(0, elapsed_msec*(1.0 - progress)/(progress*1000)) << "[s]" << std::endl;
+			if (index >= teacherNodes)
+				break;
+		}
+	};
 	std::atomic<s64> index;
 	index = 0;
+	Timer t = Timer::currentTime();
 	std::vector<std::thread> threads(threadNum);
 	for (int i = 0; i < threadNum; ++i)
-		threads[i] = std::thread([&positions, &index, i, &func] { func(positions[i], index); });
+		threads[i] = std::thread([&positions, &index, i, &func] { func(positions[i], index, i); });
+	std::thread progressThread([&index, &progressFunc, &t] { progressFunc(index, t); });
 	for (int i = 0; i < threadNum; ++i)
 		threads[i].join();
+	progressThread.join();
+
+	std::cout << "Made " << teacherNodes << " teacher nodes in " << t.elapsed()/1000 << " seconds." << std::endl;
 }
 
 namespace {
@@ -402,7 +431,7 @@ namespace {
 		g_evalTable.clear();
 	}
 }
-void use_teacher(Position& pos, std::istringstream& ssCmd) {
+void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	std::string teacherFileName;
 	int threadNum;
 	int stepNum;
@@ -439,39 +468,24 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 	Mutex mutex;
 	auto func = [&mutex, &ifs](Position& pos, RawEvaluater& rawEvaluater, double& dsigSumNorm) {
 		SearchStack ss[2];
-		std::string sfen;
-		std::string sfenLeaf;
-		std::string pvStr;
-		std::string evalLeafStr;
-		std::string token;
+		HuffmanCodedPosAndEval hcpe;
 		rawEvaluater.clear();
 		pos.searcher()->tt.clear();
 		while (true) {
 			{
 				std::unique_lock<Mutex> lock(mutex);
-				if (std::getline(ifs, sfen)) { // 4行で1組としている。
-					std::getline(ifs, pvStr);
-					std::getline(ifs, sfenLeaf);
-					std::getline(ifs, evalLeafStr);
-				}
-				else
+				ifs.read(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
+				if (ifs.eof())
 					return;
 			}
-			auto setpos = [](const std::string sfenStr, Position& pos) {
-				std::istringstream iss(sfenStr);
-				setPosition(pos, iss);
+			auto setpos = [](HuffmanCodedPosAndEval& hcpe, Position& pos) {
+				setPosition(pos, hcpe.hcp);
 			};
-			setpos(sfen, pos);
+			setpos(hcpe, pos);
 			const Color rootColor = pos.turn();
-			std::istringstream issPV(pvStr);
-			issPV >> token;
-			const Move teacherMove = usiToMove(pos, token);
 			pos.searcher()->alpha = -ScoreMaxEvaluate;
 			pos.searcher()->beta  =  ScoreMaxEvaluate;
 			go(pos, static_cast<Depth>(1));
-			const Move shallowSearchedMove = pos.searcher()->threads.mainThread()->rootMoves[0].pv_[0];
-			if (shallowSearchedMove == teacherMove) // 教師と同じ手を指せたら学習しない。
-				continue;
 			// pv を辿って評価値を返す。pos は pv を辿る為に状態が変わる。
 			auto pvEval = [&ss](Position& pos) {
 				auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
@@ -487,12 +501,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 			};
 			const Score eval = pvEval(pos);
 
-			// 教師手で探索する。
-			setpos(sfen, pos);
-			pos.searcher()->alpha = -ScoreMaxEvaluate;
-			pos.searcher()->beta  =  ScoreMaxEvaluate;
-			go(pos, static_cast<Depth>(1), teacherMove);
-			const Score teacherEval = pvEval(pos);
+			const Score teacherEval = static_cast<Score>(hcpe.eval);
 
 			auto diff = eval - teacherEval;
 			const double dsig = dsigmoid(diff);
@@ -500,7 +509,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == pos.turn() ? -dsig : dsig)}};
 			rawEvaluater.incParam(pos, dT);
 
-			setpos(sfenLeaf, pos);
+			setpos(hcpe, pos);
 			dT[0] = -dT[0];
 			dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
 			rawEvaluater.incParam(pos, dT);
@@ -678,6 +687,11 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 		++currentPly;
 	}
 	pos.setStartPosPly(currentPly);
+}
+
+void setPosition(Position& pos, const HuffmanCodedPos& hcp) {
+	pos.set(hcp, pos.searcher()->threads.mainThread());
+	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
 }
 
 void Searcher::setOption(std::istringstream& ssCmd) {

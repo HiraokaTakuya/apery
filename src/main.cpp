@@ -35,6 +35,7 @@ int main() {
 int main(int argc, char* argv[]) {
 	initTable();
 	Position::initZobrist();
+	HuffmanCodedPos::init();
 	auto s = std::unique_ptr<Searcher>(new Searcher);
 	s->init();
 	s->doUSICommandLoop(argc, argv);
