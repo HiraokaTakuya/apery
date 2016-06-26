@@ -285,19 +285,21 @@ void make_teacher(std::istringstream& ssCmd) {
 	std::shuffle(std::begin(sfens), std::end(sfens), mt);
 	auto func = [&mutex, &ofs, &sfens](Position& pos, std::atomic<s64>& idx) {
 		std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
-		std::uniform_int_distribution<int> doRandomMoveDist(0, 4);
+		std::uniform_real_distribution<double> doRandomMoveDist(0.0, 1.0);
 		for (s64 i = idx++; i < static_cast<s64>(sfens.size()); i = idx++) {
 			if (i >= static_cast<s64>(sfens.size()))
 				return;
 			std::istringstream ss(sfens[i]);
 			setPosition(pos, ss);
 			randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
+			double randomMoveRateThresh = 0.2;
 			std::unordered_set<Key> keyHash;
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
 			for (Ply ply = pos.gamePly(); ply < 400; ++ply) { // 400 手くらいで終了しておく。
-				if (!pos.inCheck() && doRandomMoveDist(mt) <= 1) { // 王手が掛かっていない局面で、20% の確率でランダムに局面を動かす。
+				if (!pos.inCheck() && doRandomMoveDist(mt) <= randomMoveRateThresh) { // 王手が掛かっていない局面で、randomMoveRateThresh の確率でランダムに局面を動かす。
 					randomMove(pos, mt);
 					ply = 0;
+					randomMoveRateThresh /= 2; // 局面を進めるごとに未知の局面になっていくので、ランダムに動かす確率を半分ずつ減らす。
 				}
 				const Key key = pos.getKey();
 				if (keyHash.find(key) == std::end(keyHash))
