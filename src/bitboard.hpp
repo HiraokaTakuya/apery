@@ -398,6 +398,8 @@ extern Bitboard SilverCheckTable[ColorNum][SquareNum];
 extern Bitboard KnightCheckTable[ColorNum][SquareNum];
 extern Bitboard LanceCheckTable[ColorNum][SquareNum];
 
+extern Bitboard Neighbor5x5Table[SquareNum]; // 25 近傍
+
 #if defined HAVE_BMI2
 // PEXT bitboard.
 inline u64 occupiedToIndex(const Bitboard& block, const Bitboard& mask) {
@@ -466,6 +468,8 @@ inline Bitboard goldCheckTable(const Color c, const Square sq) { return GoldChec
 inline Bitboard silverCheckTable(const Color c, const Square sq) { return SilverCheckTable[c][sq]; }
 inline Bitboard knightCheckTable(const Color c, const Square sq) { return KnightCheckTable[c][sq]; }
 inline Bitboard lanceCheckTable(const Color c, const Square sq) { return LanceCheckTable[c][sq]; }
+
+inline Bitboard neighbor5x5Table(const Square sq) { return Neighbor5x5Table[sq]; }
 // todo: テーブル引きを検討
 inline Bitboard rookStepAttacks(const Square sq) { return goldAttack(Black, sq) & goldAttack(White, sq); }
 // todo: テーブル引きを検討

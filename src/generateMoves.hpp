@@ -32,7 +32,7 @@ class MoveList {
 public:
 	explicit MoveList(const Position& pos) : curr_(moveStackList_), last_(generateMoves<MT>(moveStackList_, pos)) {}
 	void operator ++ () { ++curr_; }
-	bool end() const { return (curr_ == last_); }
+	bool end() const { return (curr_ == last_); } // 通常のコンテナの begin() と end() の関係では無いので注意。
 	Move move() const { return curr_->move; }
 	size_t size() const { return static_cast<size_t>(last_ - moveStackList_); }
 	bool contains(const Move move) const {
@@ -42,6 +42,7 @@ public:
 		}
 		return false;
 	}
+	MoveStack* begin() { return &moveStackList_[0]; } // 通常のコンテナの begin() と end() の関係では無いので注意。
 
 private:
 	MoveStack moveStackList_[MaxLegalMoves];

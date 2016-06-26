@@ -189,6 +189,67 @@ void go(const Position& pos, const Ply depth) {
 
 #if defined USE_GLOBAL
 #else
+// 教師局面を増やす為、適当に駒を動かす。玉の移動を多めに。王手が掛かっている時は呼ばない事にする。
+// 駒を動かした場合は true, 何もしなかった場合は false を返す。
+bool randomMove(Position& pos, std::mt19937& mt) {
+	assert(!pos.inCheck());
+	StateInfo state[MaxPlyPlus4];
+	StateInfo* st = state;
+	const Color us = pos.turn();
+	const Color them = oppositeColor(us);
+	const Square from = pos.kingSquare(us);
+	std::uniform_int_distribution<int> dist(0, 1);
+	switch (dist(mt)) {
+	case 0: { // 玉の25近傍の移動
+		MoveStack legalMoves[MaxLegalMoves]; // 玉の移動も含めた普通の合法手
+		MoveStack* pms = &legalMoves[0];
+		Bitboard kingToBB = pos.bbOf(us).notThisAnd(neighbor5x5Table(from));
+		while (kingToBB.isNot0()) {
+			const Square to = kingToBB.firstOneFromSQ11();
+			const Move move = makeNonPromoteMove<Capture>(King, from, to, pos);
+			if (pos.moveIsPseudoLegal<false>(move)
+				&& pos.pseudoLegalMoveIsLegal<true, false>(move, pos.pinnedBB()))
+			{
+				(*pms++).move = move;
+			}
+		}
+		if (&legalMoves[0] != pms) { // 手があったなら
+			std::uniform_int_distribution<int> moveDist(0, pms - &legalMoves[0] - 1);
+			pos.doMove(legalMoves[moveDist(mt)].move, *st++);
+			if (dist(mt)) { // 1/2 の確率で相手もランダムに指す事にする。
+				MoveList<LegalAll> ml(pos);
+				if (ml.size()) {
+					std::uniform_int_distribution<int> moveDist(0, ml.size()-1);
+					pos.doMove((ml.begin() + moveDist(mt))->move, *st++);
+				}
+			}
+		}
+		else
+			return false;
+		break;
+	}
+	case 1: { // 玉も含めた全ての合法手
+		bool moved = false;
+		for (int i = 0; i < dist(mt) + 1; ++i) { // 自分だけ、または両者ランダムに1手指してみる。
+			MoveList<LegalAll> ml(pos);
+			if (ml.size()) {
+				std::uniform_int_distribution<int> moveDist(0, ml.size()-1);
+				pos.doMove((ml.begin() + moveDist(mt))->move, *st++);
+				moved = true;
+			}
+		}
+		if (!moved)
+			return false;
+		break;
+	}
+	default: UNREACHABLE;
+	}
+
+	// 違法手が混ざったりするので、一旦 sfen に直して読み込み、過去の手を参照しないようにする。
+	std::string sfen = pos.toSFEN();
+	std::istringstream ss(sfen);
+	setPosition(pos, ss);
+}
 void make_teacher(std::istringstream& ssCmd) {
 	std::string recordFileName;
 	std::string outputFileName;
@@ -228,14 +289,21 @@ void make_teacher(std::istringstream& ssCmd) {
 	std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
 	std::shuffle(std::begin(sfens), std::end(sfens), mt);
 	auto func = [&mutex, &ofs, &sfens](Position& pos, std::atomic<s64>& idx) {
+		std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
+		std::uniform_int_distribution<int> doRandomMoveDist(0, 4);
 		for (s64 i = idx++; i < static_cast<s64>(sfens.size()); i = idx++) {
 			if (i >= static_cast<s64>(sfens.size()))
 				return;
 			std::istringstream ss(sfens[i]);
 			setPosition(pos, ss);
+			randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
 			std::unordered_set<Key> keyHash;
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
-			for (Ply ply = pos.gamePly(); ply < 300; ++ply) { // 300 手くらいで終了しておく。
+			for (Ply ply = pos.gamePly(); ply < 400; ++ply) { // 400 手くらいで終了しておく。
+				if (!pos.inCheck() && doRandomMoveDist(mt) <= 1) { // 王手が掛かっていない局面で、20% の確率でランダムに局面を動かす。
+					randomMove(pos, mt);
+					ply = 0;
+				}
 				const Key key = pos.getKey();
 				if (keyHash.find(key) == std::end(keyHash))
 					keyHash.insert(key);

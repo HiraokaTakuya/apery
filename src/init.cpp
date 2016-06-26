@@ -313,6 +313,18 @@ namespace {
 			}
 		}
 	}
+
+	void initNeighbor5x5() {
+		for (Square sq = SQ11; sq < SquareNum; ++sq) {
+			Neighbor5x5Table[sq] = allZeroBB();
+			Bitboard toBB = kingAttack(sq);
+			while (toBB.isNot0()) {
+				const Square to = toBB.firstOneFromSQ11();
+				Neighbor5x5Table[sq] |= kingAttack(to);
+			}
+			Neighbor5x5Table[sq].andEqualNot(setMaskBB(sq));
+		}
+	}
 }
 
 void initTable() {
@@ -328,6 +340,7 @@ void initTable() {
 	initAttackToEdge();
 	initBetweenBB();
 	initCheckTable();
+	initNeighbor5x5();
 	initSquareDistance();
 
 	Book::init();
