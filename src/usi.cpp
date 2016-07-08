@@ -303,7 +303,8 @@ void make_teacher(std::istringstream& ssCmd) {
 				ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
 			}
 			setPosition(pos, hcp);
-			randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
+			if (!pos.inCheck())
+				randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
 			double randomMoveRateThresh = 0.2;
 			std::unordered_set<Key> keyHash;
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
