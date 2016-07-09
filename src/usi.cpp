@@ -185,7 +185,6 @@ void go(const Position& pos, const Ply depth) {
 // 評価値 x を勝率にして返す。
 // 係数 600 は Ponanza で採用しているらしい値。
 inline double sigmoidWinningRate(const double x) {
-
 	return 1.0 / (1.0 + exp(-x/600.0));
 }
 inline double dsigmoidWinningRate(const double x) {
@@ -552,10 +551,16 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			};
 			const Score eval = pvEval(pos);
 			const Score teacherEval = static_cast<Score>(hcpe.eval); // root から見た評価値が入っている。
-
 			const Color leafColor = pos.turn(); // pos は末端の局面になっている。
-			auto diff = eval - teacherEval;
-			const double dsig = dsigmoidWinningRate(diff);
+			// x を浅い読みの評価値、y を深い読みの評価値として、 
+			// 目的関数 f(x, y) は、勝率の誤差の最小化を目指す以下の式とする。
+			// また、** 2 は 2 乗を表すとする。
+			// f(x,y) = (sigmoidWinningRate(x) - sigmoidWinningRate(y)) ** 2
+			//        = sigmoidWinningRate(x)**2 - 2*sigmoidWinningRate(x)*sigmoidWinningRate(y) + sigmoidWinningRate(y)**2
+			// 浅い読みの点数を修正したいので、x について微分すると。
+			// df(x,y)/dx = 2*sigmoidWinningRate(x)*dsigmoidWinningRate(x)-2*sigmoidWinningRate(y)*dsigmoidWinningRate(x)
+			//            = 2*dsigmoidWinningRate(x)*(sigmoidWinningRate(x) - sigmoidWinningRate(y))
+			const double dsig = 2*dsigmoidWinningRate(eval)*(sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval));
 			dsigSumNorm += fabs(dsig);
 			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
 			rawEvaluater.incParam(pos, dT);
