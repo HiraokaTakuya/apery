@@ -182,6 +182,17 @@ void go(const Position& pos, const Ply depth) {
 }
 #endif
 
+// 評価値 x を勝率にして返す。
+// 係数 600 は Ponanza で採用しているらしい値。
+inline double sigmoidWinningRate(const double x) {
+
+	return 1.0 / (1.0 + exp(-x/600.0));
+}
+inline double dsigmoidWinningRate(const double x) {
+	const double a = 1.0/600;
+	return a * sigmoidWinningRate(x) * (1 - sigmoidWinningRate(x));
+}
+
 // 学習でqsearchだけ呼んだ時のPVを取得する為の関数。
 // RootMoves が存在しない為、別の関数とする。
 template <bool Undo> // 局面を戻し、moves に PV を書き込むなら true。末端の局面に移動したいだけなら false
@@ -544,7 +555,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 
 			const Color leafColor = pos.turn(); // pos は末端の局面になっている。
 			auto diff = eval - teacherEval;
-			const double dsig = dsigmoid(diff);
+			const double dsig = dsigmoidWinningRate(diff);
 			dsigSumNorm += fabs(dsig);
 			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
 			rawEvaluater.incParam(pos, dT);
