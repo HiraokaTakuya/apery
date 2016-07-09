@@ -182,6 +182,50 @@ void go(const Position& pos, const Ply depth) {
 }
 #endif
 
+// 学習でqsearchだけ呼んだ時のPVを取得する為の関数。
+// RootMoves が存在しない為、別の関数とする。
+template <bool Undo> // 局面を戻し、moves に PV を書き込むなら true。末端の局面に移動したいだけなら false
+void extractPVFromTT(Position& pos, Move* moves) {
+	StateInfo state[MaxPlyPlus4];
+	StateInfo* st = state;
+	TTEntry* tte;
+	Ply ply = 0;
+	Move m;
+	bool ttHit;
+
+	tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
+	while (ttHit
+		   && pos.moveIsPseudoLegal(m = move16toMove(tte->move(), pos))
+		   && pos.pseudoLegalMoveIsLegal<false, false>(m, pos.pinnedBB())
+		   && ply < MaxPly
+		   && (!pos.isDraw(20) || ply < 6))
+	{
+		if (Undo)
+			*moves++ = m;
+		pos.doMove(m, *st++);
+		++ply;
+		tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
+	}
+	if (Undo) {
+		*moves++ = Move::moveNone();
+		while (ply)
+			pos.undoMove(*(--moves));
+	}
+}
+
+template <bool Undo>
+void qsearch(Position& pos, Move moves[MaxPlyPlus4]) {
+	SearchStack ss[MaxPlyPlus4];
+	memset(ss, 0, 5 * sizeof(SearchStack));
+	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+	if (pos.inCheck())
+		pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+	else
+		pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+	// pv 取得
+	extractPVFromTT<Undo>(pos, moves);
+}
+
 #if defined USE_GLOBAL
 #else
 // 教師局面を増やす為、適当に駒を動かす。玉の移動を多めに。王手が掛かっている時は呼ばない事にする。
@@ -468,6 +512,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 
 	Mutex mutex;
 	auto func = [&mutex, &ifs](Position& pos, RawEvaluater& rawEvaluater, double& dsigSumNorm) {
+		Move moves[MaxPlyPlus4];
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
 		rawEvaluater.clear();
@@ -486,33 +531,22 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const Color rootColor = pos.turn();
 			pos.searcher()->alpha = -ScoreMaxEvaluate;
 			pos.searcher()->beta  =  ScoreMaxEvaluate;
-			go(pos, static_cast<Depth>(1));
+			qsearch<false>(pos, moves); // 末端の局面に移動する。
 			// pv を辿って評価値を返す。pos は pv を辿る為に状態が変わる。
-			auto pvEval = [&ss](Position& pos) {
-				auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
-				const Color rootColor = pos.turn();
-				Ply ply = 0;
-				StateInfo state[MaxPlyPlus4];
-				StateInfo* st = state;
-				while (!pv[ply].isNone())
-					pos.doMove(pv[ply++], *st++);
+			auto pvEval = [&ss, &rootColor](Position& pos) {
 				ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+				// evaluate() は手番側から見た点数なので、eval は rootColor から見た点数。
 				const Score eval = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
 				return eval;
 			};
 			const Score eval = pvEval(pos);
+			const Score teacherEval = static_cast<Score>(hcpe.eval); // root から見た評価値が入っている。
 
-			const Score teacherEval = static_cast<Score>(hcpe.eval);
-
+			const Color leafColor = pos.turn(); // pos は末端の局面になっている。
 			auto diff = eval - teacherEval;
 			const double dsig = dsigmoid(diff);
 			dsigSumNorm += fabs(dsig);
-			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == pos.turn() ? -dsig : dsig)}};
-			rawEvaluater.incParam(pos, dT);
-
-			setpos(hcpe, pos);
-			dT[0] = -dT[0];
-			dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
+			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
 			rawEvaluater.incParam(pos, dT);
 		}
 	};
