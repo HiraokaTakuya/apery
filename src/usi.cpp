@@ -447,7 +447,7 @@ namespace {
 									   std::array<std::atomic<float>, 2>,
 									   std::array<std::atomic<float>, 2> >;
 
-	constexpr double FVPenalty() { return (0.2/static_cast<double>(FVScale)); }
+	constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
 	template <bool UsePenalty, typename T>
 	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& dvRef) {
 		const u64 updateMask = 3;
