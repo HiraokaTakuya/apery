@@ -460,6 +460,8 @@ namespace {
 				if      (0 < v[i]) dv[i] -= static_cast<float>(FVPenalty());
 				else if (v[i] < 0) dv[i] += static_cast<float>(FVPenalty());
 			}
+			else if (dv[i] == 0.0)
+				continue;
 
 			// T が enum だと 0 になることがある。
 			// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
@@ -588,7 +590,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		evalBase->clear();
 		lowerDimension(*evalBase, rawEvaluaters[0]);
 		std::cout << "update eval ... " << std::flush;
-		updateEval<true>(*eval, *evalBase, Evaluater::evalDir, true);
+		updateEval<false>(*eval, *evalBase, Evaluater::evalDir, true);
 		std::cout << "done" << std::endl;
 		std::cout << "step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 		std::cout << "dsigSumNorm = " << std::accumulate(std::begin(dsigSumNorms), std::end(dsigSumNorms), 0.0) << std::endl;
