@@ -499,10 +499,12 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 	std::vector<Searcher> searchers(threadNum);
 	std::vector<Position> positions;
-	std::vector<RawEvaluater> rawEvaluaters;
+	// std::vector<RawEvaluater> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
+	// 例えメモリ量が余っていても、連続で確保出来ない場合は bad_alloc してしまうので、unordered_map にする。
+	std::unordered_map<int, RawEvaluater> rawEvaluaters;
 	// rawEvaluaters(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
 	for (int i = 0; i < threadNum; ++i)
-		rawEvaluaters.emplace_back();
+		rawEvaluaters.emplace(i, std::move(RawEvaluater()));
 	for (auto& s : searchers) {
 		s.init();
 		const std::string options[] = {"name Threads value 1",
