@@ -807,14 +807,103 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
-struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, std::array<s32, 2> > {
+template <typename KPPType, typename KKPType, typename KKType>
+struct EvaluaterSynthesizer : public EvaluaterBase<KPPType, KKPType, KKType> {
+	using Base = EvaluaterBase<KPPType, KKPType, KKType>;
+	static KPPType KPP[SquareNum][fe_end][fe_end];
+	static KKPType KKP[SquareNum][SquareNum][fe_end];
+	static KKType KK[SquareNum][SquareNum];
+	// 相対位置などに分解した要素の値を全て足し込んで、KPP, KKP, KK の値を設定する。
+	void setEvaluate() {
+#if !defined LEARN
+		SYNCCOUT << "info string start setting eval table" << SYNCENDL;
+#endif
+#define FOO(indices, oneArray, sum)										\
+		for (auto indexAndWeight : indices) {							\
+			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
+			if (0 <= indexAndWeight.first) {							\
+				sum[0] += static_cast<s64>((*oneArray( indexAndWeight.first))[0]) * indexAndWeight.second; \
+				sum[1] += static_cast<s64>((*oneArray( indexAndWeight.first))[1]) * indexAndWeight.second; \
+			}															\
+			else {														\
+				sum[0] -= static_cast<s64>((*oneArray(-indexAndWeight.first))[0]) * indexAndWeight.second; \
+				sum[1] += static_cast<s64>((*oneArray(-indexAndWeight.first))[1]) * indexAndWeight.second; \
+			}															\
+		}																\
+		sum[0] /= Base::MaxWeight();									\
+		sum[1] /= Base::MaxWeight() * Base::TurnWeight();
+
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+		// KPP
+		{
+#ifdef _OPENMP
+#pragma omp for
+#endif
+			// OpenMP対応したら何故か ksq を Square 型にすると ++ksq が定義されていなくてコンパイルエラーになる。
+			for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+				// indices は更に for ループの外側に置きたいが、OpenMP 使っているとアクセス競合しそうなのでループの中に置く。
+				std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
+				for (int i = 0; i < fe_end; ++i) {
+					for (int j = 0; j < fe_end; ++j) {
+						EvaluaterBase<KPPType, KKPType, KKType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
+						std::array<s64, 2> sum = {{}};
+						FOO(indices, Base::oneArrayKPP, sum);
+						KPP[ksq][i][j] += sum;
+					}
+				}
+			}
+		}
+		// KKP
+		{
+#ifdef _OPENMP
+#pragma omp for
+#endif
+			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+				std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
+				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+					for (int i = 0; i < fe_end; ++i) {
+						EvaluaterBase<KPPType, KKPType, KKType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
+						std::array<s64, 2> sum = {{}};
+						FOO(indices, Base::oneArrayKKP, sum);
+						KKP[ksq0][ksq1][i] += sum;
+					}
+				}
+			}
+		}
+		// KK
+		{
+#ifdef _OPENMP
+#pragma omp for
+#endif
+			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+				std::pair<ptrdiff_t, int> indices[KKIndicesMax];
+				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+					EvaluaterBase<KPPType, KKPType, KKType>::kkIndices(indices, static_cast<Square>(ksq0), ksq1);
+					std::array<s64, 2> sum = {{}};
+					FOO(indices, Base::oneArrayKK, sum);
+					KK[ksq0][ksq1][0] += sum[0] / 2;
+					KK[ksq0][ksq1][1] += sum[1] / 2;
+				}
+			}
+		}
+#undef FOO
+
+#if !defined LEARN
+		SYNCCOUT << "info string end setting eval table" << SYNCENDL;
+#endif
+	}
+};
+// template struct の static 変数の定義は .hpp ファイルに書く。
+template <typename KPPType, typename KKPType, typename KKType> KPPType EvaluaterSynthesizer<KPPType, KKPType, KKType>::KPP[SquareNum][fe_end][fe_end];
+template <typename KPPType, typename KKPType, typename KKType> KKPType EvaluaterSynthesizer<KPPType, KKPType, KKType>::KKP[SquareNum][SquareNum][fe_end];
+template <typename KPPType, typename KKPType, typename KKType> KKType  EvaluaterSynthesizer<KPPType, KKPType, KKType>::KK[SquareNum][SquareNum];
+
+struct Evaluater : public EvaluaterSynthesizer<std::array<s16, 2>, std::array<s32, 2>, std::array<s32, 2> > {
 	static std::string evalDir;
 	// 探索時に参照する評価関数テーブル
-	static std::array<s16, 2> KPP[SquareNum][fe_end][fe_end];
-	static std::array<s32, 2> KKP[SquareNum][SquareNum][fe_end];
-	static std::array<s32, 2> KK[SquareNum][SquareNum];
 
-	void clear() { memset(this, 0, sizeof(*this)); }
 	static std::string addSlashIfNone(const std::string& str) {
 		std::string ret = str;
 		if (ret == "")
@@ -972,86 +1061,6 @@ struct Evaluater : public EvaluaterBase<std::array<s16, 2>, std::array<s32, 2>, 
 	}
 #undef READ_BASE_EVAL
 #undef WRITE_BASE_EVAL
-	void setEvaluate() {
-#if !defined LEARN
-		SYNCCOUT << "info string start setting eval table" << SYNCENDL;
-#endif
-#define FOO(indices, oneArray, sum)										\
-		for (auto indexAndWeight : indices) {							\
-			if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
-			if (0 <= indexAndWeight.first) {							\
-				sum[0] += static_cast<s64>((*oneArray( indexAndWeight.first))[0]) * indexAndWeight.second; \
-				sum[1] += static_cast<s64>((*oneArray( indexAndWeight.first))[1]) * indexAndWeight.second; \
-			}															\
-			else {														\
-				sum[0] -= static_cast<s64>((*oneArray(-indexAndWeight.first))[0]) * indexAndWeight.second; \
-				sum[1] += static_cast<s64>((*oneArray(-indexAndWeight.first))[1]) * indexAndWeight.second; \
-			}															\
-		}																\
-		sum[0] /= MaxWeight();											\
-		sum[1] /= MaxWeight() * TurnWeight();
-
-#if defined _OPENMP
-#pragma omp parallel
-#endif
-		// KPP
-		{
-#ifdef _OPENMP
-#pragma omp for
-#endif
-			// OpenMP対応したら何故か ksq を Square 型にすると ++ksq が定義されていなくてコンパイルエラーになる。
-			for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-				// indices は更に for ループの外側に置きたいが、OpenMP 使っているとアクセス競合しそうなのでループの中に置く。
-				std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
-				for (int i = 0; i < fe_end; ++i) {
-					for (int j = 0; j < fe_end; ++j) {
-						kppIndices(indices, static_cast<Square>(ksq), i, j);
-						std::array<s64, 2> sum = {{}};
-						FOO(indices, oneArrayKPP, sum);
-						KPP[ksq][i][j] += sum;
-					}
-				}
-			}
-		}
-		// KKP
-		{
-#ifdef _OPENMP
-#pragma omp for
-#endif
-			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-				std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
-				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-					for (int i = 0; i < fe_end; ++i) {
-						kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
-						std::array<s64, 2> sum = {{}};
-						FOO(indices, oneArrayKKP, sum);
-						KKP[ksq0][ksq1][i] += sum;
-					}
-				}
-			}
-		}
-		// KK
-		{
-#ifdef _OPENMP
-#pragma omp for
-#endif
-			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-				std::pair<ptrdiff_t, int> indices[KKIndicesMax];
-				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-					kkIndices(indices, static_cast<Square>(ksq0), ksq1);
-					std::array<s64, 2> sum = {{}};
-					FOO(indices, oneArrayKK, sum);
-					KK[ksq0][ksq1][0] += sum[0] / 2;
-					KK[ksq0][ksq1][1] += sum[1] / 2;
-				}
-			}
-		}
-#undef FOO
-
-#if !defined LEARN
-		SYNCCOUT << "info string end setting eval table" << SYNCENDL;
-#endif
-	}
 };
 
 extern const int kppArray[31];
