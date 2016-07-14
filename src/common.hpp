@@ -309,6 +309,21 @@ using Mutex = std::mutex;
 using ConditionVariable = std::condition_variable;
 #endif
 
+// 三角配列。at(i, j) と at(j, i) で同じアドレスを指す事でメモリを役半分で2次元配列を表す事が出来る。
+template <typename ElementType, typename KeyType, size_t Size_i, size_t Size_j>
+struct TriangularArray {
+	static constexpr KeyType index(const KeyType i, const KeyType j) { return i * (i + 1)/2 + j; }
+	static constexpr size_t Size = index(Size_i - 1, Size_j - 1) + 1;
+	const ElementType& at(const KeyType i, const KeyType j) const { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
+	ElementType& at(const KeyType i, const KeyType j) { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
+	const ElementType* begin() const { return data_; }
+	ElementType* begin() { return data_; }
+	const ElementType* end() const { return data_ + Size; }
+	ElementType* end() { return data_ + Size; }
+
+	ElementType data_[Size];
+};
+
 #if 0
 #include <boost/detail/endian.hpp>
 template <typename T> inline void reverseEndian(T& r) {

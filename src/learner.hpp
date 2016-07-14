@@ -13,10 +13,10 @@
 #define PRINT_PV(x)
 #endif
 
-struct RawEvaluater {
-	std::array<float, 2> kpp_raw[SquareNum][fe_end][fe_end];
-	std::array<float, 2> kkp_raw[SquareNum][SquareNum][fe_end];
-	std::array<float, 2> kk_raw[SquareNum][SquareNum];
+struct EvaluaterGradient {
+	std::array<float, 2> kpp_grad[SquareNum][fe_end][fe_end];
+	std::array<float, 2> kkp_grad[SquareNum][SquareNum][fe_end];
+	std::array<float, 2> kk_grad[SquareNum][SquareNum];
 
 	void incParam(const Position& pos, const std::array<double, 2>& dinc) {
 		const Square sq_bk = pos.kingSquare(Black);
@@ -25,56 +25,95 @@ struct RawEvaluater {
 		const int* list1 = pos.cplist1();
 		const std::array<float, 2> f = {{static_cast<float>(dinc[0] / FVScale), static_cast<float>(dinc[1] / FVScale)}};
 
-		kk_raw[sq_bk][sq_wk] += f;
+		kk_grad[sq_bk][sq_wk] += f;
 		for (int i = 0; i < pos.nlist(); ++i) {
 			const int k0 = list0[i];
 			const int k1 = list1[i];
 			for (int j = 0; j < i; ++j) {
 				const int l0 = list0[j];
 				const int l1 = list1[j];
-				kpp_raw[sq_bk         ][k0][l0] += f;
-				kpp_raw[inverse(sq_wk)][k1][l1][0] -= f[0];
-				kpp_raw[inverse(sq_wk)][k1][l1][1] += f[1];
+				kpp_grad[sq_bk         ][k0][l0] += f;
+				kpp_grad[inverse(sq_wk)][k1][l1][0] -= f[0];
+				kpp_grad[inverse(sq_wk)][k1][l1][1] += f[1];
 			}
-			kkp_raw[sq_bk][sq_wk][k0] += f;
+			kkp_grad[sq_bk][sq_wk][k0] += f;
 		}
 	}
 
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
-// float 型の atomic 加算
-inline float atomicAdd(std::atomic<float> &x, const float diff) {
-	float old = x.load(std::memory_order_consume);
-	float desired = old + diff;
+// EvaluaterGradient のメモリ使用量を三角配列を用いて抑えた代わりに、double にして精度を高めたもの。
+struct TriangularEvaluaterGradient {
+	TriangularArray<std::array<double, 2>, int, fe_end, fe_end> kpp_grad[SquareNum];
+	std::array<double, 2> kkp_grad[SquareNum][SquareNum][fe_end];
+	std::array<double, 2> kk_grad[SquareNum][SquareNum];
+
+	void incParam(const Position& pos, const std::array<double, 2>& dinc) {
+		const Square sq_bk = pos.kingSquare(Black);
+		const Square sq_wk = pos.kingSquare(White);
+		const int* list0 = pos.cplist0();
+		const int* list1 = pos.cplist1();
+		const std::array<double, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
+
+		kk_grad[sq_bk][sq_wk] += f;
+		for (int i = 0; i < pos.nlist(); ++i) {
+			const int k0 = list0[i];
+			const int k1 = list1[i];
+			for (int j = 0; j < i; ++j) {
+				const int l0 = list0[j];
+				const int l1 = list1[j];
+				kpp_grad[sq_bk         ].at(k0, l0) += f;
+				kpp_grad[inverse(sq_wk)].at(k1, l1)[0] -= f[0];
+				kpp_grad[inverse(sq_wk)].at(k1, l1)[1] += f[1];
+			}
+			kkp_grad[sq_bk][sq_wk][k0] += f;
+		}
+	}
+
+	void clear() { memset(this, 0, sizeof(*this)); } // double 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
+};
+
+// float, double 型の atomic 加算。T は float, double を想定。
+template <typename T>
+inline T atomicAdd(std::atomic<T> &x, const T diff) {
+	T old = x.load(std::memory_order_consume);
+	T desired = old + diff;
 	while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
 		desired = old + diff;
 	return desired;
 }
-// float 型の atomic 減算
-inline float atomicSub(std::atomic<float> &x, const float diff) {
-	float old = x.load(std::memory_order_consume);
-	float desired = old - diff;
-	while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
-		desired = old - diff;
-	return desired;
-}
+// float, double 型の atomic 減算
+template <typename T>
+inline T atomicSub(std::atomic<T> &x, const T diff) { return atomicAdd(x, -diff); }
 
-RawEvaluater& operator += (RawEvaluater& lhs, RawEvaluater& rhs) {
-	for (auto lit = &(***std::begin(lhs.kpp_raw)), rit = &(***std::begin(rhs.kpp_raw)); lit != &(***std::end(lhs.kpp_raw)); ++lit, ++rit)
+EvaluaterGradient& operator += (EvaluaterGradient& lhs, EvaluaterGradient& rhs) {
+	for (auto lit = &(***std::begin(lhs.kpp_grad)), rit = &(***std::begin(rhs.kpp_grad)); lit != &(***std::end(lhs.kpp_grad)); ++lit, ++rit)
 		*lit += *rit;
-	for (auto lit = &(***std::begin(lhs.kkp_raw)), rit = &(***std::begin(rhs.kkp_raw)); lit != &(***std::end(lhs.kkp_raw)); ++lit, ++rit)
+	for (auto lit = &(***std::begin(lhs.kkp_grad)), rit = &(***std::begin(rhs.kkp_grad)); lit != &(***std::end(lhs.kkp_grad)); ++lit, ++rit)
 		*lit += *rit;
-	for (auto lit = &(** std::begin(lhs.kk_raw )), rit = &(** std::begin(rhs.kk_raw )); lit != &(** std::end(lhs.kk_raw )); ++lit, ++rit)
+	for (auto lit = &(** std::begin(lhs.kk_grad )), rit = &(** std::begin(rhs.kk_grad )); lit != &(** std::end(lhs.kk_grad )); ++lit, ++rit)
 		*lit += *rit;
 
 	return lhs;
 }
 
-// kpp_raw, kkp_raw, kk_raw の値を低次元の要素に与える。
+TriangularEvaluaterGradient& operator += (TriangularEvaluaterGradient& lhs, TriangularEvaluaterGradient& rhs) {
+	for (Square sq = SQ11; sq < SquareNum; ++sq)
+		for (auto lit = std::begin(lhs.kpp_grad[sq]), rit = std::begin(rhs.kpp_grad[sq]); lit != std::end(lhs.kpp_grad[sq]); ++lit, ++rit)
+			*lit += *rit;
+	for (auto lit = &(***std::begin(lhs.kkp_grad)), rit = &(***std::begin(rhs.kkp_grad)); lit != &(***std::end(lhs.kkp_grad)); ++lit, ++rit)
+		*lit += *rit;
+	for (auto lit = &(** std::begin(lhs.kk_grad )), rit = &(** std::begin(rhs.kk_grad )); lit != &(** std::end(lhs.kk_grad )); ++lit, ++rit)
+		*lit += *rit;
+
+	return lhs;
+}
+
+// kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
 inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 										 std::array<std::atomic<float>, 2>,
-										 std::array<std::atomic<float>, 2> >& base, const RawEvaluater& raw)
+										 std::array<std::atomic<float>, 2> >& base, const EvaluaterGradient& grad)
 {
 #define FOO(indices, oneArray, sum)										\
 	for (auto indexAndWeight : indices) {								\
@@ -103,7 +142,7 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 			for (int i = 0; i < fe_end; ++i) {
 				for (int j = 0; j < fe_end; ++j) {
 					base.kppIndices(indices, static_cast<Square>(ksq), i, j);
-					FOO(indices, base.oneArrayKPP, raw.kpp_raw[ksq][i][j]);
+					FOO(indices, base.oneArrayKPP, grad.kpp_grad[ksq][i][j]);
 				}
 			}
 		}
@@ -118,7 +157,7 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 			for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 				for (int i = 0; i < fe_end; ++i) {
 					base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
-					FOO(indices, base.oneArrayKKP, raw.kkp_raw[ksq0][ksq1][i]);
+					FOO(indices, base.oneArrayKKP, grad.kkp_grad[ksq0][ksq1][i]);
 				}
 			}
 		}
@@ -132,7 +171,75 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 			std::pair<ptrdiff_t, int> indices[KKIndicesMax];
 			for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 				base.kkIndices(indices, static_cast<Square>(ksq0), ksq1);
-				FOO(indices, base.oneArrayKK, raw.kk_raw[ksq0][ksq1]);
+				FOO(indices, base.oneArrayKK, grad.kk_grad[ksq0][ksq1]);
+			}
+		}
+	}
+#undef FOO
+}
+
+// kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
+inline void lowerDimension(EvaluaterBase<std::array<std::atomic<double>, 2>,
+										 std::array<std::atomic<double>, 2>,
+										 std::array<std::atomic<double>, 2> >& base, const TriangularEvaluaterGradient& grad)
+{
+#define FOO(indices, oneArray, sum)										\
+	for (auto indexAndWeight : indices) {								\
+		if (indexAndWeight.first == std::numeric_limits<ptrdiff_t>::max()) break; \
+		if (0 <= indexAndWeight.first) {								\
+			atomicAdd((*oneArray( indexAndWeight.first))[0], sum[0] * indexAndWeight.second / base.MaxWeight()); \
+			atomicAdd((*oneArray( indexAndWeight.first))[1], sum[1] * indexAndWeight.second / base.MaxWeight()); \
+		}																\
+		else {															\
+			atomicSub((*oneArray(-indexAndWeight.first))[0], sum[0] * indexAndWeight.second / base.MaxWeight()); \
+			atomicAdd((*oneArray(-indexAndWeight.first))[1], sum[1] * indexAndWeight.second / base.MaxWeight()); \
+		}																\
+	}
+
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+
+	// KPP
+	{
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+			std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
+			for (int i = 0; i < fe_end; ++i) {
+				for (int j = 0; j <= i; ++j) { // 三角配列なので、i までで良い。
+					base.kppIndices(indices, static_cast<Square>(ksq), i, j);
+					FOO(indices, base.oneArrayKPP, grad.kpp_grad[ksq].at(i, j));
+				}
+			}
+		}
+	}
+	// KKP
+	{
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+			std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
+			for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+				for (int i = 0; i < fe_end; ++i) {
+					base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
+					FOO(indices, base.oneArrayKKP, grad.kkp_grad[ksq0][ksq1][i]);
+				}
+			}
+		}
+	}
+	// KK
+	{
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+			std::pair<ptrdiff_t, int> indices[KKIndicesMax];
+			for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+				base.kkIndices(indices, static_cast<Square>(ksq0), ksq1);
+				FOO(indices, base.oneArrayKK, grad.kk_grad[ksq0][ksq1]);
 			}
 		}
 	}
@@ -171,7 +278,7 @@ inline void printEvalTable(const Square ksq, const int p0, const int p1_base, co
 }
 
 struct Parse2Data {
-	RawEvaluater params;
+	EvaluaterGradient params;
 
 	void clear() {
 		params.clear();

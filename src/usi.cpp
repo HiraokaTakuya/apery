@@ -499,12 +499,12 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 	std::vector<Searcher> searchers(threadNum);
 	std::vector<Position> positions;
-	// std::vector<RawEvaluater> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
+	// std::vector<EvaluaterGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
 	// 例えメモリ量が余っていても、連続で確保出来ない場合は bad_alloc してしまうので、unordered_map にする。
-	std::unordered_map<int, RawEvaluater> rawEvaluaters;
-	// rawEvaluaters(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
+	std::unordered_map<int, EvaluaterGradient> evaluaterGradients;
+	// evaluaterGradients(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
 	for (int i = 0; i < threadNum; ++i)
-		rawEvaluaters.emplace(i, std::move(RawEvaluater()));
+		evaluaterGradients.emplace(i, std::move(EvaluaterGradient()));
 	for (auto& s : searchers) {
 		s.init();
 		const std::string options[] = {"name Threads value 1",
@@ -525,11 +525,11 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 
 	Mutex mutex;
-	auto func = [&mutex, &ifs](Position& pos, RawEvaluater& rawEvaluater, double& dsigSumNorm) {
+	auto func = [&mutex, &ifs](Position& pos, EvaluaterGradient& evaluaterGradient, double& dsigSumNorm) {
 		Move moves[MaxPlyPlus4];
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
-		rawEvaluater.clear();
+		evaluaterGradient.clear();
 		pos.searcher()->tt.clear();
 		while (true) {
 			{
@@ -567,7 +567,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const double dsig = 2*dsigmoidWinningRate(eval)*(sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval));
 			dsigSumNorm += fabs(dsig);
 			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
-			rawEvaluater.incParam(pos, dT);
+			evaluaterGradient.incParam(pos, dT);
 		}
 	};
 
@@ -583,14 +583,14 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		std::vector<std::thread> threads(threadNum);
 		std::vector<double> dsigSumNorms(threadNum, 0.0);
 		for (int i = 0; i < threadNum; ++i)
-			threads[i] = std::thread([&positions, i, &func, &rawEvaluaters, &dsigSumNorms] { func(positions[i], rawEvaluaters[i], dsigSumNorms[i]); });
+			threads[i] = std::thread([&positions, i, &func, &evaluaterGradients, &dsigSumNorms] { func(positions[i], evaluaterGradients[i], dsigSumNorms[i]); });
 		for (int i = 0; i < threadNum; ++i)
 			threads[i].join();
 
-		for (size_t size = 1; size < rawEvaluaters.size(); ++size)
-			rawEvaluaters[0] += rawEvaluaters[size];
+		for (size_t size = 1; size < evaluaterGradients.size(); ++size)
+			evaluaterGradients[0] += evaluaterGradients[size];
 		evalBase->clear();
-		lowerDimension(*evalBase, rawEvaluaters[0]);
+		lowerDimension(*evalBase, evaluaterGradients[0]);
 		std::cout << "update eval ... " << std::flush;
 		updateEval<false>(*eval, *evalBase, Evaluater::evalDir, true);
 		std::cout << "done" << std::endl;
