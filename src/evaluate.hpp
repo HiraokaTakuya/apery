@@ -257,13 +257,23 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			if (f_pawn <= i) {
 				const int ibegin = kppIndexBegin(i);
 				const Square isq = static_cast<Square>(i - ibegin);
-				if (SQ59 < isq) {
+				const int jbegin = kppIndexBegin(j);
+				const Square jsq = static_cast<Square>(j - jbegin);
+				if (ibegin == jbegin) {
+					if (std::min(inverseFile(isq), inverseFile(jsq)) < std::min(isq, jsq)) {
+						i = ibegin + inverseFile(isq);
+						j = jbegin + inverseFile(jsq);
+					}
+				}
+				else if (SQ59 < isq) {
 					i = ibegin + inverseFile(isq);
-					j = inverseFileIndexOnBoard(j);
+					j = jbegin + inverseFile(jsq);
 				}
 				else if (makeFile(isq) == File5)
 					j = inverseFileIndexIfLefterThanMiddle(j);
 			}
+			else if (f_pawn <= j)
+				j = inverseFileIndexIfLefterThanMiddle(j);
 		}
 		if (j < i) std::swap(i, j);
 
