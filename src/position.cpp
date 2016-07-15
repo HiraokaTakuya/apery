@@ -1595,8 +1595,9 @@ std::string Position::toSFEN(const Ply ply) const {
 	if (hand(Black).value() == 0 && hand(White).value() == 0)
 		ss << "- ";
 	else {
+		// USI の規格として、持ち駒の表記順は決まっており、先手、後手の順で、それぞれ 飛、角、金、銀、桂、香、歩 の順。
 		for (Color color = Black; color < ColorNum; ++color) {
-			for (HandPiece hp = HPawn; hp < HandPieceNum; ++hp) {
+			for (HandPiece hp : {HRook, HBishop, HGold, HSilver, HKnight, HLance, HPawn}) {
 				const int num = hand(color).numOf(hp);
 				if (num == 0)
 					continue;
