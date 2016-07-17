@@ -238,13 +238,45 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	// ptrdiff_t はインデックス、int は寄与の大きさ。MaxWeight分のいくつかで表記することにする。
 	void kppIndices(std::pair<ptrdiff_t, int> ret[KPPIndicesMax], Square ksq, int i, int j) {
 		int retIdx = 0;
-		// i == j のKP要素はKKPの方で行うので、こちらでは何も有効なindexを返さない。
-		if (i == j) {
+		auto pushLastIndex = [&] {
 			ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
 			assert(retIdx <= KPPIndicesMax);
+		};
+		// i == j のKP要素はKKPの方で行うので、こちらでは何も有効なindexを返さない。
+		if (i == j) {
+			pushLastIndex();
 			return;
 		}
 		if (j < i) std::swap(i, j);
+		// 盤上の駒のSquareが同じ位置の場合と、持ち駒の0枚目は参照する事は無いので、有効なindexを返さない。
+		if (j < fe_hand_end) {
+			// i, j 共に持ち駒
+			if ((i < fe_hand_end && i == kppIndexBegin(i)) // 0 枚目の持ち駒
+				|| (j < fe_hand_end && j == kppIndexBegin(j))) // 0 枚目の持ち駒
+			{
+				pushLastIndex();
+				return;
+			}
+		}
+		else if (i < fe_hand_end) {
+			// i 持ち駒、 j 盤上
+			const Square jsq = static_cast<Square>(j - kppIndexBegin(j));
+			if ((i < fe_hand_end && i == kppIndexBegin(i)) // 0 枚目の持ち駒
+				|| ksq == jsq)
+			{
+				pushLastIndex();
+				return;
+			}
+		}
+		else {
+			// i, j 共に盤上
+			const Square isq = static_cast<Square>(i - kppIndexBegin(i));
+			const Square jsq = static_cast<Square>(j - kppIndexBegin(j));
+			if (ksq == isq || ksq == jsq || isq == jsq) {
+				pushLastIndex();
+				return;
+			}
+		}
 
 		if (SQ59 < ksq) {
 			ksq = inverseFile(ksq);
@@ -609,15 +641,31 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 #endif
 		}
 
-		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
-		assert(retIdx <= KPPIndicesMax);
+		pushLastIndex();
 	}
 	void kkpIndices(std::pair<ptrdiff_t, int> ret[KKPIndicesMax], Square ksq0, Square ksq1, int i) {
 		int retIdx = 0;
+		auto pushLastIndex = [&] {
+			ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
+			assert(retIdx <= KKPIndicesMax);
+		};
 		if (ksq0 == ksq1) {
 			ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
 			assert(retIdx <= KKPIndicesMax);
 			return;
+		}
+		if (i < fe_hand_end) { // i 持ち駒
+			if (i == kppIndexBegin(i)) {
+				pushLastIndex();
+				return;
+			}
+		}
+		else { // i 盤上
+			const Square isq = static_cast<Square>(i - kppIndexBegin(i));
+			if (ksq0 == isq || ksq1 == isq) {
+				pushLastIndex();
+				return;
+			}
 		}
 		auto kp_func = [this, &retIdx, &ret](Square ksq, int i, int sign) {
 			if (SQ59 < ksq) {
