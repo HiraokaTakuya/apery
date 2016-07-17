@@ -443,68 +443,141 @@ void make_teacher(std::istringstream& ssCmd) {
 namespace {
 	// Learner とほぼ同じもの。todo: Learner と共通化する。
 
-	using EvalBaseType = EvaluaterBase<std::array<std::atomic<double>, 2>,
-									   std::array<std::atomic<double>, 2>,
-									   std::array<std::atomic<double>, 2> >;
+	using LowerDimensionedEvaluaterGradient = EvaluaterBase<std::array<std::atomic<double>, 2>,
+															std::array<std::atomic<double>, 2>,
+															std::array<std::atomic<double>, 2> >;
+	using EvalBaseType = EvaluaterBase<std::array<double, 2>,
+									   std::array<double, 2>,
+									   std::array<double, 2> >;
 
+	// 小数の評価値を round して整数に直す。
+	void copyEval(Evaluater& eval, EvalBaseType& evalBase) {
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < eval.kpps_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*eval.oneArrayKPP(i))[boardTurn] = round((*evalBase.oneArrayKPP(i))[boardTurn]);
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < eval.kkps_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*eval.oneArrayKKP(i))[boardTurn] = round((*evalBase.oneArrayKKP(i))[boardTurn]);
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < eval.kks_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*eval.oneArrayKK(i))[boardTurn] = round((*evalBase.oneArrayKK(i))[boardTurn]);
+	}
+	// 整数の評価値を小数に直す。
+	void copyEval(EvalBaseType& evalBase, Evaluater& eval) {
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*evalBase.oneArrayKPP(i))[boardTurn] = (*eval.oneArrayKPP(i))[boardTurn];
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*evalBase.oneArrayKKP(i))[boardTurn] = (*eval.oneArrayKKP(i))[boardTurn];
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < evalBase.kks_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*evalBase.oneArrayKK(i))[boardTurn] = (*eval.oneArrayKK(i))[boardTurn];
+	}
+	void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
+		constexpr double AverageDecay = 0.9995; // todo: 過去のデータの重みが強すぎる可能性あり。
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < averagedEvalBase.kpps_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*averagedEvalBase.oneArrayKPP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKPP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKPP(i))[boardTurn];
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < averagedEvalBase.kkps_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*averagedEvalBase.oneArrayKKP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKKP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKKP(i))[boardTurn];
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < averagedEvalBase.kks_end_index(); ++i)
+			for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+				(*averagedEvalBase.oneArrayKK(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKK(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKK(i))[boardTurn];
+	}
 	constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
-	template <bool UsePenalty, typename T>
-	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& dvRef) {
-		const u64 updateMask = 3;
-		static MT64bit mt64(std::chrono::system_clock::now().time_since_epoch().count());
+	// RMSProp でパラメータを更新する。
+	template <typename T>
+	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad) {
+		constexpr double AttenuationRate = 0.99;
+		constexpr double UpdateParam = 500.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
+		constexpr double epsilon = 0.000001; // 0除算防止の定数
 
-		std::array<double, 2> dv = {dvRef[0].load(), dvRef[1].load()};
-		const int step = count1s(mt64() & updateMask);
 		for (int i = 0; i < 2; ++i) {
-			if (UsePenalty) {
-				if      (0 < v[i]) dv[i] -= FVPenalty();
-				else if (v[i] < 0) dv[i] += FVPenalty();
-			}
-			else if (dv[i] == 0.0)
-				continue;
-
-			// T が enum だと 0 になることがある。
-			// enum のときは、std::numeric_limits<std::underlying_type<T>::type>::max() などを使う。
-			static_assert(std::numeric_limits<T>::max() != 0, "");
-			static_assert(std::numeric_limits<T>::min() != 0, "");
-			if      (0.0 <= dv[i] && v[i] <= std::numeric_limits<T>::max() - step) v[i] += step;
-			else if (dv[i] <= 0.0 && std::numeric_limits<T>::min() + step <= v[i]) v[i] -= step;
+			msGrad[i] = AttenuationRate * msGrad[i] + (1.0 - AttenuationRate) * grad[i] * grad[i];
+			const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon);
+			v[i] += updateStep;
 		}
 	}
-	template <bool UsePenalty>
-	void updateEval(Evaluater& eval, EvalBaseType& evalBase, const std::string& dirName, const bool writeBase = true) {
-		for (size_t i = 0; i < eval.kpps_end_index(); ++i)
-			updateFV<UsePenalty>(*eval.oneArrayKPP(i), *evalBase.oneArrayKPP(i));
-		for (size_t i = 0; i < eval.kkps_end_index(); ++i)
-			updateFV<UsePenalty>(*eval.oneArrayKKP(i), *evalBase.oneArrayKKP(i));
-		for (size_t i = 0; i < eval.kks_end_index(); ++i)
-			updateFV<UsePenalty>(*eval.oneArrayKK(i), *evalBase.oneArrayKK(i));
-
-		// 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
-		// updateFV()で学習しないパラメータに入ったノイズを無くす。
-		if (writeBase)
-			eval.write(dirName);
-		eval.init(dirName, false, writeBase);
-		g_evalTable.clear();
+	void updateEval(EvalBaseType& evalBase,
+					LowerDimensionedEvaluaterGradient& lowerDimentionedEvaluaterGradient,
+					LowerDimensionedEvaluaterGradient& meanSquareOfLowerDimensionedEvaluaterGradient)
+	{
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
+			updateFV(*evalBase.oneArrayKPP(i), *lowerDimentionedEvaluaterGradient.oneArrayKPP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKPP(i));
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
+			updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluaterGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKKP(i));
+#ifdef _OPENMP
+#pragma omp for
+#endif
+		for (size_t i = 0; i < evalBase.kks_end_index(); ++i)
+			updateFV(*evalBase.oneArrayKK(i), *lowerDimentionedEvaluaterGradient.oneArrayKK(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKK(i));
 	}
 }
+
+constexpr s64 NodesPerIteration = 8000; // 1回評価値を更新するのに使う教師局面数
+
 void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	std::string teacherFileName;
 	int threadNum;
-	int stepNum;
 	ssCmd >> teacherFileName;
 	ssCmd >> threadNum;
-	ssCmd >> stepNum;
 	if (threadNum <= 0)
 		exit(EXIT_FAILURE);
 	std::vector<Searcher> searchers(threadNum);
 	std::vector<Position> positions;
 	// std::vector<TriangularEvaluaterGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
 	// 例えメモリ量が余っていても、連続で確保出来ない場合は bad_alloc してしまうので、unordered_map にする。
-	std::unordered_map<int, TriangularEvaluaterGradient> evaluaterGradients;
+	std::unordered_map<int, std::unique_ptr<TriangularEvaluaterGradient> > evaluaterGradients;
 	// evaluaterGradients(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
 	for (int i = 0; i < threadNum; ++i)
-		evaluaterGradients.emplace(i, std::move(TriangularEvaluaterGradient()));
+		evaluaterGradients.emplace(i, std::move(std::unique_ptr<TriangularEvaluaterGradient>(new TriangularEvaluaterGradient)));
 	for (auto& s : searchers) {
 		s.init();
 		const std::string options[] = {"name Threads value 1",
@@ -525,7 +598,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 
 	Mutex mutex;
-	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluaterGradient& evaluaterGradient, double& dsigSumNorm) {
+	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluaterGradient& evaluaterGradient, double& loss, std::atomic<s64>& nodes) {
 		Move moves[MaxPlyPlus4];
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
@@ -534,6 +607,8 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		while (true) {
 			{
 				std::unique_lock<Mutex> lock(mutex);
+				if (NodesPerIteration < nodes++)
+					return;
 				ifs.read(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
 				if (ifs.eof())
 					return;
@@ -565,39 +640,64 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			// df(x,y)/dx = 2*sigmoidWinningRate(x)*dsigmoidWinningRate(x)-2*sigmoidWinningRate(y)*dsigmoidWinningRate(x)
 			//            = 2*dsigmoidWinningRate(x)*(sigmoidWinningRate(x) - sigmoidWinningRate(y))
 			const double dsig = 2*dsigmoidWinningRate(eval)*(sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval));
-			dsigSumNorm += fabs(dsig);
+			const double tmp = sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval);
+			loss += tmp * tmp;
 			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
 			evaluaterGradient.incParam(pos, dT);
 		}
 	};
 
-	auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType);
-	auto eval = std::unique_ptr<Evaluater>(new Evaluater);
+	auto lowerDimensionedEvaluaterGradient = std::unique_ptr<LowerDimensionedEvaluaterGradient>(new LowerDimensionedEvaluaterGradient);
+	auto meanSquareOfLowerDimensionedEvaluaterGradient = std::unique_ptr<LowerDimensionedEvaluaterGradient>(new LowerDimensionedEvaluaterGradient); // 過去の gradient の mean square (二乗総和)
+	auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // double で保持した評価関数の要素。相対位置などに分解して保持する。
+	auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
+	auto eval = std::unique_ptr<Evaluater>(new Evaluater); // 整数化した表関数。相対位置などに分解して保持する。
 	eval->init(Evaluater::evalDir, false);
+	copyEval(*evalBase, *eval); // 小数に直してコピー。
+	memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
+	const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
+	ifs.clear(); // 読み込み完了をクリアする。
+	ifs.seekg(0, std::ios::beg); // ストリームポインタを先頭に戻す。
+	const s64 MaxNodes = fileSize / sizeof(HuffmanCodedPosAndEval);
+	std::atomic<s64> nodes; // 今回のイテレーションで読み込んだ学習局面数。
+	auto writeEval = [&] {
+		// ファイル保存
+		copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
+		std::cout << "write eval ... " << std::flush;
+		eval->write(Evaluater::evalDir);
+		std::cout << "done" << std::endl;
+	};
 	Timer t;
-	for (int step = 1; step <= stepNum; ++step) {
+	// 教師データ全てから学習した時点で終了する。
+	for (s64 iteration = 0; NodesPerIteration * iteration + nodes <= MaxNodes; ++iteration) {
 		t.restart();
-		std::cout << "step " << step << "/" << stepNum << " " << std::flush;
-		ifs.clear(); // 読み込み完了をクリアする。
-		ifs.seekg(0, std::ios::beg); // ストリームポインタを先頭に戻す。
+		nodes = 0;
+		std::cout << "itereation: " << iteration << ", nodes: " << NodesPerIteration * iteration + nodes << "/" << MaxNodes
+				  << " (" << std::fixed << std::setprecision(2) << static_cast<double>(NodesPerIteration * iteration + nodes) * 100 / MaxNodes << "%)" << std::endl;
 		std::vector<std::thread> threads(threadNum);
-		std::vector<double> dsigSumNorms(threadNum, 0.0);
+		std::vector<double> losses(threadNum, 0.0);
 		for (int i = 0; i < threadNum; ++i)
-			threads[i] = std::thread([&positions, i, &func, &evaluaterGradients, &dsigSumNorms] { func(positions[i], evaluaterGradients[i], dsigSumNorms[i]); });
+			threads[i] = std::thread([&positions, i, &func, &evaluaterGradients, &losses, &nodes] { func(positions[i], *(evaluaterGradients[i]), losses[i], nodes); });
 		for (int i = 0; i < threadNum; ++i)
 			threads[i].join();
 
-		for (size_t size = 1; size < evaluaterGradients.size(); ++size)
-			evaluaterGradients[0] += evaluaterGradients[size];
-		evalBase->clear();
-		lowerDimension(*evalBase, evaluaterGradients[0]);
-		std::cout << "update eval ... " << std::flush;
-		updateEval<false>(*eval, *evalBase, Evaluater::evalDir, true);
-		std::cout << "done" << std::endl;
-		std::cout << "step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
-		std::cout << "dsigSumNorm = " << std::accumulate(std::begin(dsigSumNorms), std::end(dsigSumNorms), 0.0) << std::endl;
+		for (size_t size = 1; size < (size_t)threadNum; ++size)
+			*(evaluaterGradients[0]) += *(evaluaterGradients[size]); // 複数スレッドで個別に保持していた gradients を [0] の要素に集約する。
+		lowerDimensionedEvaluaterGradient->clear();
+		lowerDimension(*lowerDimensionedEvaluaterGradient, *(evaluaterGradients[0]));
+
+		updateEval(*evalBase, *lowerDimensionedEvaluaterGradient, *meanSquareOfLowerDimensionedEvaluaterGradient);
+		averageEval(*averagedEvalBase, *evalBase); // 平均化する。
+		if (iteration % 10 == 0)
+			writeEval();
+		copyEval(*eval, *evalBase); // 整数の評価値にコピー
+		eval->init(Evaluater::evalDir, false, false); // 探索で使う評価関数の更新
+		g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
+		std::cout << "iteration elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
+		std::cout << "loss: " << std::accumulate(std::begin(losses), std::end(losses), 0.0) << std::endl;
 		printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
 	}
+	writeEval();
 }
 #endif
 

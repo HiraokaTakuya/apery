@@ -99,7 +99,13 @@ EvaluaterGradient& operator += (EvaluaterGradient& lhs, EvaluaterGradient& rhs) 
 }
 
 TriangularEvaluaterGradient& operator += (TriangularEvaluaterGradient& lhs, TriangularEvaluaterGradient& rhs) {
-	for (Square sq = SQ11; sq < SquareNum; ++sq)
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+	for (int sq = SQ11; sq < SquareNum; ++sq)
 		for (auto lit = std::begin(lhs.kpp_grad[sq]), rit = std::begin(rhs.kpp_grad[sq]); lit != std::end(lhs.kpp_grad[sq]); ++lit, ++rit)
 			*lit += *rit;
 	for (auto lit = &(***std::begin(lhs.kkp_grad)), rit = &(***std::begin(rhs.kkp_grad)); lit != &(***std::end(lhs.kkp_grad)); ++lit, ++rit)
