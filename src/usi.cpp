@@ -443,22 +443,22 @@ void make_teacher(std::istringstream& ssCmd) {
 namespace {
 	// Learner とほぼ同じもの。todo: Learner と共通化する。
 
-	using EvalBaseType = EvaluaterBase<std::array<std::atomic<float>, 2>,
-									   std::array<std::atomic<float>, 2>,
-									   std::array<std::atomic<float>, 2> >;
+	using EvalBaseType = EvaluaterBase<std::array<std::atomic<double>, 2>,
+									   std::array<std::atomic<double>, 2>,
+									   std::array<std::atomic<double>, 2> >;
 
 	constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
 	template <bool UsePenalty, typename T>
-	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& dvRef) {
+	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& dvRef) {
 		const u64 updateMask = 3;
 		static MT64bit mt64(std::chrono::system_clock::now().time_since_epoch().count());
 
-		std::array<float, 2> dv = {dvRef[0].load(), dvRef[1].load()};
+		std::array<double, 2> dv = {dvRef[0].load(), dvRef[1].load()};
 		const int step = count1s(mt64() & updateMask);
 		for (int i = 0; i < 2; ++i) {
 			if (UsePenalty) {
-				if      (0 < v[i]) dv[i] -= static_cast<float>(FVPenalty());
-				else if (v[i] < 0) dv[i] += static_cast<float>(FVPenalty());
+				if      (0 < v[i]) dv[i] -= FVPenalty();
+				else if (v[i] < 0) dv[i] += FVPenalty();
 			}
 			else if (dv[i] == 0.0)
 				continue;
@@ -499,12 +499,12 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 	std::vector<Searcher> searchers(threadNum);
 	std::vector<Position> positions;
-	// std::vector<EvaluaterGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
+	// std::vector<TriangularEvaluaterGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
 	// 例えメモリ量が余っていても、連続で確保出来ない場合は bad_alloc してしまうので、unordered_map にする。
-	std::unordered_map<int, EvaluaterGradient> evaluaterGradients;
+	std::unordered_map<int, TriangularEvaluaterGradient> evaluaterGradients;
 	// evaluaterGradients(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
 	for (int i = 0; i < threadNum; ++i)
-		evaluaterGradients.emplace(i, std::move(EvaluaterGradient()));
+		evaluaterGradients.emplace(i, std::move(TriangularEvaluaterGradient()));
 	for (auto& s : searchers) {
 		s.init();
 		const std::string options[] = {"name Threads value 1",
@@ -525,7 +525,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 
 	Mutex mutex;
-	auto func = [&mutex, &ifs](Position& pos, EvaluaterGradient& evaluaterGradient, double& dsigSumNorm) {
+	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluaterGradient& evaluaterGradient, double& dsigSumNorm) {
 		Move moves[MaxPlyPlus4];
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
