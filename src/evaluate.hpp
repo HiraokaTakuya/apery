@@ -166,12 +166,17 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	struct KPPElements {
 		KPPType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
 		KPPType kpp[SquareNoLeftNum][fe_end][fe_end];
+#if defined EVAL_ONLINE
+#else
 		// 相対位置は[file][rank]の順
 		KPPType r_kpp_bb[PieceNone][17][17][PieceNone][17][17];
 		KPPType r_kpp_hb[fe_hand_end][PieceNone][17][17];
+#endif
 		KPPType xpp[FileNoLeftNum][fe_end][fe_end];
 		KPPType ypp[RankNum][fe_end][fe_end];
 		KPPType pp[fe_end][fe_end];
+#if defined EVAL_ONLINE
+#else
 		KPPType r_pp_bb[PieceNone][PieceNone][17][17];
 		KPPType r_pp_hb[fe_hand_end][PieceNone];
 
@@ -191,6 +196,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		KPPType r_pe_b[PieceNone][ColorNum][17][17];
 		KPPType r_pe_h[fe_hand_end][ColorNum];
 		KPPType r_ee[ColorNum][ColorNum][17][17];
+#endif
 	};
 	KPPElements kpps;
 
@@ -198,6 +204,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		KKPType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
 		KKPType kkp[SquareNoLeftNum][SquareNum][fe_end];
 		KKPType kp[SquareNoLeftNum][fe_end];
+#if defined EVAL_ONLINE
+#else
 		KKPType r_kkp_b[17][17][PieceNone][17][17];
 		KKPType r_kkp_h[17][17][fe_hand_end];
 		KKPType r_kp_b[PieceNone][17][17];
@@ -207,14 +215,18 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		KKPType ke[SquareNoLeftNum][ColorNum][SquareNum];
 		KKPType r_kke[17][17][ColorNum][17][17];
 		KKPType r_ke[ColorNum][17][17];
+#endif
 	};
 	KKPElements kkps;
 
 	struct KKElements {
 		KKType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
 		KKType kk[SquareNoLeftNum][SquareNum];
+#if defined EVAL_ONLINE
+#else
 		KKType k[SquareNoLeftNum];
 		KKType r_kk[17][17];
+#endif
 	};
 	KKElements kks;
 
@@ -309,7 +321,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		}
 		if (j < i) std::swap(i, j);
 
-#if defined EVAL_PHASE4
+#if defined EVAL_PHASE4 || defined EVAL_ONLINE
 		ret[retIdx++] = std::make_pair(&kpps.kpp[ksq][i][j] - oneArrayKPP(0), MaxWeight());
 		ret[retIdx++] = std::make_pair(&kpps.xpp[makeFile(ksq)][i][j] - oneArrayKPP(0), MaxWeight());
 #endif
@@ -318,10 +330,10 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		if (j < fe_hand_end) {
 			// i, j 共に持ち駒
 			// 相対位置無し。
-#if defined EVAL_PHASE3
+#if defined EVAL_PHASE3 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(&kpps.pp[i][j] - oneArrayKPP(0), MaxWeight());
 #endif
-#if defined EVAL_PHASE4
+#if defined EVAL_PHASE4 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(&kpps.ypp[makeRank(ksq)][i][j] - oneArrayKPP(0), MaxWeight());
 #endif
 		}
@@ -340,10 +352,10 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 #if defined EVAL_PHASE2
 			ret[retIdx++] = std::make_pair(&kpps.r_pp_hb[i][jpiece] - oneArrayKPP(0), MaxWeight());
 #endif
-#if defined EVAL_PHASE3
+#if defined EVAL_PHASE3 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(&kpps.pp[i][inverseFileIndexIfLefterThanMiddle(j)] - oneArrayKPP(0), MaxWeight());
 #endif
-#if defined EVAL_PHASE4
+#if defined EVAL_PHASE4 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(&kpps.ypp[krank][i][inverseFileIndexIfLefterThanMiddle(j)] - oneArrayKPP(0), MaxWeight());
 #endif
 
@@ -633,10 +645,10 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				j = inverseFileIndexOnBoard(j);
 				if (j < i) std::swap(i, j);
 			}
-#if defined EVAL_PHASE3
+#if defined EVAL_PHASE3 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(&kpps.pp[i][j] - oneArrayKPP(0), MaxWeight());
 #endif
-#if defined EVAL_PHASE4
+#if defined EVAL_PHASE4 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(&kpps.ypp[krank][i][j] - oneArrayKPP(0), MaxWeight());
 #endif
 		}
@@ -674,7 +686,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			}
 			else if (makeFile(ksq) == File5)
 				i = inverseFileIndexIfLefterThanMiddle(i);
-#if defined EVAL_PHASE3
+#if defined EVAL_PHASE3 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(sign*(&kkps.kp[ksq][i] - oneArrayKKP(0)), MaxWeight());
 #endif
 			auto r_kp_func = [this, &retIdx, &ret](Square ksq, int i, int sign) {
@@ -753,7 +765,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		}
 		else if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5)
 			i = inverseFileIndexIfLefterThanMiddle(i);
-#if defined EVAL_PHASE4
+#if defined EVAL_PHASE4 || defined EVAL_ONLINE
 		ret[retIdx++] = std::make_pair(sign*(&kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0)), MaxWeight());
 #endif
 
@@ -848,7 +860,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const Rank krank0 = makeRank(ksq0);
 			const File kfile1 = makeFile(ksq1);
 			const Rank krank1 = makeRank(ksq1);
-#if defined EVAL_PHASE3
+#if defined EVAL_PHASE3 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(sign*(&kks.kk[ksq0][ksq1] - oneArrayKK(0)), MaxWeight());
 #endif
 #if defined EVAL_PHASE2
@@ -1089,17 +1101,33 @@ struct Evaluater : public EvaluaterSynthesizer<std::array<s16, 2>, std::array<s3
 #define BASE_PHASE4
 #endif
 
+#if defined EVAL_ONLINE
+#define BASE_ONLINE {							\
+		FOO(kpps.kpp);							\
+		FOO(kpps.xpp);							\
+		FOO(kpps.ypp);							\
+		FOO(kpps.pp);							\
+		FOO(kkps.kkp);							\
+		FOO(kkps.kp);							\
+		FOO(kks.kk);							\
+	}
+#else
+#define BASE_ONLINE
+#endif
+
 #define READ_BASE_EVAL {						\
 		BASE_PHASE1;							\
 		BASE_PHASE2;							\
 		BASE_PHASE3;							\
 		BASE_PHASE4;							\
+		BASE_ONLINE;							\
 	}
 #define WRITE_BASE_EVAL {						\
 		BASE_PHASE1;							\
 		BASE_PHASE2;							\
 		BASE_PHASE3;							\
 		BASE_PHASE4;							\
+		BASE_ONLINE;							\
 	}
 	void read(const std::string& dirName) {
 #define FOO(x) {														\

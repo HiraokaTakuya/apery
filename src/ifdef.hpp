@@ -6,10 +6,11 @@
 #define LEARN
 #endif
 
-#define EVAL_PHASE1
-#define EVAL_PHASE2
-#define EVAL_PHASE3
-#define EVAL_PHASE4
+//#define EVAL_PHASE1
+//#define EVAL_PHASE2
+//#define EVAL_PHASE3
+//#define EVAL_PHASE4
+#define EVAL_ONLINE
 
 #if 1 && !defined LEARN
 // 対局時は1つの局面に対してしか探索を実行しないので、置換表などのデータをグローバルに置いて高速化する。
