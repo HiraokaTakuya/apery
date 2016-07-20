@@ -499,7 +499,7 @@ namespace {
 				(*evalBase.oneArrayKK(i))[boardTurn] = (*eval.oneArrayKK(i))[boardTurn];
 	}
 	void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
-		constexpr double AverageDecay = 0.9995; // todo: 過去のデータの重みが強すぎる可能性あり。
+		constexpr double AverageDecay = 0.95; // todo: 過去のデータの重みが強すぎる可能性あり。
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -526,8 +526,8 @@ namespace {
 	// RMSProp でパラメータを更新する。
 	template <typename T>
 	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad) {
-		constexpr double AttenuationRate = 0.99;
-		constexpr double UpdateParam = 500.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
+		constexpr double AttenuationRate = 0.9;
+		constexpr double UpdateParam = 1.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
 		constexpr double epsilon = 0.000001; // 0除算防止の定数
 
 		for (int i = 0; i < 2; ++i) {
@@ -561,7 +561,7 @@ namespace {
 	}
 }
 
-constexpr s64 NodesPerIteration = 8000; // 1回評価値を更新するのに使う教師局面数
+constexpr s64 NodesPerIteration = 800000; // 1回評価値を更新するのに使う教師局面数
 
 void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	std::string teacherFileName;
