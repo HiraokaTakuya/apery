@@ -5,7 +5,7 @@
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-std::string Evaluater::evalDir = "20160307";
+std::string Evaluater::evalDir = "20160722";
 EvaluateHashTable g_evalTable;
 
 const int kppArray[31] = {
