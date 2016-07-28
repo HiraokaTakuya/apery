@@ -499,7 +499,7 @@ namespace {
 				(*evalBase.oneArrayKK(i))[boardTurn] = (*eval.oneArrayKK(i))[boardTurn];
 	}
 	void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
-		constexpr double AverageDecay = 0.95; // todo: 過去のデータの重みが強すぎる可能性あり。
+		constexpr double AverageDecay = 0.99; // todo: 過去のデータの重みが強すぎる可能性あり。
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -523,15 +523,16 @@ namespace {
 				(*averagedEvalBase.oneArrayKK(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKK(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKK(i))[boardTurn];
 	}
 	constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
-	// RMSProp でパラメータを更新する。
+	// RMSProp(実質、改造してAdaGradになっている) でパラメータを更新する。
 	template <typename T>
 	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad) {
-		constexpr double AttenuationRate = 0.9;
-		constexpr double UpdateParam = 1.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
+		constexpr double AttenuationRate = 0.99999;
+		constexpr double UpdateParam = 5.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
 		constexpr double epsilon = 0.000001; // 0除算防止の定数
 
 		for (int i = 0; i < 2; ++i) {
-			msGrad[i] = AttenuationRate * msGrad[i] + (1.0 - AttenuationRate) * grad[i] * grad[i];
+			// ほぼAdaGrad
+			msGrad[i] = AttenuationRate * msGrad[i] + /*(1.0 - AttenuationRate) * */grad[i] * grad[i];
 			const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon);
 			v[i] += updateStep;
 		}
@@ -663,16 +664,23 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	auto writeEval = [&] {
 		// ファイル保存
 		copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
+		//copyEval(*eval, *evalBase); // 平均化せずに整数の評価値にコピー
 		std::cout << "write eval ... " << std::flush;
 		eval->write(Evaluater::evalDir);
 		std::cout << "done" << std::endl;
+	};
+	// 平均化していない合成後の評価関数バイナリも出力しておく。
+	auto writeSyn = [&] {
+		std::ofstream((Evaluater::evalDir + "/KPP_synthesized.bin").c_str()).write((char*)Evaluater::KPP, sizeof(Evaluater::KPP));
+		std::ofstream((Evaluater::evalDir + "/KKP_synthesized.bin").c_str()).write((char*)Evaluater::KKP, sizeof(Evaluater::KKP));
+		std::ofstream((Evaluater::evalDir + "/KK_synthesized.bin" ).c_str()).write((char*)Evaluater::KK , sizeof(Evaluater::KK ));
 	};
 	Timer t;
 	// 教師データ全てから学習した時点で終了する。
 	for (s64 iteration = 0; NodesPerIteration * iteration + nodes <= MaxNodes; ++iteration) {
 		t.restart();
 		nodes = 0;
-		std::cout << "itereation: " << iteration << ", nodes: " << NodesPerIteration * iteration + nodes << "/" << MaxNodes
+		std::cout << "iteration: " << iteration << ", nodes: " << NodesPerIteration * iteration + nodes << "/" << MaxNodes
 				  << " (" << std::fixed << std::setprecision(2) << static_cast<double>(NodesPerIteration * iteration + nodes) * 100 / MaxNodes << "%)" << std::endl;
 		std::vector<std::thread> threads(threadNum);
 		std::vector<double> losses(threadNum, 0.0);
@@ -688,8 +696,12 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 
 		updateEval(*evalBase, *lowerDimensionedEvaluaterGradient, *meanSquareOfLowerDimensionedEvaluaterGradient);
 		averageEval(*averagedEvalBase, *evalBase); // 平均化する。
-		if (iteration % 10 == 0)
+		if (iteration < 10) // 最初は値の変動が大きいので適当に変動させないでおく。
+			memset(&(*evalBase), 0, sizeof(EvalBaseType));
+		if (iteration % 100 == 0) {
 			writeEval();
+			writeSyn();
+		}
 		copyEval(*eval, *evalBase); // 整数の評価値にコピー
 		eval->init(Evaluater::evalDir, false, false); // 探索で使う評価関数の更新
 		g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
@@ -698,6 +710,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
 	}
 	writeEval();
+	writeSyn();
 }
 #endif
 
@@ -988,6 +1001,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 			}
 			use_teacher(pos, ssCmd);
 		}
+		else if (token == "print"    ) printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
 #endif
 #if !defined MINIMUL
 		// 以下、デバッグ用

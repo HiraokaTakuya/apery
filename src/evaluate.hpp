@@ -171,12 +171,9 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		// 相対位置は[file][rank]の順
 		KPPType r_kpp_bb[PieceNone][17][17][PieceNone][17][17];
 		KPPType r_kpp_hb[fe_hand_end][PieceNone][17][17];
-#endif
 		KPPType xpp[FileNoLeftNum][fe_end][fe_end];
 		KPPType ypp[RankNum][fe_end][fe_end];
 		KPPType pp[fe_end][fe_end];
-#if defined EVAL_ONLINE
-#else
 		KPPType r_pp_bb[PieceNone][PieceNone][17][17];
 		KPPType r_pp_hb[fe_hand_end][PieceNone];
 
@@ -203,9 +200,9 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	struct KKPElements {
 		KKPType dummy; // 一次元配列に変換したとき、符号で += を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
 		KKPType kkp[SquareNoLeftNum][SquareNum][fe_end];
-		KKPType kp[SquareNoLeftNum][fe_end];
 #if defined EVAL_ONLINE
 #else
+		KKPType kp[SquareNoLeftNum][fe_end];
 		KKPType r_kkp_b[17][17][PieceNone][17][17];
 		KKPType r_kkp_h[17][17][fe_hand_end];
 		KKPType r_kp_b[PieceNone][17][17];
@@ -323,9 +320,13 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 
 #if defined EVAL_PHASE4 || defined EVAL_ONLINE
 		ret[retIdx++] = std::make_pair(&kpps.kpp[ksq][i][j] - oneArrayKPP(0), MaxWeight());
+#if defined EVAL_ONLINE
+#else
 		ret[retIdx++] = std::make_pair(&kpps.xpp[makeFile(ksq)][i][j] - oneArrayKPP(0), MaxWeight());
 #endif
-
+#endif
+#if defined EVAL_ONLINE
+#else
 		assert(i < j);
 		if (j < fe_hand_end) {
 			// i, j 共に持ち駒
@@ -652,7 +653,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			ret[retIdx++] = std::make_pair(&kpps.ypp[krank][i][j] - oneArrayKPP(0), MaxWeight());
 #endif
 		}
-
+#endif
 		pushLastIndex();
 	}
 	void kkpIndices(std::pair<ptrdiff_t, int> ret[KKPIndicesMax], Square ksq0, Square ksq1, int i) {
@@ -679,6 +680,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				return;
 			}
 		}
+#if defined EVAL_ONLINE
+#else
 		auto kp_func = [this, &retIdx, &ret](Square ksq, int i, int sign) {
 			if (SQ59 < ksq) {
 				ksq = inverseFile(ksq);
@@ -743,6 +746,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const int tmp_i = (begin < fe_hand_end ? opp_begin + (i - begin) : opp_begin + inverse(static_cast<Square>(i - begin)));
 			kp_func(inverse(ksq1), tmp_i, -1);
 		}
+#endif
 
 		int sign = 1;
 		if (!kppIndexIsBlack(i)) {
@@ -769,6 +773,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 		ret[retIdx++] = std::make_pair(sign*(&kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0)), MaxWeight());
 #endif
 
+#if defined EVAL_ONLINE
+#else
 #if defined EVAL_PHASE1 || defined EVAL_PHASE3
 		const Rank diff_rank_k0k1 = makeRank(ksq0) - makeRank(ksq1);
 		File diff_file_k0k1 = makeFile(ksq0) - makeFile(ksq1);
@@ -823,14 +829,18 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 #endif
 		}
 #endif
+#endif
 		ret[retIdx++] = std::make_pair(std::numeric_limits<ptrdiff_t>::max(), MaxWeight());
 		assert(retIdx <= KKPIndicesMax);
 	}
 	void kkIndices(std::pair<ptrdiff_t, int> ret[KKIndicesMax], Square ksq0, Square ksq1) {
 		int retIdx = 0;
+#if defined EVAL_ONLINE
+#else
 #if defined EVAL_PHASE1
 		ret[retIdx++] = std::make_pair(&kks.k[std::min(ksq0, inverseFile(ksq0))] - oneArrayKK(0), MaxWeight());
 		ret[retIdx++] = std::make_pair(-(&kks.k[std::min(inverse(ksq1), inverseFile(inverse(ksq1)))] - oneArrayKK(0)), MaxWeight());
+#endif
 #endif
 
 		auto kk_func = [this, &retIdx, &ret](Square ksq0, Square ksq1, int sign) {
@@ -863,8 +873,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 #if defined EVAL_PHASE3 || defined EVAL_ONLINE
 			ret[retIdx++] = std::make_pair(sign*(&kks.kk[ksq0][ksq1] - oneArrayKK(0)), MaxWeight());
 #endif
+#if defined EVAL_ONLINE
+#else
 #if defined EVAL_PHASE2
 			ret[retIdx++] = std::make_pair(sign*(&kks.r_kk[R_Mid + kfile0 - kfile1][R_Mid + krank0 - krank1] - oneArrayKK(0)), MaxWeight());
+#endif
 #endif
 			assert(ksq0 <= SQ59);
 			assert(kfile0 - kfile1 <= 0);
@@ -1104,11 +1117,7 @@ struct Evaluater : public EvaluaterSynthesizer<std::array<s16, 2>, std::array<s3
 #if defined EVAL_ONLINE
 #define BASE_ONLINE {							\
 		FOO(kpps.kpp);							\
-		FOO(kpps.xpp);							\
-		FOO(kpps.ypp);							\
-		FOO(kpps.pp);							\
 		FOO(kkps.kkp);							\
-		FOO(kkps.kp);							\
 		FOO(kks.kk);							\
 	}
 #else
