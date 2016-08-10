@@ -378,7 +378,7 @@ void make_teacher(std::istringstream& ssCmd) {
 				go(pos, static_cast<Depth>(6));
 				const Score score = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
 				const Move bestMove = pos.searcher()->threads.mainThread()->rootMoves[0].pv_[0];
-				if (6000 < abs(score)) // 差が付いたので投了した事にする。
+				if (3000 < abs(score)) // 差が付いたので投了した事にする。
 					break;
 				else if (bestMove.isNone()) // 勝ち宣言など
 					break;
