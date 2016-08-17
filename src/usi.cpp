@@ -527,7 +527,7 @@ namespace {
 	template <typename T>
 	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad) {
 		constexpr double AttenuationRate = 0.99999;
-		constexpr double UpdateParam = 80.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
+		constexpr double UpdateParam = 100.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
 		constexpr double epsilon = 0.000001; // 0除算防止の定数
 
 		for (int i = 0; i < 2; ++i) {
