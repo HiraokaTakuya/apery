@@ -525,7 +525,7 @@ namespace {
 	constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
 	// RMSProp(実質、改造してAdaGradになっている) でパラメータを更新する。
 	template <typename T>
-	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad) {
+	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad, std::atomic<double>& max) {
 		constexpr double AttenuationRate = 0.99999;
 		constexpr double UpdateParam = 100.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
 		constexpr double epsilon = 0.000001; // 0除算防止の定数
@@ -535,12 +535,17 @@ namespace {
 			msGrad[i] = AttenuationRate * msGrad[i] + /*(1.0 - AttenuationRate) * */grad[i] * grad[i];
 			const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon);
 			v[i] += updateStep;
+			const double fabsmax = fabs(updateStep);
+			if (max < fabsmax)
+				max = fabsmax;
 		}
 	}
 	void updateEval(EvalBaseType& evalBase,
 					LowerDimensionedEvaluaterGradient& lowerDimentionedEvaluaterGradient,
 					LowerDimensionedEvaluaterGradient& meanSquareOfLowerDimensionedEvaluaterGradient)
 	{
+		std::atomic<double> max;
+		max = 0.0;
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -548,17 +553,19 @@ namespace {
 #pragma omp for
 #endif
 		for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
-			updateFV(*evalBase.oneArrayKPP(i), *lowerDimentionedEvaluaterGradient.oneArrayKPP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKPP(i));
+			updateFV(*evalBase.oneArrayKPP(i), *lowerDimentionedEvaluaterGradient.oneArrayKPP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKPP(i), max);
 #ifdef _OPENMP
 #pragma omp for
 #endif
 		for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
-			updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluaterGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKKP(i));
+			updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluaterGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKKP(i), max);
 #ifdef _OPENMP
 #pragma omp for
 #endif
 		for (size_t i = 0; i < evalBase.kks_end_index(); ++i)
-			updateFV(*evalBase.oneArrayKK(i), *lowerDimentionedEvaluaterGradient.oneArrayKK(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKK(i));
+			updateFV(*evalBase.oneArrayKK(i), *lowerDimentionedEvaluaterGradient.oneArrayKK(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKK(i), max);
+
+		std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
 	}
 }
 
