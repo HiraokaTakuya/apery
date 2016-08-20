@@ -3,7 +3,7 @@
 #+EMAIL: hiraoka64@gmail.com
 @<center>@<h3>open source shogi engine@</h3>@</center>
 * Engine Binaries
-- [[https://drive.google.com/open?id=0B0d3atdVgIH2ZjZUTThYcUtBVEU][第26回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC26][第26回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
 
 * Source Code
 - [[https://github.com/HiraokaTakuya/apery][Apery on GitHub]]
@@ -12,9 +12,9 @@
 - [[./howtouse.html][Aperyの使い方]]
 
 * Previous Versions
-- [[https://drive.google.com/open?id=0B0d3atdVgIH2RDNTdWNQS2tUenc][第3回将棋電王トーナメント version (for Windows 64bit) (出場ソフト名「大樹の枝」)]]
-- [[https://drive.google.com/open?id=0B0d3atdVgIH2YVpEejBzeGpmenM&authuser=0][第25回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
-- [[https://drive.google.com/open?id=0B0d3atdVgIH2ckQ2eDk1TjgwRGM&authuser=0][20150327 version (for Windows 64bit)]]
-- [[https://github.com/HiraokaTakuya/apery_binaries/archive/master.zip][denousen final version (for Windows 64bit)]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT3][第3回将棋電王トーナメント version (for Windows 64bit) (出場ソフト名「大樹の枝」)]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC25][第25回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/20150327][20150327 version (for Windows 64bit)]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/denousen_final][denousen final version (for Windows 64bit)]]
 
 @<br>
