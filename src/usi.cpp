@@ -225,13 +225,19 @@ void extractPVFromTT(Position& pos, Move* moves) {
 
 template <bool Undo>
 void qsearch(Position& pos, Move moves[MaxPlyPlus4]) {
+	static std::atomic<int> i;
 	SearchStack ss[MaxPlyPlus4];
 	memset(ss, 0, 5 * sizeof(SearchStack));
 	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
-	if (pos.inCheck())
-		pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
-	else
-		pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に暫定的に1手読みも混ぜる。
+	if ((i++ & 1) == 0)
+		pos.searcher()->search<PV>(pos, ss+2, -ScoreInfinite, ScoreInfinite, OnePly, false);
+	else {
+		if (pos.inCheck())
+			pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+		else
+			pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+	}
 	// pv 取得
 	extractPVFromTT<Undo>(pos, moves);
 }
@@ -499,7 +505,7 @@ namespace {
 				(*evalBase.oneArrayKK(i))[boardTurn] = (*eval.oneArrayKK(i))[boardTurn];
 	}
 	void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
-		constexpr double AverageDecay = 0.99; // todo: 過去のデータの重みが強すぎる可能性あり。
+		constexpr double AverageDecay = 0.8; // todo: 過去のデータの重みが強すぎる可能性あり。
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -527,7 +533,7 @@ namespace {
 	template <typename T>
 	void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad, std::atomic<double>& max) {
 		//constexpr double AttenuationRate = 0.99999;
-		constexpr double UpdateParam = 20.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
+		constexpr double UpdateParam = 100.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
 		constexpr double epsilon = 0.000001; // 0除算防止の定数
 
 		for (int i = 0; i < 2; ++i) {
@@ -569,7 +575,7 @@ namespace {
 	}
 }
 
-constexpr s64 NodesPerIteration = 3000000; // 1回評価値を更新するのに使う教師局面数
+constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
 
 void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	std::string teacherFileName;
@@ -695,6 +701,8 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			threads[i] = std::thread([&positions, i, &func, &evaluaterGradients, &losses, &nodes] { func(positions[i], *(evaluaterGradients[i]), losses[i], nodes); });
 		for (int i = 0; i < threadNum; ++i)
 			threads[i].join();
+		if (nodes < NodesPerIteration)
+			break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
 		for (size_t size = 1; size < (size_t)threadNum; ++size)
 			*(evaluaterGradients[0]) += *(evaluaterGradients[size]); // 複数スレッドで個別に保持していた gradients を [0] の要素に集約する。
