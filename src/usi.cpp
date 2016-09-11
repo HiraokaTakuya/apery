@@ -225,19 +225,19 @@ void extractPVFromTT(Position& pos, Move* moves) {
 
 template <bool Undo>
 void qsearch(Position& pos, Move moves[MaxPlyPlus4]) {
-	static std::atomic<int> i;
+	//static std::atomic<int> i;
 	SearchStack ss[MaxPlyPlus4];
 	memset(ss, 0, 5 * sizeof(SearchStack));
 	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に暫定的に1手読みも混ぜる。
-	if ((i++ & 1) == 0)
-		pos.searcher()->search<PV>(pos, ss+2, -ScoreInfinite, ScoreInfinite, OnePly, false);
-	else {
+	//if ((i++ & 1) == 0)
+	//	pos.searcher()->search<PV>(pos, ss+2, -ScoreInfinite, ScoreInfinite, OnePly, false);
+	//else {
 		if (pos.inCheck())
 			pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
 		else
 			pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
-	}
+	//}
 	// pv 取得
 	extractPVFromTT<Undo>(pos, moves);
 }
