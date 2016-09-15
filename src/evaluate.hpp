@@ -156,9 +156,14 @@ const int KKIndicesMax = 7;
 
 template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterBase {
 	static const int R_Mid = 8; // 相対位置の中心のindex
+#if defined EVAL_ONLINE
+	constexpr int MaxWeight() const { return 1; }
+#else
+	// todo: Bonanza Method とか 低次元要素を削除する時にこれも消す。
 	constexpr int MaxWeight() const { return 1 << 22; } // KPE自体が1/32の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚)
 														// 更に重みを下げる場合、MaxWeightを更に大きくしておく必要がある。
 														// なぜか clang で static const int MaxWeight を使っても Undefined symbols for architecture x86_64 と言われる。
+#endif
 	constexpr int TurnWeight() const { return 8; }
 	// 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
 	// 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
