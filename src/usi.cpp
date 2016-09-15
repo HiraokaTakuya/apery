@@ -246,7 +246,6 @@ void qsearch(Position& pos, Move moves[MaxPlyPlus4]) {
 #else
 // 教師局面を増やす為、適当に駒を動かす。玉の移動を多めに。王手が掛かっている時は呼ばない事にする。
 void randomMove(Position& pos, std::mt19937& mt) {
-	assert(!pos.inCheck());
 	StateInfo state[MaxPlyPlus4];
 	StateInfo* st = state;
 	const Color us = pos.turn();
@@ -363,8 +362,7 @@ void make_teacher(std::istringstream& ssCmd) {
 				ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
 			}
 			setPosition(pos, hcp);
-			if (!pos.inCheck())
-				randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
+			randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
 			double randomMoveRateThresh = 0.2;
 			std::unordered_set<Key> keyHash;
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
