@@ -405,6 +405,7 @@ void make_teacher(std::istringstream& ssCmd) {
 					const Score eval = evaluate(pos, ss+1);
 					// root の手番から見た評価値に直す。
 					hcpe.eval = (rootTurn == pos.turn() ? eval : -eval);
+					hcpe.bestMove16 = static_cast<u16>(pv[0].value());
 
 					while (tmpPly)
 						pos.undoMove(pv[--tmpPly]);

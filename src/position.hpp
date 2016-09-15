@@ -156,8 +156,9 @@ static_assert(sizeof(HuffmanCodedPos) == 32, "");
 struct HuffmanCodedPosAndEval {
 	HuffmanCodedPos hcp;
 	s16 eval;
+	u16 bestMove16; // 使うかは分からないが教師データ生成時についでに取得しておく。
 };
-static_assert(sizeof(HuffmanCodedPosAndEval) == 34, "");
+static_assert(sizeof(HuffmanCodedPosAndEval) == 36, "");
 
 class Move;
 struct Thread;

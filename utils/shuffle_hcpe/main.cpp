@@ -10,8 +10,9 @@
 struct HuffmanCodedPosAndEval {
 	char c[32];
 	int16_t e;
+	uint16_t m;
 };
-static_assert(sizeof(HuffmanCodedPosAndEval) == 34, "");
+static_assert(sizeof(HuffmanCodedPosAndEval) == 36, "");
 
 int main(int argc, char *argv[]) {
 	if (argc != 3) {
