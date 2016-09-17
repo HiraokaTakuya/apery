@@ -42,9 +42,10 @@ MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const H
 	if (pos.inCheck())
 		phase_ = QEvasionSearch;
 	// todo: ここで Stockfish は qcheck がある。
-    // 教師データ生成時はコメントアウトせずに、学習時だけコメントアウトする。
-	//else if (DepthQNoTT < depth)
-	//	phase_ = QSearch;
+#if 1 // 教師データ生成時はコメントアウトせずに、学習時だけコメントアウトする。
+	else if (DepthQNoTT < depth)
+		phase_ = QSearch;
+#endif
 	else if (DepthQRecaptures < depth) {
 		phase_ = QSearchNoTT;
 		ttm = Move::moveNone();
