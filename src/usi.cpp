@@ -399,11 +399,23 @@ const std::string MyName = "Apery Debug Build";
 
 void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 	Position pos(DefaultStartPositionSFEN, threads.mainThread(), thisptr);
-
+	
 	std::string cmd;
 	std::string token;
 
+	//評価関数の重みベクトルを読み込む為のスレッドを起動する
+	Evaluater* eval_initializer = new Evaluater();
+	std::thread initializing_thread(Evaluater::init, eval_initializer, Searcher::options["Eval_Dir"], true);
+	//重みベクトル読み込み終了を待つための巻数
+	auto wait_initializing = [&]() {
+		if (initializing_thread.joinable()) {
+			initializing_thread.join();
+			delete eval_initializer;
+		}
+	};
 #if defined MPI_LEARN
+	wait_initializing();
+
 	boost::mpi::environment  env(argc, argv);
 	boost::mpi::communicator world;
 	if (world.rank() != 0) {
@@ -446,7 +458,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 												<< "\n" << options
 												<< "\nusiok" << SYNCENDL;
 		else if (token == "go"       ) go(pos, ssCmd);
-		else if (token == "isready"  ) SYNCCOUT << "readyok" << SYNCENDL;
+		else if (token == "isready") { wait_initializing(); SYNCCOUT << "readyok" << SYNCENDL; }
 		else if (token == "position" ) setPosition(pos, ssCmd);
 		else if (token == "setoption") setOption(ssCmd);
 #if defined LEARN
@@ -472,7 +484,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 	} while (token != "quit" && argc == 1);
 
 	threads.mainThread()->waitForSearchFinished();
-
+	wait_initializing();
 	if (options["Write_Synthesized_Eval"])
 		Evaluater::writeSynthesized(options["Eval_Dir"]);
 }
