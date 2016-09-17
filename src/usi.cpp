@@ -575,7 +575,7 @@ namespace {
 	}
 }
 
-constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
+constexpr s64 NodesPerIteration = 3000000; // 1回評価値を更新するのに使う教師局面数
 
 void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	std::string teacherFileName;
