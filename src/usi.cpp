@@ -224,20 +224,21 @@ void extractPVFromTT(Position& pos, Move* moves) {
 }
 
 template <bool Undo>
-void qsearch(Position& pos, Move moves[MaxPlyPlus4]) {
-	//static std::atomic<int> i;
+void qsearch(Position& pos, Move moves[MaxPlyPlus4], const u16 bestMove16) {
+	static std::atomic<int> i;
+	StateInfo st;
 	SearchStack ss[MaxPlyPlus4];
 	memset(ss, 0, 5 * sizeof(SearchStack));
 	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
-	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に暫定的に1手読みも混ぜる。
-	//if ((i++ & 1) == 0)
-	//	pos.searcher()->search<PV>(pos, ss+2, -ScoreInfinite, ScoreInfinite, OnePly, false);
-	//else {
-		if (pos.inCheck())
-			pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
-		else
-			pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
-	//}
+	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に一手進めて探索してみる。
+	if ((i++ & 1) == 0) {
+		const Move bestMove = move16toMove(Move(bestMove16), pos);
+		pos.doMove(bestMove, st);
+	}
+	if (pos.inCheck())
+		pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+	else
+		pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
 	// pv 取得
 	extractPVFromTT<Undo>(pos, moves);
 }
@@ -633,7 +634,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const Color rootColor = pos.turn();
 			pos.searcher()->alpha = -ScoreMaxEvaluate;
 			pos.searcher()->beta  =  ScoreMaxEvaluate;
-			qsearch<false>(pos, moves); // 末端の局面に移動する。
+			qsearch<false>(pos, moves, hcpe.bestMove16); // 末端の局面に移動する。
 			// pv を辿って評価値を返す。pos は pv を辿る為に状態が変わる。
 			auto pvEval = [&ss, &rootColor](Position& pos) {
 				ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
