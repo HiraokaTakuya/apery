@@ -1949,7 +1949,7 @@ INCORRECT:
 	std::cout << "incorrect SFEN string : " << sfen << std::endl;
 }
 
-void Position::set(const HuffmanCodedPos& hcp, Thread* th) {
+bool Position::set(const HuffmanCodedPos& hcp, Thread* th) {
 	Searcher* s = std::move(searcher_);
 	clear();
 	setSearcher(s);
@@ -2012,9 +2012,10 @@ void Position::set(const HuffmanCodedPos& hcp, Thread* th) {
 	st_->material = computeMaterial();
 	thisThread_ = th;
 
-	return;
+	return true;
 INCORRECT_HUFFMAN_CODE:
 	std::cout << "incorrect Huffman code." << std::endl;
+	return false;
 }
 
 bool Position::moveGivesCheck(const Move move) const {

@@ -727,6 +727,46 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	writeEval();
 	writeSyn();
 }
+
+// 教師データが壊れていないかチェックする。
+// todo: 教師データがたまに壊れる原因を調べる。
+void check_teacher(std::istringstream& ssCmd) {
+	std::string teacherFileName;
+	int threadNum;
+	ssCmd >> teacherFileName;
+	ssCmd >> threadNum;
+	if (threadNum <= 0)
+		exit(EXIT_FAILURE);
+	std::vector<Searcher> searchers(threadNum);
+	std::vector<Position> positions;
+	for (auto& s : searchers) {
+		s.init();
+		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
+	}
+	std::ifstream ifs(teacherFileName.c_str(), std::ios::binary);
+	if (!ifs)
+		exit(EXIT_FAILURE);
+	Mutex mutex;
+	auto func = [&mutex, &ifs](Position& pos) {
+		HuffmanCodedPosAndEval hcpe;
+		while (true) {
+			{
+				std::unique_lock<Mutex> lock(mutex);
+				ifs.read(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
+				if (ifs.eof())
+					return;
+			}
+			if (!setPosition(pos, hcpe.hcp))
+				exit(EXIT_FAILURE);
+		}
+	};
+	std::vector<std::thread> threads(threadNum);
+	for (int i = 0; i < threadNum; ++i)
+		threads[i] = std::thread([&positions, i, &func] { func(positions[i]); });
+	for (int i = 0; i < threadNum; ++i)
+		threads[i].join();
+	exit(EXIT_SUCCESS);
+}
 #endif
 
 Move usiToMoveBody(const Position& pos, const std::string& moveStr) {
@@ -872,9 +912,10 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 	pos.setStartPosPly(currentPly);
 }
 
-void setPosition(Position& pos, const HuffmanCodedPos& hcp) {
-	pos.set(hcp, pos.searcher()->threads.mainThread());
+bool setPosition(Position& pos, const HuffmanCodedPos& hcp) {
+	const bool ret = pos.set(hcp, pos.searcher()->threads.mainThread());
 	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
+	return ret;
 }
 
 void Searcher::setOption(std::istringstream& ssCmd) {
@@ -1015,6 +1056,9 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 				evalTableIsRead = true;
 			}
 			use_teacher(pos, ssCmd);
+		}
+		else if (token == "check_teacher") {
+			check_teacher(ssCmd);
 		}
 		else if (token == "print"    ) printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
 #endif
