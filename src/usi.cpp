@@ -98,8 +98,9 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
 	(*this)["Max_Random_Score_Diff_Ply"]   = USIOption(SHRT_MAX, 0, SHRT_MAX);
-	(*this)["Slow_Mover"]                  = USIOption(100, 10, 1000);
-	(*this)["Minimum_Thinking_Time"]       = USIOption(1500, 0, INT_MAX);
+	(*this)["Slow_Mover"]                  = USIOption(89, 10, 1000);
+	(*this)["Move_Overhead"]               = USIOption(30, 0, 5000);
+	(*this)["Minimum_Thinking_Time"]       = USIOption(20, 0, INT_MAX);
 	(*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
 }
 

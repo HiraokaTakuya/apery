@@ -52,6 +52,7 @@
 #include <ctime>
 #include <cmath>
 #include <cstddef>
+#include <cfloat>
 //#include <boost/align/aligned_alloc.hpp>
 
 #if defined HAVE_BMI2

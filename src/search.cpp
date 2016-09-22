@@ -377,39 +377,34 @@ namespace {
 #endif
 }
 
-std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Ply depth, const Score alpha, const Score beta) {
-	const int t = pos.csearcher()->timeManager.elapsed();
-	const size_t usiPVSize = pvSize;
-	Ply selDepth = 0; // 選択的に読んでいる部分の探索深さ。
+std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Depth depth, const Score alpha, const Score beta) {
 	std::stringstream ss;
+	const int elapsed = pos.csearcher()->timeManager.elapsed() + 1;
 	const auto& rootMoves = pos.thisThread()->rootMoves;
+	const size_t PVIdx = pos.thisThread()->pvIdx;
+	const size_t usiPVSize = pvSize;
 	const auto nodesSearched = pos.csearcher()->threads.nodesSearched();
 
-	for (size_t i = 0; i < pos.csearcher()->threads.size(); ++i) {
-		if (selDepth < pos.csearcher()->threads[i]->maxPly)
-			selDepth = pos.csearcher()->threads[i]->maxPly;
-	}
-
 	for (size_t i = usiPVSize-1; 0 <= static_cast<int>(i); --i) {
-		const bool update = (i <= pos.thisThread()->pvIdx);
+		const bool update = (i <= PVIdx);
 
-		if (depth == 1 && !update)
+		if (depth == OnePly && !update)
 			continue;
 
-		const Ply d = (update ? depth : depth - 1);
+		const Depth d = (update ? depth : depth - OnePly);
 		const Score s = (update ? rootMoves[i].score_ : rootMoves[i].prevScore_);
 
 		if (ss.rdbuf()->in_avail()) // 空以外は真
 			ss << "\n";
 
-		ss << "info depth " << d
-		   << " seldepth " << selDepth
-		   << " score " << (i == pos.thisThread()->pvIdx ? scoreToUSI(s, alpha, beta) : scoreToUSI(s))
-		   << " nodes " << nodesSearched
-		   << " nps " << (0 < t ? nodesSearched * 1000 / t : 0)
-		   << " time " << t
+		ss << "info depth " << d / OnePly
+		   << " seldepth " << pos.thisThread()->maxPly
 		   << " multipv " << i + 1
-		   << " pv ";
+		   << " score " << (i == PVIdx ? scoreToUSI(s, alpha, beta) : scoreToUSI(s))
+		   << " nodes " << nodesSearched
+		   << " nps " << nodesSearched * 1000 / elapsed
+		   << " time " << elapsed
+		   << " pv";
 
 		for (int j = 0; rootMoves[i].pv_[j]; ++j)
 			ss << " " << rootMoves[i].pv_[j].toUSI();
@@ -714,7 +709,7 @@ void Thread::search() {
 					&& (rootDepth < 10 || lastInfoTime + 200 < searcher->timeManager.elapsed()))
 				{
 					lastInfoTime = searcher->timeManager.elapsed();
-					SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, rootDepth, alpha, beta) << SYNCENDL;
+					SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, (Depth)rootDepth, alpha, beta) << SYNCENDL;
 				}
 
 				// fail high/low のとき、aspiration window を広げる。
@@ -748,7 +743,7 @@ void Thread::search() {
 				&& (rootDepth < 10 || lastInfoTime + 200 < searcher->timeManager.elapsed()))
 			{
 				lastInfoTime = searcher->timeManager.elapsed();
-				SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, rootDepth, alpha, beta) << SYNCENDL;
+				SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, (Depth)rootDepth, alpha, beta) << SYNCENDL;
 			}
 		}
 
@@ -764,16 +759,15 @@ void Thread::search() {
 
 		if (searcher->limits.useTimeManagement()) {
 			if (!searcher->signals.stop && !searcher->signals.stopOnPonderHit) {
-				const bool F[] = {!mainThread->failedLow, bestScore >= mainThread->previousScore};
-				const int improvingFactor = 640 - 160 * F[0] - 126 * F[1] - 124 * F[0] * F[1];
-				const double unstablePVFactor = 1 + mainThread->bestMoveChanges;
+				const int F[] = {mainThread->failedLow, bestScore - mainThread->previousScore};
+				const int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
+				const double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 				const bool doEasyMove = (rootMoves[0].pv_[0] == easyMove
-                                         && mainThread->bestMoveChanges < 0.03
-                                         && searcher->timeManager.elapsed() > searcher->timeManager.optimumSearchTime() * 25 / 204);
-
-                if (rootMoves.size() == 1
-                    || searcher->timeManager.elapsed() > searcher->timeManager.optimumSearchTime() * unstablePVFactor * improvingFactor / 634
-					|| (mainThread->easyMovePlayed = doEasyMove))
+										 && mainThread->bestMoveChanges < 0.03
+										 && searcher->timeManager.elapsed() > searcher->timeManager.optimum() * 5 / 42);
+				if (rootMoves.size() == 1
+					|| searcher->timeManager.elapsed() > searcher->timeManager.optimum() * unstablePvFactor * improvingFactor / 628
+					|| (mainThread->easyMovePlayed = doEasyMove, doEasyMove)) // MSVC で warning 出ないようにするハック
 				{
 					if (searcher->limits.ponder)
 						searcher->signals.stopOnPonderHit = true;
@@ -796,7 +790,7 @@ void Thread::search() {
 		searcher->easyMove.clear();
 
 	skill.swapIfEnabled(this, pvSize);
-	SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, rootDepth-1, alpha, beta) << SYNCENDL;
+	SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, (Depth)(rootDepth-1), alpha, beta) << SYNCENDL;
 }
 
 #if defined INANIWA_SHIFT
@@ -1518,7 +1512,7 @@ void MainThread::search() {
 #else
 	static Book book;
 	Position& pos = rootPosition;
-	searcher->timeManager.init(searcher->limits, pos.gamePly(), pos.turn(), searcher);
+	searcher->timeManager.init(searcher->limits, pos.turn(), pos.gamePly(), searcher);
 	auto& options = searcher->options;
 	auto& tt = searcher->tt;
 	auto& signals = searcher->signals;
@@ -1623,7 +1617,7 @@ finalize:
 	previousScore = bestThread->rootMoves[0].score_;
 
 	if (bestThread != this)
-		SYNCCOUT << pvInfoToUSI(bestThread->rootPosition, 1, bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
+		SYNCCOUT << pvInfoToUSI(bestThread->rootPosition, 1, (Depth)bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
 
 	if (nyugyokuWin)
 		SYNCCOUT << "bestmove win" << SYNCENDL;
@@ -1641,7 +1635,7 @@ void Searcher::checkTime() {
 		return;
 
 	const auto elapsed = timeManager.elapsed();
-	if ((limits.useTimeManagement() && elapsed > timeManager.maximumTime() - 10)
+	if ((limits.useTimeManagement() && elapsed > timeManager.maximum() - 10)
 		|| (limits.moveTime && elapsed >= limits.moveTime)
 		|| (limits.nodes && threads.nodesSearched() >= limits.nodes))
 	{

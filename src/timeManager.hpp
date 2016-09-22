@@ -28,18 +28,15 @@ struct LimitsType;
 
 class TimeManager {
 public:
-	void init(LimitsType& limits, const Ply currentPly, const Color us, Searcher* s);
-	void pvInstability(const int currChanges, const int prevChanges);
-	int availableTime() const { return optimumSearchTime_ + unstablePVExtraTime_; }
-	int maximumTime() const { return maximumSearchTime_; }
-	int optimumSearchTime() const { return optimumSearchTime_; } // todo: 後で消す。
-	int elapsed() const { return startTime.elapsed(); }
+	void init(LimitsType& limits, const Color us, const Ply currentPly, Searcher* s);
+	int optimum() const { return optimumTime_; }
+	int maximum() const { return maximumTime_; }
+	int elapsed() const { return startTime_.elapsed(); }
 
 private:
-	Timer startTime;
-	int optimumSearchTime_;
-	int maximumSearchTime_;
-	int unstablePVExtraTime_;
+	Timer startTime_;
+	int optimumTime_;
+	int maximumTime_;
 };
 
 #endif // #ifndef APERY_TIMEMANAGER_HPP
