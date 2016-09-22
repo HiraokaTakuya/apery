@@ -439,7 +439,7 @@ private:
 			const std::string moveStrCSA = s1.substr(0, 6);
 			const Move move = csaToMove(pos, moveStrCSA);
 			// 指し手の文字列のサイズが足りなかったり、反則手だったりすれば move.isNone() == true となるので、break する。
-			if (move.isNone())
+			if (!move)
 				break;
 			BookMoveData bmd = bmdBase[pos.turn()];
 			bmd.move = move;
@@ -641,7 +641,7 @@ private:
 					const Color rootColor = pos.turn();
 					int recordPVIndex = 0;
 					PRINT_PV(std::cout << "recordpv: ");
-					for (; !bmd.pvBuffer[recordPVIndex].isNone(); ++recordPVIndex) {
+					for (; bmd.pvBuffer[recordPVIndex]; ++recordPVIndex) {
 						PRINT_PV(std::cout << bmd.pvBuffer[recordPVIndex].toCSA());
 						setUpStates->push(StateInfo());
 						pos.doMove(bmd.pvBuffer[recordPVIndex], setUpStates->top());
@@ -656,7 +656,7 @@ private:
 					std::array<double, 2> sum_dT = {{0.0, 0.0}};
 					for (int otherPVIndex = recordPVIndex + 1; otherPVIndex < static_cast<int>(bmd.pvBuffer.size()); ++otherPVIndex) {
 						PRINT_PV(std::cout << "otherpv : ");
-						for (; !bmd.pvBuffer[otherPVIndex].isNone(); ++otherPVIndex) {
+						for (; bmd.pvBuffer[otherPVIndex]; ++otherPVIndex) {
 							PRINT_PV(std::cout << bmd.pvBuffer[otherPVIndex].toCSA());
 							setUpStates->push(StateInfo());
 							pos.doMove(bmd.pvBuffer[otherPVIndex], setUpStates->top());
@@ -671,7 +671,7 @@ private:
 						dT[0] = -dT[0];
 						dT[1] = (pos.turn() == rootColor ? -dT[1] : dT[1]);
 						parse2Data.params.incParam(pos, dT);
-						for (int jj = otherPVIndex - 1; !bmd.pvBuffer[jj].isNone(); --jj)
+						for (int jj = otherPVIndex - 1; bmd.pvBuffer[jj]; --jj)
 							pos.undoMove(bmd.pvBuffer[jj]);
 					}
 

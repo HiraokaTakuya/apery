@@ -207,7 +207,7 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 		while (!line.empty()) {
 			const std::string moveStrCSA = line.substr(0, 6);
 			const Move move = csaToMove(pos, moveStrCSA);
-			if (move.isNone()) {
+			if (!move) {
 				pos.print();
 				std::cout << "!!! Illegal move = " << moveStrCSA << " !!!" << std::endl;
 				break;

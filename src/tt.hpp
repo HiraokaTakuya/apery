@@ -50,7 +50,7 @@ public:
 	void save(const Key posKey, const Score score, const Bound bound, const Depth depth,
 			  const Move move, const Score evalScore, const u8 generation)
 	{
-		if (!move.isNone() || (posKey>>48) != key16_)
+		if (move || (posKey>>48) != key16_)
 			move16_ = static_cast<u16>(move.value());
 
 		if ((posKey>>48) != key16_

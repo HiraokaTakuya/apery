@@ -327,7 +327,7 @@ void Position::doMove(const Move move, StateInfo& newSt) {
 // 局面の更新
 void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, const bool moveIsCheck) {
 	assert(isOK());
-	assert(!move.isNone());
+	assert(move);
 	assert(&newSt != st_);
 
 	Key boardKey = getBoardKey();
@@ -495,7 +495,7 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
 
 void Position::undoMove(const Move move) {
 	assert(isOK());
-	assert(!move.isNone());
+	assert(move);
 
 	const Color them = turn();
 	const Color us = oppositeColor(them);

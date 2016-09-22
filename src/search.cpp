@@ -94,7 +94,7 @@ namespace {
 			if (enabled()) {
 				auto it = std::find(th->rootMoves.begin(),
 									th->rootMoves.end(),
-									(!best.isNone() ? best : pickMove(th, pvSize)));
+									(best ? best : pickMove(th, pvSize)));
 				if (th->rootMoves.begin() != it)
 					SYNCCOUT << "info string swap multipv 1, " << it - th->rootMoves.begin() + 1 << SYNCENDL;
 				std::swap(th->rootMoves[0], *it);
@@ -203,7 +203,7 @@ namespace {
 	}
 
 	void updatePV(Move* pv, const Move move, const Move* childPV) {
-		for (*pv++ = move; childPV && !childPV->isNone();)
+		for (*pv++ = move; childPV && !(*childPV);)
 			*pv++ = *childPV++;
 		*pv = Move::moveNone();
 	}
@@ -411,7 +411,7 @@ std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Ply depth, con
 		   << " multipv " << i + 1
 		   << " pv ";
 
-		for (int j = 0; !rootMoves[i].pv_[j].isNone(); ++j)
+		for (int j = 0; rootMoves[i].pv_[j]; ++j)
 			ss << " " << rootMoves[i].pv_[j].toUSI();
 	}
 	return ss.str();
@@ -480,7 +480,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 		bestScore = futilityBase = -ScoreInfinite;
 	}
 	else {
-		if (!(move = pos.mateMoveIn1Ply()).isNone())
+		if ((move = pos.mateMoveIn1Ply()))
 			return mateIn(ss->ply);
 
 		if (ttHit) {
@@ -509,7 +509,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 	MovePicker mp(pos, ttMove, depth, history, (ss-1)->currentMove.to());
 	const CheckInfo ci(pos);
 
-	while (!(move = mp.nextMove()).isNone())
+	while ((move = mp.nextMove()))
 	{
 		assert(pos.isOK());
 
@@ -935,7 +935,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	// step4
 	// trans position table lookup
 	excludedMove = ss->excludedMove;
-	posKey = (excludedMove.isNone() ? pos.getKey() : pos.getExclusionKey());
+	posKey = (!excludedMove ? pos.getKey() : pos.getExclusionKey());
 	tte = tt.probe(posKey, ttHit);
 	ttMove = 
 		RootNode ? rootMoves[pos.thisThread()->pvIdx].pv_[0] :
@@ -955,7 +955,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 		ss->currentMove = ttMove; // Move::moveNone() もありえる。
 
 		if (beta <= ttScore
-			&& !ttMove.isNone()
+			&& ttMove
 			&& !ttMove.isCaptureOrPawnPromotion()
 			&& ttMove != ss->killers[0])
 		{
@@ -969,7 +969,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	if (!RootNode
 		&& !inCheck)
 	{
-		if (!(move = pos.mateMoveIn1Ply()).isNone()) {
+		if ((move = pos.mateMoveIn1Ply())) {
 			ss->staticEval = bestScore = mateIn(ss->ply);
 			tte->save(posKey, scoreToTT(bestScore, ss->ply), BoundExact, depth,
 					  move, ss->staticEval, tt.generation());
@@ -1015,7 +1015,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	if (!PVNode
 		&& depth < 4 * OnePly
 		&& eval + razorMargin(depth) <= alpha
-		&& ttMove.isNone())
+		&& !ttMove)
 	{
 		if (depth <= OnePly && eval + razorMargin(3 * OnePly) <= alpha)
 			return qsearch<NonPV, false>(pos, ss, alpha, beta, Depth0);
@@ -1080,7 +1080,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 			threatMove = (ss+1)->currentMove;
 			if (depth < 5 * OnePly
 				&& (ss-1)->reduction != Depth0
-				&& !threatMove.isNone()
+				&& threatMove
 				&& allows(pos, (ss-1)->currentMove, threatMove))
 			{
 				return beta - 1;
@@ -1100,14 +1100,14 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 		const Depth rdepth = depth - OnePly - 3 * OnePly;
 
 		assert(OnePly <= rdepth);
-		assert(!(ss-1)->currentMove.isNone());
+		assert((ss-1)->currentMove);
 		assert((ss-1)->currentMove != Move::moveNull());
 
 		assert(move == (ss-1)->currentMove);
 		// move.cap() は前回(一手前)の指し手で取った駒の種類
 		MovePicker mp(pos, ttMove, history, move.cap());
 		const CheckInfo ci(pos);
-		while (!(move = mp.nextMove()).isNone()) {
+		while ((move = mp.nextMove())) {
 			if (pos.pseudoLegalMoveIsLegal<false, false>(move, ci.pinned)) {
 				ss->currentMove = move;
 				pos.doMove(move, st, ci, pos.moveGivesCheck(move, ci));
@@ -1124,7 +1124,7 @@ iid_start:
 	// step10
 	// internal iterative deepening
 	if ((PVNode ? 5 * OnePly : 8 * OnePly) <= depth
-		&& ttMove.isNone()
+		&& !ttMove
 		&& (PVNode || (!inCheck && beta <= ss->staticEval + static_cast<Score>(256))))
 	{
 		//const Depth d = depth - 2 * OnePly - (PVNode ? Depth0 : depth / 4);
@@ -1149,14 +1149,14 @@ iid_start:
 	singularExtensionNode =
 		!RootNode
 		&& 8 * OnePly <= depth
-		&& !ttMove.isNone()
-		&& excludedMove.isNone()
+		&& ttMove
+		&& !excludedMove
 		&& (tte->bound() & BoundLower)
 		&& depth - 3 * OnePly <= tte->depth();
 
 	// step11
 	// Loop through moves
-	while (!(move = mp.nextMove()).isNone()) {
+	while ((move = mp.nextMove())) {
 		if (move == excludedMove)
 			continue;
 
@@ -1226,7 +1226,7 @@ iid_start:
 			// move count based pruning
 			if (depth < 16 * OnePly
 				&& FutilityMoveCounts[depth] <= moveCount
-				&& (threatMove.isNone() || !refutes(pos, move, threatMove)))
+				&& (!threatMove || !refutes(pos, move, threatMove)))
 			{
 				continue;
 			}
@@ -1346,7 +1346,7 @@ iid_start:
 
 	// step20
 	if (moveCount == 0)
-		return !excludedMove.isNone() ? alpha : matedIn(ss->ply);
+		return excludedMove ? alpha : matedIn(ss->ply);
 
 	if (bestScore == -ScoreInfinite) {
 		assert(playedMoveCount == 0);
@@ -1378,7 +1378,7 @@ iid_start:
 	else
 		// failed low or PV search
 		tte->save(posKey, scoreToTT(bestScore, ss->ply),
-				  ((PVNode && !bestMove.isNone()) ? BoundExact : BoundUpper),
+				  ((PVNode && bestMove) ? BoundExact : BoundUpper),
 				  depth, bestMove, ss->staticEval, tt.generation());
 
 	assert(-ScoreInfinite < bestScore && bestScore < ScoreInfinite);
@@ -1394,7 +1394,7 @@ void RootMove::extractPvFromTT(Position& pos) {
 	Move m = pv_[0];
 	bool ttHit;
 
-	assert(!m.isNone() && pos.moveIsPseudoLegal(m));
+	assert(m && pos.moveIsPseudoLegal(m));
 
 	pv_.clear();
 
@@ -1432,7 +1432,7 @@ void RootMove::insertPvInTT(Position& pos) {
 
 		assert(pos.moveIsLegal(pv_[ply]));
 		pos.doMove(pv_[ply++], *st++);
-	} while (!pv_[ply].isNone());
+	} while (pv_[ply]);
 
 	while (ply)
 		pos.undoMove(pv_[--ply]);
@@ -1538,7 +1538,7 @@ void MainThread::search() {
 	SYNCCOUT << "info string book_ply " << book_ply << SYNCENDL;
 	if (options["OwnBook"] && pos.gamePly() <= book_ply) {
 		const std::tuple<Move, Score> bookMoveScore = book.probe(pos, options["Book_File"], options["Best_Book_Move"]);
-		if (!std::get<0>(bookMoveScore).isNone() && std::find(rootMoves.begin(),
+		if (std::get<0>(bookMoveScore) && std::find(rootMoves.begin(),
 															  rootMoves.end(),
 															  std::get<0>(bookMoveScore)) != rootMoves.end())
 		{
@@ -1627,7 +1627,7 @@ finalize:
 
 	if (nyugyokuWin)
 		SYNCCOUT << "bestmove win" << SYNCENDL;
-	else if (bestThread->rootMoves[0].pv_[0].isNone())
+	else if (!bestThread->rootMoves[0].pv_[0])
 			SYNCCOUT << "bestmove resign" << SYNCENDL;
 	else
 		SYNCCOUT << "bestmove " << bestThread->rootMoves[0].pv_[0].toUSI()

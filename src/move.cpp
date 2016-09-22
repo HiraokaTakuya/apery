@@ -32,7 +32,7 @@ namespace {
 }
 
 std::string Move::toUSI() const {
-	if (this->isNone()) return "None";
+	if (!(*this)) return "None";
 
 	const Square from = this->from();
 	const Square to = this->to();
@@ -44,7 +44,7 @@ std::string Move::toUSI() const {
 }
 
 std::string Move::toCSA() const {
-	if (this->isNone()) return "None";
+	if (!(*this)) return "None";
 
 	std::string s = (this->isDrop() ? std::string("00") : squareToStringCSA(this->from()));
 	s += squareToStringCSA(this->to()) + pieceTypeToString(this->pieceTypeTo());

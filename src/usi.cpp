@@ -410,7 +410,7 @@ void make_teacher(std::istringstream& ssCmd) {
 				const Move bestMove = pos.searcher()->threads.mainThread()->rootMoves[0].pv_[0];
 				if (3000 < abs(score)) // 差が付いたので投了した事にする。
 					break;
-				else if (bestMove.isNone()) // 勝ち宣言など
+				else if (!bestMove) // 勝ち宣言など
 					break;
 
 				{
@@ -421,7 +421,7 @@ void make_teacher(std::istringstream& ssCmd) {
 					const Color rootTurn = pos.turn();
 					StateInfo state[MaxPlyPlus4];
 					StateInfo* st = state;
-					while (!pv[tmpPly].isNone())
+					while (pv[tmpPly])
 						pos.doMove(pv[tmpPly++], *st++);
 					// evaluate() の差分計算を無効化する。
 					SearchStack ss[2];
@@ -930,7 +930,7 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 	Ply currentPly = pos.gamePly();
 	while (ssCmd >> token) {
 		const Move move = usiToMove(pos, token);
-		if (move.isNone()) break;
+		if (!move) break;
 		pos.searcher()->usiSetUpStates->push(StateInfo());
 		pos.doMove(move, pos.searcher()->usiSetUpStates->top());
 		++currentPly;

@@ -86,7 +86,8 @@ public:
 		return pieceTypeToHandPiece(pieceTypeDropped());
 	}
 	// 値が入っているか。
-	bool isNone() const { return (value() == MoveNone); }
+	explicit operator bool() const { return value() != MoveNone; }
+	bool isAny() const { return (value() != MoveNone); }
 	// メンバ変数 value_ の取得
 	u32 value() const { return value_; }
 	Move operator |= (const Move rhs) {
@@ -208,7 +209,7 @@ inline MoveStack* pickBest(MoveStack* currMove, MoveStack* lastMove) {
 }
 
 inline Move move16toMove(const Move move, const Position& pos) {
-	if (move.isNone())
+	if (!move)
 		return Move::moveNone();
 	if (move.isDrop())
 		return move;

@@ -49,8 +49,8 @@ MovePicker::MovePicker(const Position& pos, const Move ttm, const Depth depth,
 			captureThreshold_ = beta - ss_->staticEval;
 	}
 
-	ttMove_ = (!ttm.isNone() && pos.moveIsPseudoLegal(ttm) ? ttm : Move::moveNone());
-	lastMove_ += (!ttMove_.isNone());
+	ttMove_ = (ttm && pos.moveIsPseudoLegal(ttm) ? ttm : Move::moveNone());
+	lastMove_ += ttMove_.isAny();
 }
 
 // 静止探索で呼ばれる。
@@ -77,8 +77,8 @@ MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const H
 		ttm = Move::moveNone();
 	}
 
-	ttMove_ = (!ttm.isNone() && pos.moveIsPseudoLegal(ttm) ? ttm : Move::moveNone());
-	lastMove_ += !ttMove_.isNone();
+	ttMove_ = (ttm && pos.moveIsPseudoLegal(ttm) ? ttm : Move::moveNone());
+	lastMove_ += ttMove_.isAny();
 }
 
 MovePicker::MovePicker(const Position& pos, const Move ttm, const History& history, const PieceType pt)
@@ -90,12 +90,12 @@ MovePicker::MovePicker(const Position& pos, const Move ttm, const History& histo
 	phase_ = ProbCut;
 
 	captureThreshold_ = pos.capturePieceScore(pt);
-	ttMove_ = ((!ttm.isNone() && pos.moveIsPseudoLegal(ttm)) ? ttm : Move::moveNone());
+	ttMove_ = ((ttm && pos.moveIsPseudoLegal(ttm)) ? ttm : Move::moveNone());
 
-	if (!ttMove_.isNone() && (!ttMove_.isCapture() || pos.see(ttMove_) <= captureThreshold_))
+	if (ttMove_ && (!ttMove_.isCapture() || pos.see(ttMove_) <= captureThreshold_))
 		ttMove_ = Move::moveNone();
 
-	lastMove_ += !ttMove_.isNone();
+	lastMove_ += ttMove_.isAny();
 }
 
 Move MovePicker::nextMove() {
@@ -125,7 +125,7 @@ Move MovePicker::nextMove() {
 
 		case PH_Killers:
 			move = (currMove_++)->move;
-			if (!move.isNone()
+			if (move
 				&& move != ttMove_
 				&& pos().moveIsPseudoLegal(move)
 				&& pos().piece(move.to()) == Empty)
