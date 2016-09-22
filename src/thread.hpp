@@ -27,7 +27,7 @@
 #include "usi.hpp"
 #include "tt.hpp"
 
-const int MaxThreads = 64;
+const int MaxThreads = 256;
 
 enum NodeType {
 	Root, PV, NonPV
