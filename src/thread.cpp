@@ -102,8 +102,8 @@ void ThreadPool::readUSIOptions(Searcher* s) {
 	}
 }
 
-u64 ThreadPool::nodesSearched() const {
-	u64 nodes = 0;
+s64 ThreadPool::nodesSearched() const {
+	s64 nodes = 0;
 	for (Thread* th : *this)
 		nodes += th->rootPosition.nodesSearched();
 	return nodes;

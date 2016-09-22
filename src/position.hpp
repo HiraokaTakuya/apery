@@ -353,8 +353,8 @@ public:
 
 	HuffmanCodedPos toHuffmanCodedPos() const;
 
-	u64 nodesSearched() const          { return nodes_; }
-	void setNodesSearched(const u64 n) { nodes_ = n; }
+	s64 nodesSearched() const          { return nodes_; }
+	void setNodesSearched(const s64 n) { nodes_ = n; }
 	RepetitionType isDraw(const int checkMaxPly = std::numeric_limits<int>::max()) const;
 
 	Thread* thisThread() const { return thisThread_; }
@@ -494,7 +494,7 @@ private:
 	// 時間管理に使用する。
 	Ply gamePly_;
 	Thread* thisThread_;
-	u64 nodes_;
+	s64 nodes_;
 
 	Searcher* searcher_;
 

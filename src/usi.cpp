@@ -169,12 +169,13 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 		if      (token == "ponder"     ) limits.ponder = true;
 		else if (token == "btime"      ) ssCmd >> limits.time[Black];
 		else if (token == "wtime"      ) ssCmd >> limits.time[White];
-		else if (token == "binc"       ) ssCmd >> limits.increment[Black];
-		else if (token == "winc"       ) ssCmd >> limits.increment[White];
+		else if (token == "binc"       ) ssCmd >> limits.inc[Black];
+		else if (token == "winc"       ) ssCmd >> limits.inc[White];
 		else if (token == "infinite"   ) limits.infinite = true;
 		else if (token == "byoyomi" || token == "movetime") ssCmd >> limits.moveTime;
-		else if (token == "depth"      ) { ssCmd >> limits.depth; }
-		else if (token == "nodes"      ) { ssCmd >> limits.nodes; }
+		else if (token == "mate"       ) ssCmd >> limits.mate;
+		else if (token == "depth"      ) ssCmd >> limits.depth;
+		else if (token == "nodes"      ) ssCmd >> limits.nodes;
 		else if (token == "searchmoves") {
 			while (ssCmd >> token)
 				limits.searchmoves.push_back(usiToMove(pos, token));
@@ -182,7 +183,7 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 	}
 	if      (limits.moveTime != 0)
 		limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"];
-	else if (limits.increment[pos.turn()] != 0)
+	else if (limits.inc[pos.turn()] != 0)
 		limits.time[pos.turn()] -= pos.searcher()->options["Inc_Margin"];
 	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
 }

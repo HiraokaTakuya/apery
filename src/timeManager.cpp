@@ -69,7 +69,7 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, Search
 
 	for (int hypMTG = 1; hypMTG <= MaxMTG; ++hypMTG) {
 		int hypMyTime = (limits.time[us]
-						 + limits.increment[us] * (hypMTG - 1)
+						 + limits.inc[us] * (hypMTG - 1)
 						 - moveOverhead * (2 + std::min(hypMTG, 40)));
 
 		hypMyTime = std::max(hypMyTime, 0);

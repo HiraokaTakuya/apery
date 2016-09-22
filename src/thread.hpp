@@ -35,20 +35,14 @@ enum NodeType {
 
 // 時間や探索深さの制限を格納する為の構造体
 struct LimitsType {
-	LimitsType() : searchmoves(), movesToGo(), depth(), nodes(), moveTime(), infinite(), ponder() {
-		time[Black] = time[White] = increment[Black] = increment[White] = 0;
+	LimitsType() {
+		nodes = time[Black] = time[White] = inc[Black] = inc[White] = movesToGo = depth = moveTime = infinite = ponder = 0;
 	}
-	bool useTimeManagement() const { return !(depth | nodes | moveTime | static_cast<int>(infinite)); }
+	bool useTimeManagement() const { return !(mate | moveTime | depth | nodes | infinite); }
 
 	std::vector<Move> searchmoves;
-	int time[ColorNum];
-	int increment[ColorNum];
-	int movesToGo;
-	Ply depth;
-	u64 nodes;
-	int moveTime;
-	bool infinite;
-	bool ponder;
+	int time[ColorNum], inc[ColorNum], movesToGo, depth, moveTime, mate, infinite, ponder;
+	s64 nodes;
 	Timer startTime;
 };
 
@@ -155,7 +149,7 @@ struct ThreadPool : public std::vector<Thread*> {
 	MainThread* mainThread() { return static_cast<MainThread*>((*this)[0]); }
 	void startThinking(const Position& pos, const LimitsType& limits, StateStackPtr& states);
 	void readUSIOptions(Searcher* s);
-	u64 nodesSearched() const;
+	s64 nodesSearched() const;
 };
 
 #endif // #ifndef APERY_THREAD_HPP
