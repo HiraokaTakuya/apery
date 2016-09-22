@@ -96,7 +96,7 @@ Key Book::bookKey(const Position& pos) {
 	Key key = 0;
 	Bitboard bb = pos.occupiedBB();
 
-	while (bb.isNot0()) {
+	while (bb) {
 		const Square sq = bb.firstOneFromSQ11();
 		key ^= ZobPiece[pos.piece(sq)][sq];
 	}

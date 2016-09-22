@@ -243,7 +243,7 @@ public:
 	template <bool BetweenIsUs = true> Bitboard discoveredCheckBB() const { return hiddenCheckers<false, BetweenIsUs>(); }
 
 	// toFile と同じ筋に us の歩がないなら true
-	bool noPawns(const Color us, const File toFile) const { return !bbOf(Pawn, us).andIsNot0(fileMask(toFile)); }
+	bool noPawns(const Color us, const File toFile) const { return !bbOf(Pawn, us).andIsAny(fileMask(toFile)); }
 	bool isPawnDropCheckMate(const Color us, const Square sq) const;
 	// Pinされているfromの駒がtoに移動出来なければtrueを返す。
 	template <bool IsKnight = false>
@@ -261,7 +261,7 @@ public:
 	Bitboard checkersBB() const     { return st_->checkersBB; }
 	Bitboard prevCheckersBB() const { return st_->previous->checkersBB; }
 	// 王手が掛かっているか。
-	bool inCheck() const            { return checkersBB().isNot0(); }
+	bool inCheck() const            { return checkersBB().isAny(); }
 
 	Score material() const { return st_->material; }
 	Score materialDiff() const { return st_->material - st_->previous->material; }
@@ -279,13 +279,13 @@ public:
 	Bitboard attackersTo(const Color c, const Square sq) const { return attackersTo(c, sq, occupiedBB()); }
 	Bitboard attackersTo(const Color c, const Square sq, const Bitboard& occupied) const;
 	Bitboard attackersToExceptKing(const Color c, const Square sq) const;
-	// todo: 利きをデータとして持ったとき、attackersToIsNot0() を高速化すること。
-	bool attackersToIsNot0(const Color c, const Square sq) const { return attackersTo(c, sq).isNot0(); }
-	bool attackersToIsNot0(const Color c, const Square sq, const Bitboard& occupied) const {
-		return attackersTo(c, sq, occupied).isNot0();
+	// todo: 利きをデータとして持ったとき、attackersToIsAny() を高速化すること。
+	bool attackersToIsAny(const Color c, const Square sq) const { return attackersTo(c, sq).isAny(); }
+	bool attackersToIsAny(const Color c, const Square sq, const Bitboard& occupied) const {
+		return attackersTo(c, sq, occupied).isAny();
 	}
 	// 移動王手が味方の利きに支えられているか。false なら相手玉で取れば詰まない。
-	bool unDropCheckIsSupported(const Color c, const Square sq) const { return attackersTo(c, sq).isNot0(); }
+	bool unDropCheckIsSupported(const Color c, const Square sq) const { return attackersTo(c, sq).isAny(); }
 	// 利きの生成
 
 	// 任意の occupied に対する利きを生成する。
@@ -441,15 +441,15 @@ private:
 		pinners &= (bbOf(Lance) & lanceAttackToEdge((FindPinned ? us : them), ksq)) |
 			(bbOf(Rook, Dragon) & rookAttackToEdge(ksq)) | (bbOf(Bishop, Horse) & bishopAttackToEdge(ksq));
 
-		while (pinners.isNot0()) {
+		while (pinners) {
 			const Square sq = pinners.firstOneFromSQ11();
 			// pin する遠隔駒と玉の間にある駒の位置の Bitboard
 			const Bitboard between = betweenBB(sq, ksq) & occupiedBB();
 
 			// pin する遠隔駒と玉の間にある駒が1つで、かつ、引数の色のとき、その駒は(を) pin されて(して)いる。
-			if (between.isNot0()
+			if (between
 				&& between.isOneBit<false>()
-				&& between.andIsNot0(bbOf(BetweenIsUs ? us : them)))
+				&& between.andIsAny(bbOf(BetweenIsUs ? us : them)))
 			{
 				result |= between;
 			}

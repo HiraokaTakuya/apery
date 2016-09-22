@@ -170,7 +170,7 @@ namespace {
 			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				KnightAttack[c][sq] = allZeroBB();
 				const Bitboard bb = pawnAttack(c, sq);
-				if (bb.isNot0())
+				if (bb)
 					KnightAttack[c][sq] = bishopStepAttacks(bb.constFirstOneFromSQ11()) & inFrontMask(c, makeRank(sq));
 			}
 		}
@@ -235,7 +235,7 @@ namespace {
 			for (Square sq = SQ11; sq < SquareNum; ++sq) {
 				GoldCheckTable[c][sq] = allZeroBB();
 				Bitboard checkBB = goldAttack(opp, sq);
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					GoldCheckTable[c][sq] |= goldAttack(opp, checkSq);
 				}
@@ -249,13 +249,13 @@ namespace {
 				SilverCheckTable[c][sq] = allZeroBB();
 
 				Bitboard checkBB = silverAttack(opp, sq);
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					SilverCheckTable[c][sq] |= silverAttack(opp, checkSq);
 				}
 				const Bitboard TRank123BB = (c == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
 				checkBB = goldAttack(opp, sq);
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					// 移動元が敵陣である位置なら、金に成って王手出来る。
 					SilverCheckTable[c][sq] |= (silverAttack(opp, checkSq) & TRank123BB);
@@ -264,7 +264,7 @@ namespace {
 				const Bitboard TRank4BB = (c == Black ? rankMask<Rank4>() : rankMask<Rank6>());
 				// 移動先が3段目で、4段目に移動したときも、成ることが出来る。
 				checkBB = goldAttack(opp, sq) & TRank123BB;
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					SilverCheckTable[c][sq] |= (silverAttack(opp, checkSq) & TRank4BB);
 				}
@@ -278,13 +278,13 @@ namespace {
 				KnightCheckTable[c][sq] = allZeroBB();
 
 				Bitboard checkBB = knightAttack(opp, sq);
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					KnightCheckTable[c][sq] |= knightAttack(opp, checkSq);
 				}
 				const Bitboard TRank123BB = (c == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
 				checkBB = goldAttack(opp, sq) & TRank123BB;
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					KnightCheckTable[c][sq] |= knightAttack(opp, checkSq);
 				}
@@ -298,7 +298,7 @@ namespace {
 
 				const Bitboard TRank123BB = (c == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
 				Bitboard checkBB = goldAttack(opp, sq) & TRank123BB;
-				while (checkBB.isNot0()) {
+				while (checkBB) {
 					const Square checkSq = checkBB.firstOneFromSQ11();
 					LanceCheckTable[c][sq] |= lanceAttackToEdge(opp, checkSq);
 				}
@@ -339,7 +339,7 @@ namespace {
 		for (Square sq = SQ11; sq < SquareNum; ++sq) {
 			Neighbor5x5Table[sq] = allZeroBB();
 			Bitboard toBB = kingAttack(sq);
-			while (toBB.isNot0()) {
+			while (toBB) {
 				const Square to = toBB.firstOneFromSQ11();
 				Neighbor5x5Table[sq] |= kingAttack(to);
 			}

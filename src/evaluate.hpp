@@ -390,7 +390,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const Color jcolor = pieceToColor(jpiece);
 			const PieceType jpt = pieceToPieceType(jpiece);
 			Bitboard jtoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(jpt, jcolor, jsq, setMaskBB(ksq)));
-			while (jtoBB.isNot0()) {
+			while (jtoBB) {
 				Square jto = jtoBB.firstOneFromSQ11();
 				if (kfile == File5 && SQ59 < jto)
 					jto = inverseFile(jto);
@@ -473,7 +473,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				const PieceType jipt = pieceToPieceType(jipiece);
 				const Bitboard mask = setMaskBB(ksq) | setMaskBB(ijsq);
 				Bitboard jitoBB = mask.notThisAnd(Position::attacksFrom(jipt, jicolor, jisq, mask));
-				while (jitoBB.isNot0()) {
+				while (jitoBB) {
 					Square jito = jitoBB.firstOneFromSQ11();
 					Square ijsq_tmp = ijsq;
 					assert(ksq <= SQ59);
@@ -568,11 +568,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				const Bitboard jmask = setMaskBB(ksq) | setMaskBB(isq);
 				Bitboard itoBB = imask.notThisAnd(Position::attacksFrom(jpt, icolor, isq, imask));
 				Bitboard jtoBB = jmask.notThisAnd(Position::attacksFrom(jpt, jcolor, jsq, jmask));
-				while (itoBB.isNot0()) {
+				while (itoBB) {
 					const Square ito = itoBB.firstOneFromSQ11();
 					const int itodistance = squareDistance(isq, ito);
 					Bitboard jtoBB_tmp = jtoBB;
-					while (jtoBB_tmp.isNot0()) {
+					while (jtoBB_tmp) {
 						const Square jto = jtoBB_tmp.firstOneFromSQ11();
 						const int jtodistance = squareDistance(jsq, jto);
 						const int distance = itodistance + jtodistance - 1;
@@ -736,7 +736,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 					const PieceType ipt = pieceToPieceType(ipiece);
 					const Color icolor = pieceToColor(ipiece);
 					Bitboard itoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(ipt, icolor, isq, setMaskBB(ksq)));
-					while (itoBB.isNot0()) {
+					while (itoBB) {
 						Square ito = itoBB.firstOneFromSQ11();
 						const int distance = squareDistance(isq, ito);
 						ret[retIdx++] = std::make_pair(sign*(&kkps.r_ke[icolor][R_Mid + -abs(makeFile(ksq) - makeFile(ito))][R_Mid + makeRank(ksq) - makeRank(ito)] - oneArrayKKP(0)), MaxWeight() >> (distance+4));
@@ -754,7 +754,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 				const Color icolor = pieceToColor(ipiece);
 
 				Bitboard itoBB = setMaskBB(ksq).notThisAnd(Position::attacksFrom(ipt, icolor, isq, setMaskBB(ksq)));
-				while (itoBB.isNot0()) {
+				while (itoBB) {
 					Square ito = itoBB.firstOneFromSQ11();
 					const int distance = squareDistance(isq, ito);
 					if (makeFile(ksq) == File5 && SQ59 < ito)
@@ -822,7 +822,7 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 			const PieceType ipt = pieceToPieceType(ipiece);
 			const Bitboard mask = setMaskBB(ksq0) | setMaskBB(ksq1);
 			Bitboard itoBB = mask.notThisAnd(Position::attacksFrom(ipt, icolor, isq, mask));
-			while (itoBB.isNot0()) {
+			while (itoBB) {
 				Square ito = itoBB.firstOneFromSQ11();
 				const int distance = squareDistance(isq, ito);
 				if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5 && SQ59 < ito)

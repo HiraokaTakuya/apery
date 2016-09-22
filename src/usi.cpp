@@ -283,7 +283,7 @@ void randomMove(Position& pos, std::mt19937& mt) {
 		MoveStack legalMoves[MaxLegalMoves]; // 玉の移動も含めた普通の合法手
 		MoveStack* pms = &legalMoves[0];
 		Bitboard kingToBB = pos.bbOf(us).notThisAnd(neighbor5x5Table(from));
-		while (kingToBB.isNot0()) {
+		while (kingToBB) {
 			const Square to = kingToBB.firstOneFromSQ11();
 			const Move move = makeNonPromoteMove<Capture>(King, from, to, pos);
 			if (pos.moveIsPseudoLegal<false>(move)

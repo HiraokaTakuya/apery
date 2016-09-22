@@ -48,19 +48,20 @@ public:
 	u64 p(const int index) const { return p_[index]; }
 	void set(const int index, const u64 val) { p_[index] = val; }
 	u64 merge() const { return this->p(0) | this->p(1); }
-	bool isNot0() const {
+	explicit operator bool() const {
 #ifdef HAVE_SSE4
 		return !(_mm_testz_si128(this->m_, _mm_set1_epi8(static_cast<char>(0xffu))));
 #else
 		return (this->merge() ? true : false);
 #endif
 	}
+	bool isAny() const { return static_cast<bool>(*this); }
 	// これはコードが見難くなるけど仕方ない。
-	bool andIsNot0(const Bitboard& bb) const {
+	bool andIsAny(const Bitboard& bb) const {
 #ifdef HAVE_SSE4
 		return !(_mm_testz_si128(this->m_, bb.m_));
 #else
-		return (*this & bb).isNot0();
+		return (*this & bb).isAny();
 #endif
 	}
 	Bitboard operator ~ () const {
@@ -151,7 +152,7 @@ public:
 	}
 	bool isSet(const Square sq) const {
 		assert(isInSquare(sq));
-		return andIsNot0(SetMaskBB[sq]);
+		return andIsAny(SetMaskBB[sq]);
 	}
 	void setBit(const Square sq) { *this |= SetMaskBB[sq]; }
 	void clearBit(const Square sq) { andEqualNot(SetMaskBB[sq]); }
@@ -204,7 +205,7 @@ public:
 #if defined (HAVE_SSE42)
 		return (this->popCount<Crossover>() == 1);
 #else
-		if (!this->isNot0())
+		if (!isAny())
 			return false;
 		else if (this->p(0))
 			return !((this->p(0) & (this->p(0) - 1)) | this->p(1));

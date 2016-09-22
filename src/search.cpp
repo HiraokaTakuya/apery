@@ -290,7 +290,7 @@ namespace {
 				| (pos.attacksFrom<Bishop>(m2to, occ) & pos.bbOf(Bishop, Horse, us));
 
 			// sq へ当たりになっている駒のうち、first で動くことによって新たに当たりになったものがあるなら true
-			if (xray.isNot0() && (xray ^ (xray & queenAttack(m2to, pos.occupiedBB()))).isNot0())
+			if (xray && (xray ^ (xray & queenAttack(m2to, pos.occupiedBB()))))
 				return true;
 		}
 
@@ -1471,7 +1471,7 @@ bool nyugyoku(const Position& pos) {
 	const Bitboard opponentsField = (us == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
 
 	// 二 宣言側の玉が敵陣三段目以内に入っている。
-	if (!pos.bbOf(King, us).andIsNot0(opponentsField))
+	if (!pos.bbOf(King, us).andIsAny(opponentsField))
 		return false;
 
 	// 三 宣言側が、大駒5点小駒1点で計算して
