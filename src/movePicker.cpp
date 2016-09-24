@@ -24,8 +24,8 @@
 #include "thread.hpp"
 
 MovePicker::MovePicker(const Position& pos, const Move ttm, const Depth depth,
-					   const History& history, SearchStack* searchStack, const Score beta)
-	: pos_(pos), history_(history), depth_(depth)
+					   /*const History& history, */SearchStack* searchStack, const Score beta)
+	: pos_(pos), /*history_(history), */depth_(depth)
 {
 	assert(Depth0 < depth);
 
@@ -54,8 +54,8 @@ MovePicker::MovePicker(const Position& pos, const Move ttm, const Depth depth,
 }
 
 // 静止探索で呼ばれる。
-MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const History& history, const Square sq)
-	: pos_(pos), history_(history), currMove_(firstMove()), lastMove_(firstMove())
+MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, /*const History& history, */const Square sq)
+	: pos_(pos), /*history_(history), */currMove_(firstMove()), lastMove_(firstMove())
 {
 	assert(depth <= Depth0);
 	legalMoves_[0].score = INT_MAX; // 番兵のセット
@@ -81,8 +81,8 @@ MovePicker::MovePicker(const Position& pos, Move ttm, const Depth depth, const H
 	lastMove_ += ttMove_.isAny();
 }
 
-MovePicker::MovePicker(const Position& pos, const Move ttm, const History& history, const PieceType pt)
-	: pos_(pos), history_(history), currMove_(firstMove()), lastMove_(firstMove())
+MovePicker::MovePicker(const Position& pos, const Move ttm, /*const History& history, */const PieceType pt)
+	: pos_(pos), /*history_(history), */currMove_(firstMove()), lastMove_(firstMove())
 {
 	assert(!pos.inCheck());
 
@@ -193,10 +193,10 @@ template <bool IsDrop> void MovePicker::scoreNonCapturesMinusPro() {
 	for (MoveStack* curr = currMove(); curr != lastMove(); ++curr) {
 		const Move move = curr->move;
 		curr->score =
-			history().value(IsDrop,
-							colorAndPieceTypeToPiece(pos().turn(),
-													 (IsDrop ? move.pieceTypeDropped() : move.pieceTypeFrom())),
-							move.to());
+			ScoreZero;//history().value(IsDrop,
+			//				colorAndPieceTypeToPiece(pos().turn(),
+			//										 (IsDrop ? move.pieceTypeDropped() : move.pieceTypeFrom())),
+			//				move.to());
 		if (!IsDrop && move.isPromotion())
 			++curr->score;
 	}
@@ -207,16 +207,16 @@ void MovePicker::scoreEvasions() {
 		const Move move = curr->move;
 		const Score seeScore = pos().seeSign(move);
 		if (seeScore < 0)
-			curr->score = seeScore - History::MaxScore;
+			curr->score = seeScore /*- History::MaxScore*/;
 		else if (move.isCaptureOrPromotion()) {
-			curr->score = pos().capturePieceScore(pos().piece(move.to())) + History::MaxScore;
+			curr->score = pos().capturePieceScore(pos().piece(move.to())) /*+ History::MaxScore*/;
 			if (move.isPromotion()) {
 				const PieceType pt = pieceToPieceType(pos().piece(move.from()));
 				curr->score += pos().promotePieceScore(pt);
 			}
 		}
 		else
-			curr->score = history().value(move.isDrop(), colorAndPieceTypeToPiece(pos().turn(), move.pieceTypeFromOrDropped()), move.to());
+			curr->score = ScoreZero;//history().value(move.isDrop(), colorAndPieceTypeToPiece(pos().turn(), move.pieceTypeFromOrDropped()), move.to());
 	}
 }
 

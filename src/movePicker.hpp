@@ -41,9 +41,9 @@ OverloadEnumOperators(GenerateMovePhase); // ++phase_ の為。
 class MovePicker {
 public:
 	MovePicker(const Position& pos, const Move ttm, const Depth depth,
-			   const History& history, SearchStack* searchStack, const Score beta);
-	MovePicker(const Position& pos, Move ttm, const Depth depth, const History& history, const Square sq);
-	MovePicker(const Position& pos, const Move ttm, const History& history, const PieceType pt);
+			   /*const History& history, */SearchStack* searchStack, const Score beta);
+	MovePicker(const Position& pos, Move ttm, const Depth depth, /*const History& history, */const Square sq);
+	MovePicker(const Position& pos, const Move ttm, /*const History& history, */const PieceType pt);
 	Move nextMove();
 
 private:
@@ -60,10 +60,10 @@ private:
 	const Position& pos() const { return pos_; }
 
 	GenerateMovePhase phase() const { return phase_; }
-	const History& history() const { return history_; }
+	//const History& history() const { return history_; }
 
 	const Position& pos_;
-	const History& history_;
+	//const History& history_;
 	SearchStack* ss_;
 	Depth depth_;
 	Move ttMove_; // transposition table move

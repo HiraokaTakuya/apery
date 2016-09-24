@@ -28,8 +28,8 @@ Thread::Thread(Searcher* s) {
 	searcher = s;
 	resetCalls = exit = false;
 	maxPly = callsCount = 0;
-	history.clear();
-	gains.clear();
+	//history.clear();
+	//gains.clear();
 	idx = s->threads.size();
 
 	std::unique_lock<Mutex> lock(mutex);

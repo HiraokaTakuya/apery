@@ -60,8 +60,8 @@ void Searcher::init() {
 void Searcher::clear() {
 	tt.clear();
 	for (Thread* th : threads) {
-		th->history.clear();
-		th->gains.clear();
+		//th->history.clear();
+		//th->gains.clear();
 	}
 	threads.mainThread()->previousScore = ScoreInfinite;
 }
@@ -222,7 +222,7 @@ namespace {
 		Thread* thisThread = pos.thisThread();
 
 		const Piece pc = colorAndPieceTypeToPiece(pos.turn(), move.pieceTypeFromOrDropped());
-		thisThread->history.update(move.isDrop(), pc, move.to(), bonus);
+		//thisThread->history.update(move.isDrop(), pc, move.to(), bonus);
 
 //		if (is_ok((ss-1)->currentMove))
 //		{
@@ -232,7 +232,7 @@ namespace {
 
 		for (int i = 0; i < quietsCount; ++i) {
 			const Piece pc_quiet = colorAndPieceTypeToPiece(pos.turn(), quiets[i].pieceTypeFromOrDropped());
-			thisThread->history.update(quiets[i].isDrop(), pc_quiet, quiets[i].to(), -bonus);
+			//thisThread->history.update(quiets[i].isDrop(), pc_quiet, quiets[i].to(), -bonus);
 
 //			if (is_ok((ss-1)->currentMove))
 //				cmh.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
@@ -422,7 +422,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 	assert(PVNode || (alpha == beta - 1));
 	assert(depth <= Depth0);
 //	auto& tt = pos.searcher()->tt;
-	auto& history = pos.thisThread()->history;
+	//auto& history = pos.thisThread()->history;
 
 	StateInfo st;
 	TTEntry* tte;
@@ -501,7 +501,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 
 	evaluate(pos, ss);
 
-	MovePicker mp(pos, ttMove, depth, history, (ss-1)->currentMove.to());
+	MovePicker mp(pos, ttMove, depth, /*history, */(ss-1)->currentMove.to());
 	const CheckInfo ci(pos);
 
 	while ((move = mp.nextMove()))
@@ -615,8 +615,8 @@ void Thread::search() {
 
 	ss[0].currentMove = ss[1].currentMove = Move::moveNull(); // skip update gains
 	searcher->tt.newSearch();
-	history.clear();
-	gains.clear();
+	//history.clear();
+	//gains.clear();
 
 	size_t pvSize = searcher->options["MultiPV"];
 	Skill skill(SkillLevel, searcher->options["Max_Random_Score_Diff"]);
@@ -874,8 +874,8 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	// step1
 	// initialize node
 	Thread* thisThread = pos.thisThread();
-	auto& history = thisThread->history;
-	auto& gains = thisThread->gains;
+	//auto& history = thisThread->history;
+	//auto& gains = thisThread->gains;
 	auto& rootMoves = thisThread->rootMoves;
 	moveCount = playedMoveCount = 0;
 	inCheck = pos.inCheck();
@@ -1001,7 +1001,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 		)
 	{
 		const Square to = move.to();
-		gains.update(move.isDrop(), pos.piece(to), to, -(ss-1)->staticEval - ss->staticEval);
+		//gains.update(move.isDrop(), pos.piece(to), to, -(ss-1)->staticEval - ss->staticEval);
 	}
 
 	// step6
@@ -1099,7 +1099,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 
 		assert(move == (ss-1)->currentMove);
 		// move.cap() は前回(一手前)の指し手で取った駒の種類
-		MovePicker mp(pos, ttMove, history, move.cap());
+		MovePicker mp(pos, ttMove, /*history, */move.cap());
 		const CheckInfo ci(pos);
 		while ((move = mp.nextMove())) {
 			if (pos.pseudoLegalMoveIsLegal<false, false>(move, ci.pinned)) {
@@ -1134,7 +1134,7 @@ iid_start:
 				  Move::moveNone());
 	}
 
-	MovePicker mp(pos, ttMove, depth, history, ss, PVNode ? -ScoreInfinite : beta);
+	MovePicker mp(pos, ttMove, depth, /*history, */ss, PVNode ? -ScoreInfinite : beta);
 	const CheckInfo ci(pos);
 	bool improving = (ss->staticEval >= (ss-2)->staticEval
 					  || ss->staticEval == ScoreNone
@@ -1360,12 +1360,12 @@ iid_start:
 
 			const Score bonus = static_cast<Score>(depth * depth);
 			const Piece pc1 = colorAndPieceTypeToPiece(pos.turn(), bestMove.pieceTypeFromOrDropped());
-			history.update(bestMove.isDrop(), pc1, bestMove.to(), bonus);
+			//history.update(bestMove.isDrop(), pc1, bestMove.to(), bonus);
 
 			for (int i = 0; i < playedMoveCount - 1; ++i) {
 				const Move m = movesSearched[i];
 				const Piece pc2 = colorAndPieceTypeToPiece(pos.turn(), m.pieceTypeFromOrDropped());
-				history.update(m.isDrop(), pc2, m.to(), -bonus);
+				//history.update(m.isDrop(), pc2, m.to(), -bonus);
 			}
 		}
 	}

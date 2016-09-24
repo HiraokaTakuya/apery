@@ -46,31 +46,72 @@ struct LimitsType {
 	Timer startTime;
 };
 
-template <bool Gain>
-class Stats {
-public:
-	static const Score MaxScore = static_cast<Score>(2000);
+template <typename T, bool CM = false>
+struct Stats {
+	static const Score Max = Score(1 << 28);
 
-	void clear() { memset(table_, 0, sizeof(table_)); }
-	Score value(const bool isDrop, const Piece pc, const Square to) const {
-		assert(0 < pc && pc < PieceNone);
-		assert(isInSquare(to));
-		return table_[isDrop][pc][to];
-	}
-	void update(const bool isDrop, const Piece pc, const Square to, const Score s) {
-		if (Gain)
-			table_[isDrop][pc][to] = std::max(s, value(isDrop, pc, to) - 1);
-		else if (abs(value(isDrop, pc, to) + s) < MaxScore)
-			table_[isDrop][pc][to] += s;
+	const T* operator [](const Piece pc) const { return table[pc]; }
+	T* operator [](const Piece pc) { return table[pc]; }
+	void clear() { std::memset(table, 0, sizeof(table)); }
+	void update(const Piece pc, const Square to, const Move m) { table[pc][to] = m; }
+	void update(const Piece pc, const Square to, const Score s) {
+		if (abs(int(s)) >= 324)
+			return;
+		table[pc][to] -= table[pc][to] * abs(int(s)) / (CM ? 936 : 324);
+		table[pc][to] += int(s) * 32;
 	}
 
 private:
-	// [isDrop][piece][square] とする。
-	Score table_[2][PieceNone][SquareNum];
+	T table[PieceNone][SquareNum];
 };
 
-using History = Stats<false>;
-using Gains   = Stats<true>;
+using MoveStats               = Stats<Move>;
+using HistoryStats            = Stats<Score, false>;
+using CounterMoveStats        = Stats<Score, true >;
+using CounterMoveHistoryStats = Stats<CounterMoveStats>;
+
+struct FromToStats {
+	Score get(const Color c, const Move m) const { return table[c][m.from()][m.to()]; }
+	void clear() { std::memset(table, 0, sizeof(table)); }
+	void update(const Color c, const Move m, const Score s) {
+		if (abs(int(s)) >= 324)
+			return;
+		const Square from = m.from();
+		const Square to = m.to();
+
+		table[c][from][to] -= table[c][from][to] * abs(int(s)) / 324;
+		table[c][from][to] += int(s) * 32;
+	}
+
+private:
+	Score table[ColorNum][(Square)PieceTypeNum + SquareNum][SquareNum]; // from は駒打ちも含めるので、その分のサイズをとる。
+};
+
+//template <bool Gain>
+//class Stats {
+//public:
+//	static const Score MaxScore = static_cast<Score>(2000);
+//
+//	void clear() { memset(table_, 0, sizeof(table_)); }
+//	Score value(const bool isDrop, const Piece pc, const Square to) const {
+//		assert(0 < pc && pc < PieceNone);
+//		assert(isInSquare(to));
+//		return table_[isDrop][pc][to];
+//	}
+//	void update(const bool isDrop, const Piece pc, const Square to, const Score s) {
+//		if (Gain)
+//			table_[isDrop][pc][to] = std::max(s, value(isDrop, pc, to) - 1);
+//		else if (abs(value(isDrop, pc, to) + s) < MaxScore)
+//			table_[isDrop][pc][to] += s;
+//	}
+//
+//private:
+//	// [isDrop][piece][square] とする。
+//	Score table_[2][PieceNone][SquareNum];
+//};
+//
+//using History = Stats<false>;
+//using Gains   = Stats<true>;
 
 class RootMove {
 public:
@@ -119,8 +160,8 @@ struct Thread {
 	Position rootPosition;
 	std::vector<RootMove> rootMoves;
 	Ply rootDepth; // depth にしたい。
-	History history;
-	Gains gains;
+	//History history;
+	//Gains gains;
 	Ply completedDepth; // depth にしたい。
 	std::atomic_bool resetCalls;
 
