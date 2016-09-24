@@ -87,32 +87,6 @@ private:
 	Score table[ColorNum][(Square)PieceTypeNum + SquareNum][SquareNum]; // from は駒打ちも含めるので、その分のサイズをとる。
 };
 
-//template <bool Gain>
-//class Stats {
-//public:
-//	static const Score MaxScore = static_cast<Score>(2000);
-//
-//	void clear() { memset(table_, 0, sizeof(table_)); }
-//	Score value(const bool isDrop, const Piece pc, const Square to) const {
-//		assert(0 < pc && pc < PieceNone);
-//		assert(isInSquare(to));
-//		return table_[isDrop][pc][to];
-//	}
-//	void update(const bool isDrop, const Piece pc, const Square to, const Score s) {
-//		if (Gain)
-//			table_[isDrop][pc][to] = std::max(s, value(isDrop, pc, to) - 1);
-//		else if (abs(value(isDrop, pc, to) + s) < MaxScore)
-//			table_[isDrop][pc][to] += s;
-//	}
-//
-//private:
-//	// [isDrop][piece][square] とする。
-//	Score table_[2][PieceNone][SquareNum];
-//};
-//
-//using History = Stats<false>;
-//using Gains   = Stats<true>;
-
 class RootMove {
 public:
 	RootMove() {}
@@ -151,24 +125,25 @@ struct Thread {
 	void wait(std::atomic_bool& condition);
 
     Searcher* searcher;
-	Position* activePosition;
-	int idx;
+	size_t idx;
 	size_t pvIdx;
 	int maxPly;
-	int callsCount;
+	int callsCnt;
 
-	Position rootPosition;
+	Position rootPos;
 	std::vector<RootMove> rootMoves;
-	Ply rootDepth; // depth にしたい。
-	//History history;
-	//Gains gains;
-	Ply completedDepth; // depth にしたい。
+	Depth rootDepth;
+	Depth completedDepth;
 	std::atomic_bool resetCalls;
+	HistoryStats history;
+	MoveStats counterMoves;
+	FromToStats fromTo;
+	CounterMoveHistoryStats counterMoveHistory;
 
 private:
+	std::thread nativeThread;
 	Mutex mutex;
 	ConditionVariable sleepCondition;
-	std::thread nativeThread;
 	bool exit;
 	bool searching;
 };
@@ -187,7 +162,7 @@ struct ThreadPool : public std::vector<Thread*> {
 	void init(Searcher* s);
 	void exit();
 
-	MainThread* mainThread() { return static_cast<MainThread*>((*this)[0]); }
+	MainThread* main() { return static_cast<MainThread*>((*this)[0]); }
 	void startThinking(const Position& pos, const LimitsType& limits, StateStackPtr& states);
 	void readUSIOptions(Searcher* s);
 	s64 nodesSearched() const;

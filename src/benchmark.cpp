@@ -45,6 +45,6 @@ void benchmark(Position& pos) {
 		setPosition(pos, ss_sfen);
 		std::istringstream ss_go("byoyomi 10000");
 		go(pos, ss_go);
-		pos.searcher()->threads.mainThread()->waitForSearchFinished();       
+		pos.searcher()->threads.main()->waitForSearchFinished();       
 	}
 }

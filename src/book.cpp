@@ -202,7 +202,7 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 			std::cout << "!!! header only !!!" << std::endl;
 			return;
 		}
-		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
+		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
 		StateStackPtr SetUpStates = StateStackPtr(new std::stack<StateInfo>());
 		while (!line.empty()) {
 			const std::string moveStrCSA = line.substr(0, 6);

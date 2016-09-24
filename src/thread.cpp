@@ -27,7 +27,7 @@
 Thread::Thread(Searcher* s) {
 	searcher = s;
 	resetCalls = exit = false;
-	maxPly = callsCount = 0;
+	maxPly = callsCnt = 0;
 	//history.clear();
 	//gains.clear();
 	idx = s->threads.size();
@@ -105,16 +105,16 @@ void ThreadPool::readUSIOptions(Searcher* s) {
 s64 ThreadPool::nodesSearched() const {
 	s64 nodes = 0;
 	for (Thread* th : *this)
-		nodes += th->rootPosition.nodesSearched();
+		nodes += th->rootPos.nodesSearched();
 	return nodes;
 }
 
 void ThreadPool::startThinking(const Position& pos, const LimitsType& limits, StateStackPtr& states) {
-	mainThread()->waitForSearchFinished();
+	main()->waitForSearchFinished();
 	pos.searcher()->signals.stopOnPonderHit = pos.searcher()->signals.stop = false;
 
-	mainThread()->rootMoves.clear();
-	mainThread()->rootPosition = pos;
+	main()->rootMoves.clear();
+	main()->rootPos = pos;
 	pos.searcher()->limits = limits;
 	if (states.get()) {
 		pos.searcher()->setUpStates = std::move(states);
@@ -125,8 +125,8 @@ void ThreadPool::startThinking(const Position& pos, const LimitsType& limits, St
 		if (limits.searchmoves.empty()
 			|| std::find(std::begin(limits.searchmoves), std::end(limits.searchmoves), ml.move()) != std::end(limits.searchmoves))
 		{
-			mainThread()->rootMoves.push_back(RootMove(ml.move()));
+			main()->rootMoves.push_back(RootMove(ml.move()));
 		}
 	}
-	mainThread()->startSearching();
+	main()->startSearching();
 }

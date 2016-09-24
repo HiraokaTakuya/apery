@@ -63,7 +63,7 @@ void Searcher::clear() {
 		//th->history.clear();
 		//th->gains.clear();
 	}
-	threads.mainThread()->previousScore = ScoreInfinite;
+	threads.main()->previousScore = ScoreInfinite;
 }
 
 namespace {
@@ -599,14 +599,14 @@ void Thread::search() {
 	Score alpha = -ScoreInfinite;
 	Score beta = ScoreInfinite;
 	Move easyMove = Move::moveNone();
-	MainThread* mainThread = (this == searcher->threads.mainThread() ? searcher->threads.mainThread() : nullptr);
+	MainThread* mainThread = (this == searcher->threads.main() ? searcher->threads.main() : nullptr);
 	int lastInfoTime = -1; // 将棋所のコンソールが詰まる問題への対処用
 
 	memset(ss, 0, 5 * sizeof(SearchStack));
 	completedDepth = Depth0;
 
 	if (mainThread) {
-		easyMove = searcher->easyMove.get(rootPosition.getKey());
+		easyMove = searcher->easyMove.get(rootPos.getKey());
 		searcher->easyMove.clear();
 		mainThread->easyMovePlayed = mainThread->failedLow = false;
 		mainThread->bestMoveChanges = 0;
@@ -621,7 +621,7 @@ void Thread::search() {
 	size_t pvSize = searcher->options["MultiPV"];
 	Skill skill(SkillLevel, searcher->options["Max_Random_Score_Diff"]);
 
-	if (searcher->options["Max_Random_Score_Diff_Ply"] < rootPosition.gamePly()) {
+	if (searcher->options["Max_Random_Score_Diff_Ply"] < rootPos.gamePly()) {
 		skill.max_random_score_diff = ScoreZero;
 		pvSize = 1;
 		assert(!skill.enabled()); // level による設定が出来るようになるまでは、これで良い。
@@ -645,7 +645,7 @@ void Thread::search() {
 	while (++rootDepth <= MaxPly && !searcher->signals.stop && (!searcher->limits.depth || rootDepth <= searcher->limits.depth)) {
 		if (!mainThread) {
 			const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
-			if (row[(rootDepth + rootPosition.gamePly()) % row.size()])
+			if (row[(rootDepth + rootPos.gamePly()) % row.size()])
 				continue;
 		}
 		if (mainThread) {
@@ -676,19 +676,19 @@ void Thread::search() {
 			while (true) {
 				// 探索を行う。
 				ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
-				bestScore = searcher->search<Root>(rootPosition, ss + 2, alpha, beta, static_cast<Depth>(rootDepth * OnePly), false);
+				bestScore = searcher->search<Root>(rootPos, ss + 2, alpha, beta, static_cast<Depth>(rootDepth * OnePly), false);
 				// 先頭が最善手になるようにソート
 				insertionSort(rootMoves.begin() + pvIdx, rootMoves.end()); // todo: std::stable_sort() で良いのでは？
 
 				for (size_t i = 0; i <= pvIdx; ++i) {
 					ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated; // todo: 不要ぽい。
-					rootMoves[i].insertPvInTT(rootPosition);
+					rootMoves[i].insertPvInTT(rootPos);
 				}
 
 #if 0
 				// 詰みを発見したら即指す。
 				if (ScoreMateInMaxPly <= abs(bestScore) && abs(bestScore) < ScoreInfinite) {
-					SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, ply, alpha, beta) << SYNCENDL;
+					SYNCCOUT << pvInfoToUSI(rootPos, pvSize, ply, alpha, beta) << SYNCENDL;
 					signals.stop = true;
 				}
 #endif
@@ -709,7 +709,7 @@ void Thread::search() {
 					&& (rootDepth < 10 || lastInfoTime + 200 < searcher->timeManager.elapsed()))
 				{
 					lastInfoTime = searcher->timeManager.elapsed();
-					SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, (Depth)rootDepth, alpha, beta) << SYNCENDL;
+					SYNCCOUT << pvInfoToUSI(rootPos, pvSize, (Depth)rootDepth, alpha, beta) << SYNCENDL;
 				}
 
 				// fail high/low のとき、aspiration window を広げる。
@@ -743,7 +743,7 @@ void Thread::search() {
 				&& (rootDepth < 10 || lastInfoTime + 200 < searcher->timeManager.elapsed()))
 			{
 				lastInfoTime = searcher->timeManager.elapsed();
-				SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, (Depth)rootDepth, alpha, beta) << SYNCENDL;
+				SYNCCOUT << pvInfoToUSI(rootPos, pvSize, (Depth)rootDepth, alpha, beta) << SYNCENDL;
 			}
 		}
 
@@ -777,7 +777,7 @@ void Thread::search() {
 			}
 
 			if (rootMoves[0].pv_.size() >= 3)
-				searcher->easyMove.update(rootPosition, rootMoves[0].pv_);
+				searcher->easyMove.update(rootPos, rootMoves[0].pv_);
 			else
 				searcher->easyMove.clear();
 		}
@@ -790,7 +790,7 @@ void Thread::search() {
 		searcher->easyMove.clear();
 
 	skill.swapIfEnabled(this, pvSize);
-	SYNCCOUT << pvInfoToUSI(rootPosition, pvSize, (Depth)(rootDepth-1), alpha, beta) << SYNCENDL;
+	SYNCCOUT << pvInfoToUSI(rootPos, pvSize, (Depth)(rootDepth-1), alpha, beta) << SYNCENDL;
 }
 
 #if defined INANIWA_SHIFT
@@ -889,9 +889,9 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 
 	if (thisThread->resetCalls.load(std::memory_order_relaxed)) {
 		thisThread->resetCalls = false;
-		thisThread->callsCount = 0;
+		thisThread->callsCnt = 0;
 	}
-	if (++thisThread->callsCount > 4096) {
+	if (++thisThread->callsCnt > 4096) {
 		for (Thread* th : threads)
 			th->resetCalls = true;
 
@@ -1315,7 +1315,7 @@ iid_start:
 				rm.score_ = score;
 				rm.extractPvFromTT(pos);
 
-				if (moveCount > 1 && thisThread == threads.mainThread())
+				if (moveCount > 1 && thisThread == threads.main())
 					++static_cast<MainThread*>(thisThread)->bestMoveChanges;
 			}
 			else
@@ -1511,7 +1511,7 @@ void MainThread::search() {
 	Thread::search();
 #else
 	static Book book;
-	Position& pos = rootPosition;
+	Position& pos = rootPos;
 	searcher->timeManager.init(searcher->limits, pos.turn(), pos.gamePly(), searcher);
 	auto& options = searcher->options;
 	auto& tt = searcher->tt;
@@ -1576,7 +1576,7 @@ void MainThread::search() {
 		th->maxPly = 0;
 		th->rootDepth = Depth0;
 		if (th != this) {
-			th->rootPosition = Position(rootPosition, th);
+			th->rootPos = Position(rootPos, th);
 			th->rootMoves = rootMoves;
 			th->startSearching();
 		}
@@ -1617,7 +1617,7 @@ finalize:
 	previousScore = bestThread->rootMoves[0].score_;
 
 	if (bestThread != this)
-		SYNCCOUT << pvInfoToUSI(bestThread->rootPosition, 1, (Depth)bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
+		SYNCCOUT << pvInfoToUSI(bestThread->rootPos, 1, (Depth)bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
 
 	if (nyugyokuWin)
 		SYNCCOUT << "bestmove win" << SYNCENDL;

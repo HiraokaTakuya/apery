@@ -196,13 +196,13 @@ void go(const Position& pos, const Ply depth, const Move move) {
 	limits.depth = depth;
 	limits.searchmoves.push_back(move);
 	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
-	pos.searcher()->threads.mainThread()->waitForSearchFinished();
+	pos.searcher()->threads.main()->waitForSearchFinished();
 }
 void go(const Position& pos, const Ply depth) {
 	LimitsType limits;
 	limits.depth = depth;
 	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
-	pos.searcher()->threads.mainThread()->waitForSearchFinished();
+	pos.searcher()->threads.main()->waitForSearchFinished();
 }
 #endif
 
@@ -363,7 +363,7 @@ void make_teacher(std::istringstream& ssCmd) {
 			std::istringstream is(str);
 			s.setOption(is);
 		}
-		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
+		positions.emplace_back(DefaultStartPositionSFEN, s.threads.main(), s.thisptr);
 	}
 	std::ifstream ifs(recordFileName.c_str(), std::ifstream::in | std::ifstream::binary | std::ios::ate);
 	if (!ifs) {
@@ -409,8 +409,8 @@ void make_teacher(std::istringstream& ssCmd) {
 				pos.searcher()->alpha = -ScoreMaxEvaluate;
 				pos.searcher()->beta  =  ScoreMaxEvaluate;
 				go(pos, static_cast<Depth>(6));
-				const Score score = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
-				const Move bestMove = pos.searcher()->threads.mainThread()->rootMoves[0].pv_[0];
+				const Score score = pos.searcher()->threads.main()->rootMoves[0].score_;
+				const Move bestMove = pos.searcher()->threads.main()->rootMoves[0].pv_[0];
 				if (3000 < abs(score)) // 差が付いたので投了した事にする。
 					break;
 				else if (!bestMove) // 勝ち宣言など
@@ -419,7 +419,7 @@ void make_teacher(std::istringstream& ssCmd) {
 				{
 					HuffmanCodedPosAndEval hcpe;
 					hcpe.hcp = pos.toHuffmanCodedPos();
-					auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
+					auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv_;
 					Ply tmpPly = 0;
 					const Color rootTurn = pos.turn();
 					StateInfo state[MaxPlyPlus4];
@@ -631,7 +631,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			std::istringstream is(str);
 			s.setOption(is);
 		}
-		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
+		positions.emplace_back(DefaultStartPositionSFEN, s.threads.main(), s.thisptr);
 	}
 	if (teacherFileName == "-") // "-" なら棋譜ファイルを読み込まない。
 		exit(EXIT_FAILURE);
@@ -770,7 +770,7 @@ void check_teacher(std::istringstream& ssCmd) {
 	std::vector<Position> positions;
 	for (auto& s : searchers) {
 		s.init();
-		positions.emplace_back(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr);
+		positions.emplace_back(DefaultStartPositionSFEN, s.threads.main(), s.thisptr);
 	}
 	std::ifstream ifs(teacherFileName.c_str(), std::ios::binary);
 	if (!ifs)
@@ -927,7 +927,7 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 	else
 		return;
 
-	pos.set(sfen, pos.searcher()->threads.mainThread());
+	pos.set(sfen, pos.searcher()->threads.main());
 	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
 
 	Ply currentPly = pos.gamePly();
@@ -942,7 +942,7 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 }
 
 bool setPosition(Position& pos, const HuffmanCodedPos& hcp) {
-	const bool ret = pos.set(hcp, pos.searcher()->threads.mainThread());
+	const bool ret = pos.set(hcp, pos.searcher()->threads.main());
 	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
 	return ret;
 }
@@ -1017,7 +1017,7 @@ const std::string MyName = "Apery Debug Build";
 
 void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 	bool evalTableIsRead = false;
-	Position pos(DefaultStartPositionSFEN, threads.mainThread(), thisptr);
+	Position pos(DefaultStartPositionSFEN, threads.main(), thisptr);
 
 	std::string cmd;
 	std::string token;
@@ -1036,7 +1036,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		if (token == "quit" || token == "stop" || token == "ponderhit" || token == "gameover") {
 			if (token != "ponderhit" || signals.stopOnPonderHit) {
 				signals.stop = true;
-				threads.mainThread()->startSearching(true);
+				threads.main()->startSearching(true);
 			}
 			else
 				limits.ponder = false;
@@ -1052,7 +1052,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 												<< "\nusiok" << SYNCENDL;
 		else if (token == "isready"  ) { // 対局開始前の準備。
 			tt.clear();
-			threads.mainThread()->previousScore = ScoreInfinite;
+			threads.main()->previousScore = ScoreInfinite;
 			if (!evalTableIsRead) {
 				// 一時オブジェクトを生成して Evaluater::init() を呼んだ直後にオブジェクトを破棄する。
 				// 評価関数の次元下げをしたデータを格納する分のメモリが無駄な為、
@@ -1105,5 +1105,5 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		else                           SYNCCOUT << "unknown command: " << cmd << SYNCENDL;
 	} while (token != "quit" && argc == 1);
 
-	threads.mainThread()->waitForSearchFinished();
+	threads.main()->waitForSearchFinished();
 }

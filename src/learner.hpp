@@ -392,7 +392,7 @@ public:
 		for (auto& s : searchers) {
 			s.init();
 			setLearnOptions(s);
-			positions_.push_back(Position(DefaultStartPositionSFEN, s.threads.mainThread(), s.thisptr));
+			positions_.push_back(Position(DefaultStartPositionSFEN, s.threads.main(), s.thisptr));
 			mts_.push_back(std::mt19937(std::chrono::system_clock::now().time_since_epoch().count()));
 		}
 		for (size_t i = 0; i < parse2ThreadNum_ - 1; ++i)
@@ -433,7 +433,7 @@ private:
 		ss >> elem; // 引き分け勝ち負け
 		bmdBase[Black].winner = (elem == "1");
 		bmdBase[White].winner = (elem == "2");
-		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
+		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
 		StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
 		while (true) {
 			const std::string moveStrCSA = s1.substr(0, 6);
@@ -514,20 +514,20 @@ private:
 		pos.searcher()->tt.clear();
 		for (size_t i = lockingIndexIncrement<true>(); i < gameNumForIteration; i = lockingIndexIncrement<true>()) {
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
-			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
+			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
 			auto& gameMoves = bmds[i];
 			for (auto& bmd : gameMoves) {
 				if (bmd.useLearning) {
 					pos.searcher()->alpha = -ScoreMaxEvaluate;
 					pos.searcher()->beta  =  ScoreMaxEvaluate;
 					go(pos, dist(mt), bmd.move);
-					const Score recordScore = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
+					const Score recordScore = pos.searcher()->threads.main()->rootMoves[0].score_;
 					++moveCount_;
 					bmd.otherPVExist = false;
 					bmd.pvBuffer.clear();
 					if (abs(recordScore) < ScoreMaxEvaluate) {
 						int recordIsNth = 0; // 正解の手が何番目に良い手か。0から数える。
-						auto& recordPv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
+						auto& recordPv = pos.searcher()->threads.main()->rootMoves[0].pv_;
 						bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordPv), std::end(recordPv));
 						const auto recordPVSize = bmd.pvBuffer.size();
 						for (MoveList<LegalAll> ml(pos); !ml.end(); ++ml) {
@@ -535,9 +535,9 @@ private:
 								pos.searcher()->alpha = recordScore - FVWindow;
 								pos.searcher()->beta  = recordScore + FVWindow;
 								go(pos, dist(mt), ml.move());
-								const Score score = pos.searcher()->threads.mainThread()->rootMoves[0].score_;
+								const Score score = pos.searcher()->threads.main()->rootMoves[0].score_;
 								if (pos.searcher()->alpha < score && score < pos.searcher()->beta) {
-									auto& pv = pos.searcher()->threads.mainThread()->rootMoves[0].pv_;
+									auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv_;
 									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
 								}
 								if (recordScore <= score)
@@ -633,7 +633,7 @@ private:
 		SearchStack ss[2];
 		for (size_t i = lockingIndexIncrement<false>(); i < gameNumForIteration_; i = lockingIndexIncrement<false>()) {
 			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
-			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.mainThread());
+			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
 			auto& gameMoves = bookMovesDatum_[i];
 			for (auto& bmd : gameMoves) {
 				PRINT_PV(pos.print());
