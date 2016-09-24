@@ -26,42 +26,45 @@
 #include "move.hpp"
 
 enum Depth {
-	OnePly                 = 2,
-	Depth0                 = 0,
-	Depth1                 = 1,
-	DepthQChecks           = -1 * OnePly,
-	DepthQNoChecks         = -2 * OnePly,
-	DepthQNoTT             = -3 * OnePly,
-	DepthQRecaptures       = -5 * OnePly,
-	DepthNone              = -127 * OnePly
+	OnePly           = 2,
+	Depth0           = 0,
+	Depth1           = 1,
+	DepthQChecks     = 0 * OnePly,
+	DepthQNoChecks   = -1 * OnePly,
+	DepthQRecaptures = -5 * OnePly,
+
+	DepthNone        = -6 * OnePly,
+	MaxDepth         = MaxPly * OnePly,
 };
 OverloadEnumOperators(Depth);
+static_assert(!(OnePly & (OnePly - 1)), "OnePly is not a power of 2");
 
 class TTEntry {
 public:
 	u16   key() const        { return key16_; }
-	Depth depth() const      { return static_cast<Depth>(depth8_); }
-	Score score() const      { return static_cast<Score>(score16_); }
 	Move  move() const       { return static_cast<Move>(move16_); }
+	Score score() const      { return static_cast<Score>(score16_); }
+	Score evalScore() const  { return static_cast<Score>(eval16_); }
+	Depth depth() const      { return static_cast<Depth>(depth8_); }
 	Bound bound() const      { return static_cast<Bound>(genBound8_ & 0x3); }
 	u8    generation() const { return genBound8_ & 0xfc; }
-	Score evalScore() const  { return static_cast<Score>(evalScore_); }
 
 	void save(const Key posKey, const Score score, const Bound bound, const Depth depth,
 			  const Move move, const Score evalScore, const u8 generation)
 	{
+		assert(depth / OnePly * OnePly == depth);
 		if (move || (posKey>>48) != key16_)
 			move16_ = static_cast<u16>(move.value());
 
 		if ((posKey>>48) != key16_
-			|| depth > depth8_ - 4
+			|| depth / OnePly > depth8_ - 4
 			|| bound == BoundExact)
 		{
-			key16_ = static_cast<u16>(posKey>>48);
-			score16_ = static_cast<s16>(score);
-			evalScore_ = static_cast<s16>(evalScore);
-			genBound8_ = static_cast<u8>(generation | bound);
-			depth8_ = static_cast<s8>(depth);
+			key16_     = static_cast<u16>(posKey>>48);
+			score16_   = static_cast<s16>(score);
+			eval16_    = static_cast<s16>(evalScore);
+			genBound8_ = static_cast<u8 >(generation | bound);
+			depth8_    = static_cast<s8 >(depth / OnePly);
 		}
 	}
 
@@ -71,7 +74,7 @@ private:
 	u16 key16_;
 	u16 move16_;
 	s16 score16_;
-	s16 evalScore_;
+	s16 eval16_;
 	u8 genBound8_;
 	s8 depth8_;
 };
@@ -85,15 +88,20 @@ struct TTCluster {
 
 class TranspositionTable {
 public:
-	TranspositionTable();
-	~TranspositionTable();
-	void setSize(const size_t mbSize); // Mega Byte 指定
+	TranspositionTable() : clusterCount_(0), table_(nullptr), mem_(nullptr), generation_(0) {}
+	~TranspositionTable() { free(mem_); }
+    void newSearch() { generation_ += 4; } // TTEntry::genBound8_ の Bound の部分を書き換えないように。
+    u8 generation() const { return generation_; }
+    TTEntry* probe(const Key posKey, bool& found) const;
+	void resize(const size_t mbSize); // Mega Byte 指定
 	void clear();
-	TTEntry* probe(const Key posKey, bool& found) const;
-	void newSearch();
-	TTEntry* firstEntry(const Key posKey) const;
-
-	u8 generation() const { return generation_; }
+	TTEntry* firstEntry(const Key posKey) const {
+		// (clusterCount_ - 1) は置換表で使用するバイト数のマスク
+		// posKey の下位 (clusterCount_ - 1) ビットを hash key として使用。
+		// ここで posKey の下位ビットの一致を確認。
+		// posKey の上位16ビットとの一致は probe 内で確認する。
+		return &table_[(size_t)posKey & (clusterCount_ - 1)].entry[0];
+	}
 
 private:
 	TranspositionTable(const TranspositionTable&);
@@ -105,24 +113,5 @@ private:
 	// iterative deepening していくとき、過去の探索で調べたものかを判定する。
 	u8 generation_;
 };
-
-inline TranspositionTable::TranspositionTable()
-	: clusterCount_(0), table_(nullptr), mem_(nullptr), generation_(0) {}
-
-inline TranspositionTable::~TranspositionTable() {
-	free(mem_);
-}
-
-inline TTEntry* TranspositionTable::firstEntry(const Key posKey) const {
-	// (clusterCount_ - 1) は置換表で使用するバイト数のマスク
-	// posKey の下位 (clusterCount_ - 1) ビットを hash key として使用。
-	// ここで posKey の下位ビットの一致を確認。
-	// posKey の上位16ビットとの一致は probe 内で確認する。
-	return &table_[posKey & (clusterCount_ - 1)].entry[0];
-}
-
-inline void TranspositionTable::newSearch() {
-	generation_ += 4; // TTEntry::genBound8_ の Bound の部分を書き換えないように。
-}
 
 #endif // #ifndef APERY_TT_HPP

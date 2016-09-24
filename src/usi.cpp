@@ -33,7 +33,7 @@
 
 namespace {
 	void onThreads(Searcher* s, const USIOption&)      { s->threads.readUSIOptions(s); }
-	void onHashSize(Searcher* s, const USIOption& opt) { s->tt.setSize(opt); }
+	void onHashSize(Searcher* s, const USIOption& opt) { s->tt.resize(opt); }
 	void onClearHash(Searcher* s, const USIOption&)    { s->tt.clear(); }
 }
 

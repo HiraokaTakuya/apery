@@ -54,7 +54,7 @@ void Searcher::init() {
 #endif
 	options.init(thisptr);
 	threads.init(thisptr);
-	tt.setSize(options["USI_Hash"]);
+	tt.resize(options["USI_Hash"]);
 }
 
 void Searcher::clear() {
@@ -1527,7 +1527,7 @@ void MainThread::search() {
 	}
 	pos.setNodesSearched(0);
 
-	tt.setSize(options["USI_Hash"]); // operator int() 呼び出し。
+	tt.resize(options["USI_Hash"]); // operator int() 呼び出し。
 
 	SYNCCOUT << "info string book_ply " << book_ply << SYNCENDL;
 	if (options["OwnBook"] && pos.gamePly() <= book_ply) {

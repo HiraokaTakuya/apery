@@ -134,17 +134,29 @@ FORCE_INLINE int firstOneFromLSB(const u64 b) {
 	_BitScanForward64(&index, b);
 	return index;
 }
+FORCE_INLINE int lsb(const u64 b) {
+	return firstOneFromLSB(b);
+}
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
 	unsigned long index;
 	_BitScanReverse64(&index, b);
 	return 63 - index;
 }
+FORCE_INLINE int msb(const u64 b) {
+	return 63 - firstOneFromMSB(b);
+}
 #elif defined(__GNUC__) && ( defined(__i386__) || defined(__x86_64__) )
 FORCE_INLINE int firstOneFromLSB(const u64 b) {
 	return __builtin_ctzll(b);
 }
+FORCE_INLINE int lsb(const u64 b) {
+	return __builtin_ctzll(b);
+}
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
 	return __builtin_clzll(b);
+}
+FORCE_INLINE int msb(const u64 b) {
+	return 63 - __builtin_clzll(b);
 }
 #else
 // firstOneFromLSB() で使用する table
@@ -162,6 +174,9 @@ FORCE_INLINE int firstOneFromLSB(const u64 b) {
 	const u32 old = static_cast<u32>((tmp & 0xffffffff) ^ (tmp >> 32));
 	return BitTable[(old * 0x783a9b23) >> 26];
 }
+FORCE_INLINE int lsb(const u64 b) {
+	return firstOneFromLSB(b);
+}
 // 超絶遅いコードなので後で書き換えること。
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
 	for (int i = 63; 0 <= i; --i) {
@@ -169,6 +184,9 @@ FORCE_INLINE int firstOneFromMSB(const u64 b) {
 			return 63 - i;
 	}
 	return 0;
+}
+FORCE_INLINE int msb(const u64 b) {
+	return 63 - firstOneFromMSB(b);
 }
 #endif
 
