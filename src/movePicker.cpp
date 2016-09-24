@@ -99,7 +99,7 @@ MovePicker::MovePicker(const Position& pos, const Move ttm, /*const History& his
 }
 
 Move MovePicker::nextMove() {
-	MoveStack* ms;
+	ExtMove* ms;
 	Move move;
 	do {
 		// lastMove() に達したら次の phase に移る。
@@ -181,7 +181,7 @@ const Score LVATable[PieceTypeNum] = {
 inline Score LVA(const PieceType pt) { return LVATable[pt]; }
 
 void MovePicker::scoreCaptures() {
-	for (MoveStack* curr = currMove(); curr != lastMove(); ++curr) {
+	for (ExtMove* curr = currMove(); curr != lastMove(); ++curr) {
 		const Move move = curr->move;
 		curr->score = Position::pieceScore(pos().piece(move.to())) - LVA(move.pieceTypeFrom());
 		if (move.isPromotion())
@@ -190,7 +190,7 @@ void MovePicker::scoreCaptures() {
 }
 
 template <bool IsDrop> void MovePicker::scoreNonCapturesMinusPro() {
-	for (MoveStack* curr = currMove(); curr != lastMove(); ++curr) {
+	for (ExtMove* curr = currMove(); curr != lastMove(); ++curr) {
 		const Move move = curr->move;
 		curr->score =
 			ScoreZero;//history().value(IsDrop,
@@ -203,7 +203,7 @@ template <bool IsDrop> void MovePicker::scoreNonCapturesMinusPro() {
 }
 
 void MovePicker::scoreEvasions() {
-	for (MoveStack* curr = currMove(); curr != lastMove(); ++curr) {
+	for (ExtMove* curr = currMove(); curr != lastMove(); ++curr) {
 		const Move move = curr->move;
 		const Score seeScore = pos().seeSign(move);
 		if (seeScore < 0)
@@ -220,7 +220,7 @@ void MovePicker::scoreEvasions() {
 	}
 }
 
-struct HasPositiveScore { bool operator () (const MoveStack& ms) { return 0 < ms.score; } };
+struct HasPositiveScore { bool operator () (const ExtMove& ms) { return 0 < ms.score; } };
 
 void MovePicker::goNextPhase() {
 	currMove_ = firstMove(); // legalMoves_[0] は番兵
@@ -246,14 +246,14 @@ void MovePicker::goNextPhase() {
 		currMove_ = firstMove();
 		lastMove_ = std::partition(currMove(), lastNonCapture(), HasPositiveScore());
 		// 要素数は10個くらいまでであることが多い。要素数が少ないので、insertionSort() を使用する。
-		insertionSort<MoveStack*, true>(currMove(), lastMove());
+		insertionSort<ExtMove*, true>(currMove(), lastMove());
 		return;
 
 	case PH_NonTacticalMoves1:
 		currMove_ = lastMove();
 		lastMove_ = lastNonCapture();
 		if (static_cast<Depth>(3 * OnePly) <= depth_)
-			std::sort(currMove(), lastMove(), std::greater<MoveStack>());
+			std::sort(currMove(), lastMove(), std::greater<ExtMove>());
 		return;
 
 	case PH_BadCaptures:

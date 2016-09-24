@@ -169,14 +169,14 @@ inline Move makeCapturePromoteMove(const PieceType pt, const Square from, const 
 // todo: PieceType を HandPiece に変更
 inline Move makeDropMove(const PieceType pt, const Square to) { return from2Move(drop2From(pt)) | to2Move(to); }
 
-struct MoveStack {
+struct ExtMove {
 	Move move;
 	int score;
 };
 
 // insertionSort() や std::sort() で必要
-inline bool operator < (const MoveStack& f, const MoveStack& s) { return f.score < s.score; }
-inline bool operator > (const MoveStack& f, const MoveStack& s) { return f.score > s.score; }
+inline bool operator < (const ExtMove& f, const ExtMove& s) { return f.score < s.score; }
+inline bool operator > (const ExtMove& f, const ExtMove& s) { return f.score > s.score; }
 
 // 汎用的な insertion sort. 要素数が少ない時、高速にソートできる。
 // 降順(大きいものが先頭付近に集まる)
@@ -200,10 +200,10 @@ template <typename T, bool UseSentinel = false> inline void insertionSort(T firs
 	}
 }
 
-// 最も score の高い moveStack のポインタを返す。
-// MoveStack の数が多いとかなり時間がかかるので、
+// 最も score の高い ExtMove のポインタを返す。
+// ExtMove の数が多いとかなり時間がかかるので、
 // 駒打ちを含むときに使用してはならない。
-inline MoveStack* pickBest(MoveStack* currMove, MoveStack* lastMove) {
+inline ExtMove* pickBest(ExtMove* currMove, ExtMove* lastMove) {
 	std::swap(*currMove, *std::max_element(currMove, lastMove));
 	return currMove;
 }

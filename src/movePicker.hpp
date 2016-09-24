@@ -51,11 +51,11 @@ private:
 	template <bool IsDrop> void scoreNonCapturesMinusPro();
 	void scoreEvasions();
 	void goNextPhase();
-	MoveStack* firstMove() { return &legalMoves_[1]; } // [0] は番兵
-	MoveStack* currMove() const { return currMove_; }
-	MoveStack* lastMove() const { return lastMove_; }
-	MoveStack* lastNonCapture() const { return lastNonCapture_; }
-	MoveStack* endBadCaptures() const { return endBadCaptures_; }
+	ExtMove* firstMove() { return &legalMoves_[1]; } // [0] は番兵
+	ExtMove* currMove() const { return currMove_; }
+	ExtMove* lastMove() const { return lastMove_; }
+	ExtMove* lastNonCapture() const { return lastNonCapture_; }
+	ExtMove* endBadCaptures() const { return endBadCaptures_; }
 
 	const Position& pos() const { return pos_; }
 
@@ -67,16 +67,16 @@ private:
 	SearchStack* ss_;
 	Depth depth_;
 	Move ttMove_; // transposition table move
-	MoveStack killerMoves_[2];
+	ExtMove killerMoves_[2];
 	Square recaptureSquare_;
 	int captureThreshold_; // int で良いのか？
 	GenerateMovePhase phase_;
-	MoveStack* currMove_;
-	MoveStack* lastMove_;
-	MoveStack* lastNonCapture_;
-	MoveStack* endBadCaptures_;
+	ExtMove* currMove_;
+	ExtMove* lastMove_;
+	ExtMove* lastNonCapture_;
+	ExtMove* endBadCaptures_;
 	// std::array にした方が良さそう。
-	MoveStack legalMoves_[MaxLegalMoves];
+	ExtMove legalMoves_[MaxLegalMoves];
 };
 
 #endif // #ifndef APERY_MOVEPICKER_HPP

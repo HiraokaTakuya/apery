@@ -283,8 +283,8 @@ void randomMove(Position& pos, std::mt19937& mt) {
 	std::uniform_int_distribution<int> dist(0, 1);
 	switch (dist(mt)) {
 	case 0: { // 玉の25近傍の移動
-		MoveStack legalMoves[MaxLegalMoves]; // 玉の移動も含めた普通の合法手
-		MoveStack* pms = &legalMoves[0];
+		ExtMove legalMoves[MaxLegalMoves]; // 玉の移動も含めた普通の合法手
+		ExtMove* pms = &legalMoves[0];
 		Bitboard kingToBB = pos.bbOf(us).notThisAnd(neighbor5x5Table(from));
 		while (kingToBB) {
 			const Square to = kingToBB.firstOneFromSQ11();
@@ -976,9 +976,9 @@ void Searcher::setOption(std::istringstream& ssCmd) {
 void measureGenerateMoves(const Position& pos) {
 	pos.print();
 
-	MoveStack legalMoves[MaxLegalMoves];
+	ExtMove legalMoves[MaxLegalMoves];
 	for (int i = 0; i < MaxLegalMoves; ++i) legalMoves[i].move = moveNone();
-	MoveStack* pms = &legalMoves[0];
+	ExtMove* pms = &legalMoves[0];
 	const u64 num = 5000000;
 	Timer t = Timer::currentTime();
 	if (pos.inCheck()) {
