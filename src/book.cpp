@@ -242,7 +242,7 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 					SetUpStates->pop();
 
 					// doMove してから search してるので点数が反転しているので直す。
-					const Score score = -pos.thisThread()->rootMoves[0].score_;
+					const Score score = -pos.thisThread()->rootMoves[0].score;
 #else
 					const Score score = ScoreZero;
 #endif

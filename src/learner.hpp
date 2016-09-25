@@ -521,13 +521,13 @@ private:
 					pos.searcher()->alpha = -ScoreMaxEvaluate;
 					pos.searcher()->beta  =  ScoreMaxEvaluate;
 					go(pos, dist(mt), bmd.move);
-					const Score recordScore = pos.searcher()->threads.main()->rootMoves[0].score_;
+					const Score recordScore = pos.searcher()->threads.main()->rootMoves[0].score;
 					++moveCount_;
 					bmd.otherPVExist = false;
 					bmd.pvBuffer.clear();
 					if (abs(recordScore) < ScoreMaxEvaluate) {
 						int recordIsNth = 0; // 正解の手が何番目に良い手か。0から数える。
-						auto& recordPv = pos.searcher()->threads.main()->rootMoves[0].pv_;
+						auto& recordPv = pos.searcher()->threads.main()->rootMoves[0].pv;
 						bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(recordPv), std::end(recordPv));
 						const auto recordPVSize = bmd.pvBuffer.size();
 						for (MoveList<LegalAll> ml(pos); !ml.end(); ++ml) {
@@ -535,9 +535,9 @@ private:
 								pos.searcher()->alpha = recordScore - FVWindow;
 								pos.searcher()->beta  = recordScore + FVWindow;
 								go(pos, dist(mt), ml.move());
-								const Score score = pos.searcher()->threads.main()->rootMoves[0].score_;
+								const Score score = pos.searcher()->threads.main()->rootMoves[0].score;
 								if (pos.searcher()->alpha < score && score < pos.searcher()->beta) {
-									auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv_;
+									auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv;
 									bmd.pvBuffer.insert(std::end(bmd.pvBuffer), std::begin(pv), std::end(pv));
 								}
 								if (recordScore <= score)

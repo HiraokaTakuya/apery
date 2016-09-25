@@ -107,15 +107,15 @@ namespace {
 			if (max_random_score_diff != ScoreZero) {
 				size_t i = 1;
 				for (; i < pvSize; ++i) {
-					if (max_random_score_diff < th->rootMoves[0].score_ - th->rootMoves[i].score_)
+					if (max_random_score_diff < th->rootMoves[0].score - th->rootMoves[i].score)
 						break;
 				}
 				// 0 から i-1 までの間でランダムに選ぶ。
 				std::uniform_int_distribution<size_t> dist(0, i-1);
-				best = th->rootMoves[dist(g_randomTimeSeed)].pv_[0];
+				best = th->rootMoves[dist(g_randomTimeSeed)].pv[0];
 				return best;
 			}
-			best = th->rootMoves[0].pv_[0];
+			best = th->rootMoves[0].pv[0];
 			return best;
 		}
 
@@ -392,7 +392,7 @@ std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Depth depth, c
 			continue;
 
 		const Depth d = (update ? depth : depth - OnePly);
-		const Score s = (update ? rootMoves[i].score_ : rootMoves[i].prevScore_);
+		const Score s = (update ? rootMoves[i].score : rootMoves[i].previousScore);
 
 		if (ss.rdbuf()->in_avail()) // 空以外は真
 			ss << "\n";
@@ -406,8 +406,8 @@ std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Depth depth, c
 		   << " time " << elapsed
 		   << " pv";
 
-		for (int j = 0; rootMoves[i].pv_[j]; ++j)
-			ss << " " << rootMoves[i].pv_[j].toUSI();
+		for (int j = 0; rootMoves[i].pv[j]; ++j)
+			ss << " " << rootMoves[i].pv[j].toUSI();
 	}
 	return ss.str();
 }
@@ -654,7 +654,7 @@ void Thread::search() {
 		}
 		// 前回の iteration の結果を全てコピー
 		for (RootMove& rm : rootMoves)
-			rm.prevScore_ = rm.score_;
+			rm.previousScore = rm.score;
 
 		// Multi PV loop
 		for (pvIdx = 0; pvIdx < pvSize && !searcher->signals.stop; ++pvIdx) {
@@ -666,8 +666,8 @@ void Thread::search() {
 			// alpha, beta をある程度絞ることで、探索効率を上げる。
 			if (5 <= rootDepth) {
 				delta = static_cast<Score>(18);
-				alpha = std::max(rootMoves[pvIdx].prevScore_ - delta, -ScoreInfinite);
-				beta  = std::min(rootMoves[pvIdx].prevScore_ + delta, ScoreInfinite);
+				alpha = std::max(rootMoves[pvIdx].previousScore - delta, -ScoreInfinite);
+				beta  = std::min(rootMoves[pvIdx].previousScore + delta, ScoreInfinite);
 			}
 #endif
 
@@ -682,7 +682,7 @@ void Thread::search() {
 
 				for (size_t i = 0; i <= pvIdx; ++i) {
 					ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated; // todo: 不要ぽい。
-					rootMoves[i].insertPvInTT(rootPos);
+					//rootMoves[i].insertPvInTT(rootPos);
 				}
 
 #if 0
@@ -762,7 +762,7 @@ void Thread::search() {
 				const int F[] = {mainThread->failedLow, bestScore - mainThread->previousScore};
 				const int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
 				const double unstablePvFactor = 1 + mainThread->bestMoveChanges;
-				const bool doEasyMove = (rootMoves[0].pv_[0] == easyMove
+				const bool doEasyMove = (rootMoves[0].pv[0] == easyMove
 										 && mainThread->bestMoveChanges < 0.03
 										 && searcher->timeManager.elapsed() > searcher->timeManager.optimum() * 5 / 42);
 				if (rootMoves.size() == 1
@@ -776,8 +776,8 @@ void Thread::search() {
 				}
 			}
 
-			if (rootMoves[0].pv_.size() >= 3)
-				searcher->easyMove.update(rootPos, rootMoves[0].pv_);
+			if (rootMoves[0].pv.size() >= 3)
+				searcher->easyMove.update(rootPos, rootMoves[0].pv);
 			else
 				searcher->easyMove.clear();
 		}
@@ -931,7 +931,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	posKey = (!excludedMove ? pos.getKey() : pos.getExclusionKey());
 	tte = tt.probe(posKey, ttHit);
 	ttMove = 
-		RootNode ? rootMoves[pos.thisThread()->pvIdx].pv_[0] :
+		RootNode ? rootMoves[pos.thisThread()->pvIdx].pv[0] :
 		ttHit ?
 		move16toMove(tte->move(), pos) :
 		Move::moveNone();
@@ -1309,14 +1309,14 @@ iid_start:
 			RootMove& rm = *std::find(rootMoves.begin(), rootMoves.end(), move);
 			if (isPVMove || alpha < score) {
 				// PV move or new best move
-				rm.score_ = score;
-				rm.extractPvFromTT(pos);
+				rm.score = score;
+				//rm.extractPvFromTT(pos);
 
 				if (moveCount > 1 && thisThread == threads.main())
 					++static_cast<MainThread*>(thisThread)->bestMoveChanges;
 			}
 			else
-				rm.score_ = -ScoreInfinite;
+				rm.score = -ScoreInfinite;
 		}
 
 		if (bestScore < score) {
@@ -1377,56 +1377,23 @@ iid_start:
 	return bestScore;
 }
 
-void RootMove::extractPvFromTT(Position& pos) {
-	StateInfo state[MaxPlyPlus4];
-	StateInfo* st = state;
-	TTEntry* tte;
-	Ply ply = 0;
-	Move m = pv_[0];
+bool RootMove::extractPonderFromTT(Position& pos) {
+	StateInfo st;
 	bool ttHit;
 
-	assert(m && pos.moveIsPseudoLegal(m));
+	assert(pv.size() == 1);
 
-	pv_.clear();
+	pos.doMove(pv[0], st/*, pos.moveGivesCheck(pv[0])*/);
+	TTEntry* tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
 
-	do {
-		pv_.push_back(m);
-
-		assert(pos.moveIsLegal(pv_[ply]));
-		pos.doMove(pv_[ply++], *st++);
-		tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
+	if (ttHit) {
+		const Move m = tte->move();
+		if (MoveList<Legal>(pos).contains(m))
+			pv.push_back(m);
 	}
-	while (ttHit
-		   // このチェックは少し無駄。駒打ちのときはmove16toMove() 呼ばなくて良い。
-		   && pos.moveIsPseudoLegal(m = move16toMove(tte->move(), pos))
-		   && pos.pseudoLegalMoveIsLegal<false, false>(m, pos.pinnedBB())
-		   && ply < MaxPly
-		   && (!pos.isDraw(20) || ply < 6));
 
-	pv_.push_back(Move::moveNone());
-	while (ply)
-		pos.undoMove(pv_[--ply]);
-}
-
-void RootMove::insertPvInTT(Position& pos) {
-	StateInfo state[MaxPlyPlus4];
-	StateInfo* st = state;
-	TTEntry* tte;
-	Ply ply = 0;
-	bool ttHit;
-
-	do {
-		tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
-
-		if (!ttHit || move16toMove(tte->move(), pos) != pv_[ply])
-			tte->save(pos.getKey(), ScoreNone, BoundNone, DepthNone, pv_[ply], ScoreNone, pos.csearcher()->tt.generation());
-
-		assert(pos.moveIsLegal(pv_[ply]));
-		pos.doMove(pv_[ply++], *st++);
-	} while (pv_[ply]);
-
-	while (ply)
-		pos.undoMove(pv_[--ply]);
+	pos.undoMove(pv[0]);
+	return pv.size() > 1;
 }
 
 void initSearchTable() {
@@ -1548,7 +1515,7 @@ void MainThread::search() {
 	{
 		auto deleteFunc = [](const std::string& str) {
 			auto it = std::find_if(std::begin(rootMoves), std::end(rootMoves), [&str](const RootMove& rm) {
-					return rm.pv_[0].toCSA() == str;
+					return rm.pv[0].toCSA() == str;
 				});
 			if (it != std::end(rootMoves))
 				rootMoves.erase(it);
@@ -1605,24 +1572,24 @@ finalize:
 	{
 		for (Thread* th : searcher->threads)
 			if (th->completedDepth > bestThread->completedDepth
-				&& th->rootMoves[0].score_ > bestThread->rootMoves[0].score_)
+				&& th->rootMoves[0].score > bestThread->rootMoves[0].score)
 			{
 				bestThread = th;
 			}
 	}
 
-	previousScore = bestThread->rootMoves[0].score_;
+	previousScore = bestThread->rootMoves[0].score;
 
 	if (bestThread != this)
 		SYNCCOUT << pvInfoToUSI(bestThread->rootPos, 1, (Depth)bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
 
 	if (nyugyokuWin)
 		SYNCCOUT << "bestmove win" << SYNCENDL;
-	else if (!bestThread->rootMoves[0].pv_[0])
+	else if (!bestThread->rootMoves[0].pv[0])
 			SYNCCOUT << "bestmove resign" << SYNCENDL;
 	else
-		SYNCCOUT << "bestmove " << bestThread->rootMoves[0].pv_[0].toUSI()
-				 << " ponder " << bestThread->rootMoves[0].pv_[1].toUSI()
+		SYNCCOUT << "bestmove " << bestThread->rootMoves[0].pv[0].toUSI()
+				 << " ponder " << bestThread->rootMoves[0].pv[1].toUSI()
 				 << SYNCENDL;
 #endif
 }

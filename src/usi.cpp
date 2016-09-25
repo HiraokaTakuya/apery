@@ -409,8 +409,8 @@ void make_teacher(std::istringstream& ssCmd) {
 				pos.searcher()->alpha = -ScoreMaxEvaluate;
 				pos.searcher()->beta  =  ScoreMaxEvaluate;
 				go(pos, static_cast<Depth>(6));
-				const Score score = pos.searcher()->threads.main()->rootMoves[0].score_;
-				const Move bestMove = pos.searcher()->threads.main()->rootMoves[0].pv_[0];
+				const Score score = pos.searcher()->threads.main()->rootMoves[0].score;
+				const Move bestMove = pos.searcher()->threads.main()->rootMoves[0].pv[0];
 				if (3000 < abs(score)) // 差が付いたので投了した事にする。
 					break;
 				else if (!bestMove) // 勝ち宣言など
@@ -419,7 +419,7 @@ void make_teacher(std::istringstream& ssCmd) {
 				{
 					HuffmanCodedPosAndEval hcpe;
 					hcpe.hcp = pos.toHuffmanCodedPos();
-					auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv_;
+					auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv;
 					Ply tmpPly = 0;
 					const Color rootTurn = pos.turn();
 					StateInfo state[MaxPlyPlus4];

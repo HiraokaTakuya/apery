@@ -87,32 +87,15 @@ private:
 	Score table[ColorNum][(Square)PieceTypeNum + SquareNum][SquareNum]; // from は駒打ちも含めるので、その分のサイズをとる。
 };
 
-class RootMove {
-public:
-	RootMove() {}
-	explicit RootMove(const Move m) : score_(-ScoreInfinite), prevScore_(-ScoreInfinite) {
-		pv_.push_back(m);
-		pv_.push_back(Move::moveNone());
-	}
-	explicit RootMove(const std::tuple<Move, Score> m) : score_(std::get<1>(m)), prevScore_(-ScoreInfinite) {
-		pv_.push_back(std::get<0>(m));
-		pv_.push_back(Move::moveNone());
-	}
+struct RootMove {
+	explicit RootMove(const Move m) : pv(1, m) {}
+	bool operator < (const RootMove& m) const { return score < m.score; }
+	bool operator == (const Move& m) const { return pv[0] == m; }
+	bool extractPonderFromTT(Position& pos);
 
-	bool operator < (const RootMove& m) const {
-		return score_ < m.score_;
-	}
-	bool operator == (const Move& m) const {
-		return pv_[0] == m;
-	}
-
-	void extractPvFromTT(Position& pos);
-	void insertPvInTT(Position& pos);
-
-public:
-	Score score_;
-	Score prevScore_;
-	std::vector<Move> pv_;
+	Score score = -ScoreInfinite;
+	Score previousScore = -ScoreInfinite;
+	std::vector<Move> pv;
 };
 
 struct Thread {
