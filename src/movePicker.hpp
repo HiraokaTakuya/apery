@@ -26,57 +26,49 @@
 #include "position.hpp"
 #include "search.hpp"
 
-enum GenerateMovePhase {
-	MainSearch, PH_TacticalMoves0, PH_Killers, PH_NonTacticalMoves0, PH_NonTacticalMoves1, PH_BadCaptures,
-	EvasionSearch, PH_Evasions,
-	QSearch, PH_QCaptures0,
-	QEvasionSearch, PH_QEvasions,
-	ProbCut, PH_TacticalMoves1,
-	QRecapture, PH_QCaptures1,
-	QSearchNoTT, PH_QCaptures2,
-	PH_Stop
+enum Stages {
+	MainSearch, TacticalInit, GoodTacticals, Killers, Countermove, QuietInit, Quiet, BadCaptures,
+	EvasionSearch, EvasionsInit, AllEvasions,
+	Probcut, ProbcutInit, ProbcutCaptures,
+#if defined USE_QCHECKS
+	QSearchWithChecks, QCaptures1Init, QCaptures1, QChecks,
+#endif
+	QSearchNoChecks, QCaptures2Init, QCaptures2,
+	QSearchRecaptures, QRecaptures
 };
-OverloadEnumOperators(GenerateMovePhase); // ++phase_ の為。
+OverloadEnumOperators(Stages);
 
 class MovePicker {
 public:
-	MovePicker(const Position& pos, const Move ttm, const Depth depth,
-			   /*const History& history, */SearchStack* searchStack, const Score beta);
-	MovePicker(const Position& pos, Move ttm, const Depth depth, /*const History& history, */const Square sq);
-	MovePicker(const Position& pos, const Move ttm, /*const History& history, */const PieceType pt);
+	MovePicker(const MovePicker&) = delete;
+	MovePicker& operator = (const MovePicker&) = delete;
+
+	MovePicker(const Position& pos, const Move ttm, const Score th);
+	MovePicker(const Position& pos, const Move ttm, const Depth depth, const Square sq);
+	MovePicker(const Position& pos, const Move ttm, const Depth depth, SearchStack* searchStack);
+
 	Move nextMove();
 
 private:
 	void scoreCaptures();
 	template <bool IsDrop> void scoreNonCapturesMinusPro();
 	void scoreEvasions();
-	void goNextPhase();
-	ExtMove* firstMove() { return &legalMoves_[1]; } // [0] は番兵
-	ExtMove* currMove() const { return currMove_; }
-	ExtMove* lastMove() const { return lastMove_; }
-	ExtMove* lastNonCapture() const { return lastNonCapture_; }
-	ExtMove* endBadCaptures() const { return endBadCaptures_; }
-
-	const Position& pos() const { return pos_; }
-
-	GenerateMovePhase phase() const { return phase_; }
-	//const History& history() const { return history_; }
+	ExtMove* begin() { return cur_; }
+	ExtMove* end() { return endMoves_; }
+	ExtMove* first() { return &moves_[1]; } // 番兵を除いている。
 
 	const Position& pos_;
-	//const History& history_;
-	SearchStack* ss_;
+	const SearchStack* ss_;
+	Move counterMove_;
 	Depth depth_;
-	Move ttMove_; // transposition table move
-	ExtMove killerMoves_[2];
+	Move ttMove_;
 	Square recaptureSquare_;
-	int captureThreshold_; // int で良いのか？
-	GenerateMovePhase phase_;
-	ExtMove* currMove_;
-	ExtMove* lastMove_;
-	ExtMove* lastNonCapture_;
+	Score threshold_;
+	Stages stage_;
+	ExtMove* cur_;
+	ExtMove* endMoves_;
 	ExtMove* endBadCaptures_;
-	// std::array にした方が良さそう。
-	ExtMove legalMoves_[MaxLegalMoves];
+	ExtMove moves_[MaxLegalMoves];
 };
 
 #endif // #ifndef APERY_MOVEPICKER_HPP

@@ -1098,8 +1098,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 		assert((ss-1)->currentMove != Move::moveNull());
 
 		assert(move == (ss-1)->currentMove);
-		// move.cap() は前回(一手前)の指し手で取った駒の種類
-		MovePicker mp(pos, ttMove, /*history, */move.cap());
+		MovePicker mp(pos, ttMove, rbeta - ss->staticEval);
 		const CheckInfo ci(pos);
 		while ((move = mp.nextMove())) {
 			if (pos.pseudoLegalMoveIsLegal<false, false>(move, ci.pinned)) {
@@ -1134,7 +1133,7 @@ iid_start:
 				  Move::moveNone());
 	}
 
-	MovePicker mp(pos, ttMove, depth, /*history, */ss, PVNode ? -ScoreInfinite : beta);
+	MovePicker mp(pos, ttMove, depth, ss);
 	const CheckInfo ci(pos);
 	bool improving = (ss->staticEval >= (ss-2)->staticEval
 					  || ss->staticEval == ScoreNone

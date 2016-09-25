@@ -43,6 +43,10 @@
 #define STATIC
 #endif
 
+#if 0
+#define USE_QCHECKS
+#endif
+
 #if 1
 // 評価関数の SIMD 化
 #if defined HAVE_AVX2

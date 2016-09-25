@@ -2072,6 +2072,10 @@ bool Position::moveGivesCheck(const Move move, const CheckInfo& ci) const {
 	return false;
 }
 
+Piece Position::movedPiece(const Move m) const {
+	return colorAndPieceTypeToPiece(turn(), m.pieceTypeFromOrDropped());
+}
+
 void Position::clear() {
 	memset(this, 0, sizeof(Position));
 	st_ = &startState_;

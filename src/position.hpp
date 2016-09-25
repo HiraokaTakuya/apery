@@ -273,6 +273,7 @@ public:
 
 	bool moveGivesCheck(const Move m) const;
 	bool moveGivesCheck(const Move move, const CheckInfo& ci) const;
+	Piece movedPiece(const Move m) const;
 
 	// attacks
 	Bitboard attackersTo(const Square sq, const Bitboard& occupied) const;

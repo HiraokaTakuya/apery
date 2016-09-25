@@ -37,6 +37,11 @@
 //       from, to , promo だけだったら、16bit で済む。
 class Move {
 public:
+	static const u32 PromoteFlag = 1 << 14;
+	static const u32 MoveNone    = 0;
+	static const u32 MoveNull    = 129;
+	static const u32 MovePVsEnd  = 1 << 15; // for learn
+
 	Move() {}
 	explicit Move(const u32 u) : value_(u) {}
 	Move& operator = (const Move& m) { value_ = m.value_; return *this; }
@@ -98,6 +103,10 @@ public:
 	bool operator == (const Move rhs) const { return this->value() == rhs.value(); }
 	bool operator != (const Move rhs) const { return !(*this == rhs); }
 	bool operator < (const Move rhs) const { return this->value() < rhs.value(); } // for learn
+	bool isOK() const {
+		static_assert(MoveNull == 129, "");
+		return to() != from(); // catch MoveNull and MoveNone
+	}
 	std::string promoteFlagToStringUSI() const { return (this->isPromotion() ? "+" : ""); }
 	std::string toUSI() const;
 	std::string toCSA() const;
@@ -108,11 +117,6 @@ public:
 	// 格納するその他のPVの最後に MovePVsEnd を格納する。それをフラグに次の指し手に遷移する。
 	// 正解のPV, MoveNone, その他0のPV, MoveNone, その他1のPV, MoveNone, MovePVsEnd という感じに並ぶ。
 	static Move movePVsEnd() { return Move(MovePVsEnd); }
-
-	static const u32 PromoteFlag = 1 << 14;
-	static const u32 MoveNone    = 0;
-	static const u32 MoveNull    = 129;
-	static const u32 MovePVsEnd  = 1 << 15; // for learn
 
 private:
 	u32 value_;
@@ -203,9 +207,9 @@ template <typename T, bool UseSentinel = false> inline void insertionSort(T firs
 // 最も score の高い ExtMove のポインタを返す。
 // ExtMove の数が多いとかなり時間がかかるので、
 // 駒打ちを含むときに使用してはならない。
-inline ExtMove* pickBest(ExtMove* currMove, ExtMove* lastMove) {
-	std::swap(*currMove, *std::max_element(currMove, lastMove));
-	return currMove;
+inline Move pickBest(ExtMove* begin, ExtMove* end) {
+	std::swap(*begin, *std::max_element(begin, end));
+	return begin->move;
 }
 
 inline Move move16toMove(const Move move, const Position& pos) {
