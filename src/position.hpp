@@ -56,25 +56,22 @@ struct ChangedLists {
 	size_t size;
 };
 
-// minimul stateinfo
-struct StateInfoMin {
+struct StateInfo {
+	// Copied when making a move
 	Score material; // stocfish の npMaterial は 先手、後手の点数を配列で持っているけど、
 					// 特に分ける必要は無い気がする。
 	int pliesFromNull;
 	int continuousCheck[ColorNum]; // Stockfish には無い。
-};
 
-// StateInfoMin だけ memcpy でコピーすることああるので、
-// 継承を使っている。
-struct StateInfo : public StateInfoMin {
+	// Not copied when making a move (will be recomputed anyhow)
 	Key boardKey;
 	Key handKey;
-	// 手番側の玉へ check している駒の Bitboard
-	Bitboard checkersBB;
+	Bitboard checkersBB; // 手番側の玉へ check している駒の Bitboard
+#if 0
+	Piece capturedPiece;
+#endif
 	StateInfo* previous;
-	// 手番側の持ち駒
-	Hand hand;
-	// capturedPieceType は move.cap() で取得出来るので必要無い。
+	Hand hand; // 手番側の持ち駒
 	ChangedLists cl;
 
 	Key key() const { return boardKey + handKey; }

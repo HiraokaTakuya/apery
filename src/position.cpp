@@ -334,7 +334,7 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
 	Key handKey = getHandKey();
 	boardKey ^= zobTurn();
 
-	memcpy(&newSt, st_, sizeof(StateInfoMin));
+	memcpy(&newSt, st_, offsetof(StateInfo, boardKey));
 	newSt.previous = st_;
 	st_ = &newSt;
 
