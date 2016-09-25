@@ -883,8 +883,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	bestScore = -ScoreInfinite;
 	ss->currentMove = threatMove = bestMove = (ss + 1)->excludedMove = Move::moveNone();
 	ss->ply = (ss-1)->ply + 1;
-	(ss+1)->skipNullMove = false;
-	(ss+1)->reduction = Depth0;
+	(ss+1)->skipEarlyPruning = false;
 	(ss+2)->killers[0] = (ss+2)->killers[1] = Move::moveNone();
 
 	if (thisThread->resetCalls.load(std::memory_order_relaxed)) {
@@ -1022,7 +1021,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	// step7
 	// static null move pruning
 	if (!PVNode
-		&& !ss->skipNullMove
+		&& !ss->skipEarlyPruning
 		&& depth < 6 * OnePly
 		&& beta <= eval - futilityMargin(depth)
 		&& abs(beta) < ScoreMateInMaxPly)
@@ -1033,7 +1032,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	// step8
 	// null move
 	if (!PVNode
-		&& !ss->skipNullMove
+		&& !ss->skipEarlyPruning
 		&& 2 * OnePly <= depth
 		&& beta <= eval
 		&& abs(beta) < ScoreMateInMaxPly)
@@ -1046,11 +1045,11 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 
 		pos.doNullMove<true>(st);
 		(ss+1)->staticEvalRaw = (ss)->staticEvalRaw; // 評価値の差分評価の為。
-		(ss+1)->skipNullMove = true;
+		(ss+1)->skipEarlyPruning = true;
 		Score nullScore = (depth - reduction < OnePly ?
 						   -qsearch<NonPV, false>(pos, ss + 1, -beta, -alpha, Depth0)
 						   : -search<NonPV>(pos, ss + 1, -beta, -alpha, depth - reduction, !cutNode));
-		(ss+1)->skipNullMove = false;
+		(ss+1)->skipEarlyPruning = false;
 		pos.doNullMove<false>(st);
 
 		if (beta <= nullScore) {
@@ -1060,11 +1059,11 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 			if (depth < 6 * OnePly)
 				return nullScore;
 
-			ss->skipNullMove = true;
+			ss->skipEarlyPruning = true;
 			const Score s = (depth - reduction < OnePly ?
 							 qsearch<NonPV, false>(pos, ss, alpha, beta, Depth0)
 							 : search<NonPV>(pos, ss, alpha, beta, depth - reduction, false));
-			ss->skipNullMove = false;
+			ss->skipEarlyPruning = false;
 
 			if (beta <= s)
 				return nullScore;
@@ -1073,7 +1072,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 			// fail low
 			threatMove = (ss+1)->currentMove;
 			if (depth < 5 * OnePly
-				&& (ss-1)->reduction != Depth0
+				&& reduction != Depth0
 				&& threatMove
 				&& allows(pos, (ss-1)->currentMove, threatMove))
 			{
@@ -1086,7 +1085,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
 	// probcut
 	if (!PVNode
 		&& 5 * OnePly <= depth
-		&& !ss->skipNullMove
+		&& !ss->skipEarlyPruning
 		// 確実にバグらせないようにする。
 		&& abs(beta) < ScoreInfinite - 200)
 	{
@@ -1123,9 +1122,9 @@ iid_start:
 		//const Depth d = depth - 2 * OnePly - (PVNode ? Depth0 : depth / 4);
 		const Depth d = (PVNode ? depth - 2 * OnePly : depth / 2);
 
-		ss->skipNullMove = true;
+		ss->skipEarlyPruning = true;
 		search<PVNode ? PV : NonPV>(pos, ss, alpha, beta, d, true);
-		ss->skipNullMove = false;
+		ss->skipEarlyPruning = false;
 
 		tte = tt.probe(posKey, ttHit);
 		ttMove = (ttHit ?
@@ -1193,9 +1192,9 @@ iid_start:
 
 			const Score rBeta = ttScore - static_cast<Score>(depth);
 			ss->excludedMove = move;
-			ss->skipNullMove = true;
+			ss->skipEarlyPruning = true;
 			score = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2, cutNode);
-			ss->skipNullMove = false;
+			ss->skipEarlyPruning = false;
 			ss->excludedMove = Move::moveNone();
 
 			if (score < rBeta) {
@@ -1267,15 +1266,14 @@ iid_start:
 			&& ss->killers[0] != move
 			&& ss->killers[1] != move)
 		{
-			ss->reduction = reduction<PVNode>(improving, depth, moveCount);
+			int reduction = reduction<PVNode>(improving, depth, moveCount);
 			if (!PVNode && cutNode)
-				ss->reduction += OnePly;
-			const Depth d = std::max(newDepth - ss->reduction, OnePly);
+				reduction += OnePly;
+			const Depth d = std::max(newDepth - reduction, OnePly);
 			// PVS
 			score = -search<NonPV>(pos, ss+1, -(alpha + 1), -alpha, d, true);
 
-			doFullDepthSearch = (alpha < score && ss->reduction != Depth0);
-			ss->reduction = Depth0;
+			doFullDepthSearch = (alpha < score && reduction != Depth0);
 		}
 		else
 			doFullDepthSearch = !isPVMove;
