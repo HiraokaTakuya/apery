@@ -33,7 +33,6 @@
 #if defined USE_GLOBAL
 SignalsType Searcher::signals;
 LimitsType Searcher::limits;
-std::vector<Move> Searcher::searchMoves;
 StateStackPtr Searcher::setUpStates;
 StateStackPtr Searcher::usiSetUpStates;
 TimeManager Searcher::timeManager;

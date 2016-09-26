@@ -107,7 +107,6 @@ struct Searcher {
 	STATIC Searcher* thisptr;
 	STATIC SignalsType signals;
 	STATIC LimitsType limits;
-	STATIC std::vector<Move> searchMoves;
 	STATIC StateStackPtr setUpStates;
 	STATIC StateStackPtr usiSetUpStates;
 
