@@ -73,7 +73,7 @@
 #elif defined(__INTEL_COMPILER)
 // todo: icc も __assume(false) で良いのか？ 一応ビルド出来るけど。
 #define UNREACHABLE __assume(false)
-#elif defined(__GNUC__) && (4 < __GNUC__ || (__GNUC__ == 4 && 4 < __GNUC_MINOR__))
+#elif defined(__GNUC__)
 #define UNREACHABLE __builtin_unreachable()
 #else
 #define UNREACHABLE assert(false)
@@ -253,35 +253,17 @@ template <> struct Unroller<0> {
 
 const size_t CacheLineSize = 64; // 64byte
 
-// Stockfish ほとんどそのまま
-template <typename T> inline void prefetch(T* addr) {
-#if defined HAVE_SSE2 || defined HAVE_SSE4
+inline void prefetch(void* addr) {
 #if defined(__INTEL_COMPILER)
-	// これでプリフェッチが最適化で消えるのを防げるらしい。
+	// これでプリフェッチが最適化で消えるのを防ぐ。
 	__asm__("");
 #endif
 
-	// 最低でも sizeof(T) のバイト数分をプリフェッチする。
-	// Stockfish は TTCluster が 64byte なのに、なぜか 128byte 分 prefetch しているが、
-	// 必要無いと思う。
-	char* charAddr = reinterpret_cast<char*>(addr);
-#if defined(__INTEL_COMPILER) || defined(_MSC_VER)
-	Unroller<(sizeof(T) + CacheLineSize - 1)/CacheLineSize>()([&](const int) {
-			// 1キャッシュライン分(64byte)のプリフェッチ。
-			_mm_prefetch(charAddr, _MM_HINT_T0);
-			charAddr += CacheLineSize;
-		});
-#else
-	Unroller<(sizeof(T) + CacheLineSize - 1)/CacheLineSize>()([&](const int) {
-			// 1キャッシュライン分(64byte)のプリフェッチ。
-			__builtin_prefetch(charAddr);
-			charAddr += CacheLineSize;
-		});
-#endif
-#else
-	// SSE が使えない時は、_mm_prefetch() とかが使えないので、prefetch無しにする。
-	addr = addr; // warning 対策
-#endif
+#  if defined(__INTEL_COMPILER) || defined(_MSC_VER)
+	_mm_prefetch((char*)addr, _MM_HINT_T0);
+#  elif defined(__GNUC__)
+	__builtin_prefetch(addr);
+#  endif
 }
 
 using Key = u64;
