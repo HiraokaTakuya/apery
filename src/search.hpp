@@ -107,8 +107,7 @@ struct Searcher {
 	STATIC Searcher* thisptr;
 	STATIC SignalsType signals;
 	STATIC LimitsType limits;
-	STATIC StateStackPtr setUpStates;
-	STATIC StateStackPtr usiSetUpStates;
+	STATIC StateListPtr states;
 
 #if defined LEARN
 	STATIC Score alpha;

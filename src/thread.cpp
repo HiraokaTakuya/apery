@@ -28,8 +28,8 @@ Thread::Thread(Searcher* s) {
 	searcher = s;
 	resetCalls = exit = false;
 	maxPly = callsCnt = 0;
-	//history.clear();
-	//gains.clear();
+	history.clear();
+	counterMoves.clear();
 	idx = s->threads.size();
 
 	std::unique_lock<Mutex> lock(mutex);
@@ -109,24 +109,34 @@ s64 ThreadPool::nodesSearched() const {
 	return nodes;
 }
 
-void ThreadPool::startThinking(const Position& pos, const LimitsType& limits, StateStackPtr& states) {
+void ThreadPool::startThinking(const Position& pos, const LimitsType& limits, StateListPtr& states) {
 	main()->waitForSearchFinished();
 	pos.searcher()->signals.stopOnPonderHit = pos.searcher()->signals.stop = false;
-
-	main()->rootMoves.clear();
-	main()->rootPos = pos;
 	pos.searcher()->limits = limits;
-	if (states.get()) {
-		pos.searcher()->setUpStates = std::move(states);
-		assert(!states.get());
-	}
+	std::vector<RootMove> rootMoves;
 
 	for (MoveList<Legal> ml(pos); !ml.end(); ++ml) {
 		if (limits.searchmoves.empty()
 			|| std::find(std::begin(limits.searchmoves), std::end(limits.searchmoves), ml.move()) != std::end(limits.searchmoves))
 		{
-			main()->rootMoves.push_back(RootMove(ml.move()));
+			rootMoves.push_back(RootMove(ml.move()));
 		}
 	}
+
+	//assert(states.get() || setupStates.get());
+	//if (states.get()) {
+	//	setupStates = std::move(states);
+	//}
+
+	//StateInfo tmp = setUpStates->back();
+
+	for (Thread* th : pos.searcher()->threads) {
+		th->rootPos = Position(pos, th);
+		th->maxPly = 0;
+		th->rootDepth = Depth0;
+		th->rootMoves = rootMoves;
+	}
+
+	//setUpStates->back() = tmp;
 	main()->startSearching();
 }

@@ -203,7 +203,7 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 			return;
 		}
 		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
-		StateStackPtr SetUpStates = StateStackPtr(new std::stack<StateInfo>());
+		StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
 		while (!line.empty()) {
 			const std::string moveStrCSA = line.substr(0, 6);
 			const Move move = csaToMove(pos, moveStrCSA);
@@ -232,14 +232,14 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 				}
 				if (isFind == false) {
 #if defined MAKE_SEARCHED_BOOK
-					SetUpStates->push(StateInfo());
-					pos.doMove(move, SetUpStates->top());
+					states->push_back(StateInfo());
+					pos.doMove(move, states->back());
 
 					std::istringstream ssCmd("byoyomi 1000");
 					go(pos, ssCmd);
 
 					pos.undoMove(move);
-					SetUpStates->pop();
+					states->pop_back();
 
 					// doMove してから search してるので点数が反転しているので直す。
 					const Score score = -pos.thisThread()->rootMoves[0].score;
@@ -255,8 +255,8 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
 					bookMap[key].push_back(be);
 				}
 			}
-			SetUpStates->push(StateInfo());
-			pos.doMove(move, SetUpStates->top());
+			states->push_back(StateInfo());
+			pos.doMove(move, states->back());
 		}
 	}
 

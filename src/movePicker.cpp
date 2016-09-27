@@ -133,10 +133,10 @@ Move MovePicker::nextMove() {
 		cur_ = endBadCaptures_;
 		if (depth_ < 3 * OnePly) {
 			ExtMove* goodQuiet = std::partition(cur_, endMoves_, [](const ExtMove& m) { return m.score > ScoreZero; });
-			insertionSort<ExtMove*, true>(cur_, goodQuiet);
+			insertionSort<ExtMove*, false>(cur_, goodQuiet);
 		}
 		else
-			insertionSort<ExtMove*, true>(cur_, endMoves_);
+			insertionSort<ExtMove*, false>(cur_, endMoves_);
 		++stage_;
 	case Quiet:
 		while (cur_ < endMoves_) {

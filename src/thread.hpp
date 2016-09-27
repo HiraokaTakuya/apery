@@ -30,7 +30,7 @@
 const int MaxThreads = 256;
 
 enum NodeType {
-	Root, PV, NonPV
+	NonPV, PV
 };
 
 // 時間や探索深さの制限を格納する為の構造体
@@ -89,7 +89,7 @@ private:
 
 struct RootMove {
 	explicit RootMove(const Move m) : pv(1, m) {}
-	bool operator < (const RootMove& m) const { return score < m.score; }
+	bool operator < (const RootMove& m) const { return m.score < score; } // Descending sort
 	bool operator == (const Move& m) const { return pv[0] == m; }
 	bool extractPonderFromTT(Position& pos);
 
@@ -146,9 +146,12 @@ struct ThreadPool : public std::vector<Thread*> {
 	void exit();
 
 	MainThread* main() { return static_cast<MainThread*>((*this)[0]); }
-	void startThinking(const Position& pos, const LimitsType& limits, StateStackPtr& states);
+	void startThinking(const Position& pos, const LimitsType& limits, StateListPtr& states);
 	void readUSIOptions(Searcher* s);
 	s64 nodesSearched() const;
+
+private:
+	StateListPtr setupStates;
 };
 
 #endif // #ifndef APERY_THREAD_HPP

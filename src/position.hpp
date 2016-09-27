@@ -77,7 +77,7 @@ struct StateInfo {
 	Key key() const { return boardKey + handKey; }
 };
 
-using StateStackPtr = std::unique_ptr<std::stack<StateInfo> >;
+using StateListPtr = std::unique_ptr<std::deque<StateInfo>>;
 
 class BitStream {
 public:

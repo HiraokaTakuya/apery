@@ -26,7 +26,7 @@
 #include "move.hpp"
 
 enum Depth {
-	OnePly           = 2,
+	OnePly           = 1,
 	Depth0           = 0,
 	Depth1           = 1,
 	DepthQChecks     = 0 * OnePly,
@@ -34,7 +34,7 @@ enum Depth {
 	DepthQRecaptures = -5 * OnePly,
 
 	DepthNone        = -6 * OnePly,
-	MaxDepth         = MaxPly * OnePly,
+	DepthMax         = MaxPly * OnePly,
 };
 OverloadEnumOperators(Depth);
 static_assert(!(OnePly & (OnePly - 1)), "OnePly is not a power of 2");

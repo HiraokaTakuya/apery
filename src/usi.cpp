@@ -186,7 +186,7 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 		limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"];
 	else if (limits.inc[pos.turn()] != 0)
 		limits.time[pos.turn()] -= pos.searcher()->options["Inc_Margin"];
-	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
+	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->states);
 }
 
 #if defined LEARN
@@ -195,13 +195,13 @@ void go(const Position& pos, const Ply depth, const Move move) {
 	LimitsType limits;
 	limits.depth = depth;
 	limits.searchmoves.push_back(move);
-	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
+	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->states);
 	pos.searcher()->threads.main()->waitForSearchFinished();
 }
 void go(const Position& pos, const Ply depth) {
 	LimitsType limits;
 	limits.depth = depth;
-	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->usiSetUpStates);
+	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->states);
 	pos.searcher()->threads.main()->waitForSearchFinished();
 }
 #endif
@@ -220,7 +220,7 @@ inline double dsigmoidWinningRate(const double x) {
 // RootMoves が存在しない為、別の関数とする。
 template <bool Undo> // 局面を戻し、moves に PV を書き込むなら true。末端の局面に移動したいだけなら false
 bool extractPVFromTT(Position& pos, Move* moves, const Move bestMove) {
-	StateInfo state[MaxPlyPlus4];
+	StateInfo state[MaxPly+7];
 	StateInfo* st = state;
 	TTEntry* tte;
 	Ply ply = 0;
@@ -251,10 +251,10 @@ bool extractPVFromTT(Position& pos, Move* moves, const Move bestMove) {
 }
 
 template <bool Undo>
-bool qsearch(Position& pos, Move moves[MaxPlyPlus4], const u16 bestMove16) {
+bool qsearch(Position& pos, Move moves[MaxPly+7], const u16 bestMove16) {
 	//static std::atomic<int> i;
 	//StateInfo st;
-	SearchStack ss[MaxPlyPlus4];
+	SearchStack ss[MaxPly+7];
 	memset(ss, 0, 5 * sizeof(SearchStack));
 	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に一手進めて探索してみる。
@@ -275,7 +275,7 @@ bool qsearch(Position& pos, Move moves[MaxPlyPlus4], const u16 bestMove16) {
 #else
 // 教師局面を増やす為、適当に駒を動かす。玉の移動を多めに。王手が掛かっている時は呼ばない事にする。
 void randomMove(Position& pos, std::mt19937& mt) {
-	StateInfo state[MaxPlyPlus4];
+	StateInfo state[MaxPly+7];
 	StateInfo* st = state;
 	const Color us = pos.turn();
 	const Color them = oppositeColor(us);
@@ -394,7 +394,7 @@ void make_teacher(std::istringstream& ssCmd) {
 			randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
 			double randomMoveRateThresh = 0.2;
 			std::unordered_set<Key> keyHash;
-			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
+			StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
 			for (Ply ply = pos.gamePly(); ply < 400; ++ply, ++idx) { // 400 手くらいで終了しておく。
 				if (!pos.inCheck() && doRandomMoveDist(mt) <= randomMoveRateThresh) { // 王手が掛かっていない局面で、randomMoveRateThresh の確率でランダムに局面を動かす。
 					randomMove(pos, mt);
@@ -422,7 +422,7 @@ void make_teacher(std::istringstream& ssCmd) {
 					auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv;
 					Ply tmpPly = 0;
 					const Color rootTurn = pos.turn();
-					StateInfo state[MaxPlyPlus4];
+					StateInfo state[MaxPly+7];
 					StateInfo* st = state;
 					while (pv[tmpPly])
 						pos.doMove(pv[tmpPly++], *st++);
@@ -441,8 +441,8 @@ void make_teacher(std::istringstream& ssCmd) {
 					ofs.write(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
 				}
 
-				setUpStates->push(StateInfo());
-				pos.doMove(bestMove, setUpStates->top());
+				states->push_back(StateInfo());
+				pos.doMove(bestMove, states->back());
 			}
 		}
 	};
@@ -641,7 +641,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 
 	Mutex mutex;
 	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluaterGradient& evaluaterGradient, double& loss, std::atomic<s64>& nodes) {
-		Move moves[MaxPlyPlus4];
+		Move moves[MaxPly+7];
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
 		evaluaterGradient.clear();
@@ -928,23 +928,21 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 		return;
 
 	pos.set(sfen, pos.searcher()->threads.main());
-	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
+	pos.searcher()->states = StateListPtr(new std::deque<StateInfo>(1));
 
 	Ply currentPly = pos.gamePly();
 	while (ssCmd >> token) {
 		const Move move = usiToMove(pos, token);
 		if (!move) break;
-		pos.searcher()->usiSetUpStates->push(StateInfo());
-		pos.doMove(move, pos.searcher()->usiSetUpStates->top());
+		pos.searcher()->states->push_back(StateInfo());
+		pos.doMove(move, pos.searcher()->states->back());
 		++currentPly;
 	}
 	pos.setStartPosPly(currentPly);
 }
 
 bool setPosition(Position& pos, const HuffmanCodedPos& hcp) {
-	const bool ret = pos.set(hcp, pos.searcher()->threads.main());
-	pos.searcher()->usiSetUpStates = StateStackPtr(new std::stack<StateInfo>());
-	return ret;
+	return pos.set(hcp, pos.searcher()->threads.main());
 }
 
 void Searcher::setOption(std::istringstream& ssCmd) {

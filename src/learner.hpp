@@ -434,7 +434,7 @@ private:
 		bmdBase[Black].winner = (elem == "1");
 		bmdBase[White].winner = (elem == "2");
 		pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
-		StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
+		StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
 		while (true) {
 			const std::string moveStrCSA = s1.substr(0, 6);
 			const Move move = csaToMove(pos, moveStrCSA);
@@ -454,8 +454,8 @@ private:
 			bmds.back().emplace_back(bmd);
 			s1.erase(0, 6);
 
-			setUpStates->push(StateInfo());
-			pos.doMove(move, setUpStates->top());
+			states->push_back(StateInfo());
+			pos.doMove(move, states->back());
 		}
 	}
 	void readBookBody(std::set<std::pair<Key, Move> >& dict, Position& pos, const std::string& record, const std::array<bool, ColorNum>& useTurnMove, const s64 gameNum, const bool testRecord)
@@ -513,7 +513,7 @@ private:
 		std::uniform_int_distribution<Ply> dist(minDepth_, maxDepth_);
 		pos.searcher()->tt.clear();
 		for (size_t i = lockingIndexIncrement<true>(); i < gameNumForIteration; i = lockingIndexIncrement<true>()) {
-			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
+			StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
 			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
 			auto& gameMoves = bmds[i];
 			for (auto& bmd : gameMoves) {
@@ -549,8 +549,8 @@ private:
 							++predictions_[i];
 					}
 				}
-				setUpStates->push(StateInfo());
-				pos.doMove(bmd.move, setUpStates->top());
+				states->push_back(StateInfo());
+				pos.doMove(bmd.move, states->back());
 			}
 		}
 	}
@@ -632,7 +632,7 @@ private:
 		parse2Data.clear();
 		SearchStack ss[2];
 		for (size_t i = lockingIndexIncrement<false>(); i < gameNumForIteration_; i = lockingIndexIncrement<false>()) {
-			StateStackPtr setUpStates = StateStackPtr(new std::stack<StateInfo>());
+			StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
 			pos.set(DefaultStartPositionSFEN, pos.searcher()->threads.main());
 			auto& gameMoves = bookMovesDatum_[i];
 			for (auto& bmd : gameMoves) {
@@ -643,8 +643,8 @@ private:
 					PRINT_PV(std::cout << "recordpv: ");
 					for (; bmd.pvBuffer[recordPVIndex]; ++recordPVIndex) {
 						PRINT_PV(std::cout << bmd.pvBuffer[recordPVIndex].toCSA());
-						setUpStates->push(StateInfo());
-						pos.doMove(bmd.pvBuffer[recordPVIndex], setUpStates->top());
+						states->push_back(StateInfo());
+						pos.doMove(bmd.pvBuffer[recordPVIndex], states->back());
 					}
 					// evaluate() の差分計算を無効化する。
 					ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
@@ -658,8 +658,8 @@ private:
 						PRINT_PV(std::cout << "otherpv : ");
 						for (; bmd.pvBuffer[otherPVIndex]; ++otherPVIndex) {
 							PRINT_PV(std::cout << bmd.pvBuffer[otherPVIndex].toCSA());
-							setUpStates->push(StateInfo());
-							pos.doMove(bmd.pvBuffer[otherPVIndex], setUpStates->top());
+							states->push_back(StateInfo());
+							pos.doMove(bmd.pvBuffer[otherPVIndex], states->back());
 						}
 						ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 						const Score score = (rootColor == pos.turn() ? evaluate(pos, ss+1) : -evaluate(pos, ss+1));
@@ -676,16 +676,16 @@ private:
 					}
 
 					for (int jj = 0; jj < recordPVIndex; ++jj) {
-						setUpStates->push(StateInfo());
-						pos.doMove(bmd.pvBuffer[jj], setUpStates->top());
+						states->push_back(StateInfo());
+						pos.doMove(bmd.pvBuffer[jj], states->back());
 					}
 					sum_dT[1] = (pos.turn() == rootColor ? sum_dT[1] : -sum_dT[1]);
 					parse2Data.params.incParam(pos, sum_dT);
 					for (int jj = recordPVIndex - 1; 0 <= jj; --jj)
 						pos.undoMove(bmd.pvBuffer[jj]);
 				}
-				setUpStates->push(StateInfo());
-				pos.doMove(bmd.move, setUpStates->top());
+				states->push_back(StateInfo());
+				pos.doMove(bmd.move, states->back());
 			}
 		}
 	}
