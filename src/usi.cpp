@@ -195,7 +195,7 @@ inline double dsigmoidWinningRate(const double x) {
 // 学習でqsearchだけ呼んだ時のPVを取得する為の関数。
 // RootMoves が存在しない為、別の関数とする。
 template <bool Undo> // 局面を戻し、moves に PV を書き込むなら true。末端の局面に移動したいだけなら false
-void extractPVFromTT(Position& pos, Move* moves) {
+bool extractPVFromTT(Position& pos, Move* moves, const Move bestMove) {
 	StateInfo state[MaxPlyPlus4];
 	StateInfo* st = state;
 	TTEntry* tte;
@@ -204,6 +204,8 @@ void extractPVFromTT(Position& pos, Move* moves) {
 	bool ttHit;
 
 	tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
+	if (ttHit && move16toMove(tte->move(), pos) != bestMove)
+		return false; // 教師の手と異なる手の場合は学習しないので false。手が無い時は学習するので true
 	while (ttHit
 		   && pos.moveIsPseudoLegal(m = move16toMove(tte->move(), pos))
 		   && pos.pseudoLegalMoveIsLegal<false, false>(m, pos.pinnedBB())
@@ -221,26 +223,28 @@ void extractPVFromTT(Position& pos, Move* moves) {
 		while (ply)
 			pos.undoMove(*(--moves));
 	}
+	return true;
 }
 
 template <bool Undo>
-void qsearch(Position& pos, Move moves[MaxPlyPlus4], const u16 bestMove16) {
-	static std::atomic<int> i;
-	StateInfo st;
+bool qsearch(Position& pos, Move moves[MaxPlyPlus4], const u16 bestMove16) {
+	//static std::atomic<int> i;
+	//StateInfo st;
 	SearchStack ss[MaxPlyPlus4];
 	memset(ss, 0, 5 * sizeof(SearchStack));
 	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
 	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に一手進めて探索してみる。
-	if ((i++ & 1) == 0) {
-		const Move bestMove = move16toMove(Move(bestMove16), pos);
-		pos.doMove(bestMove, st);
-	}
+	//if ((i++ & 1) == 0) {
+	//	const Move bestMove = move16toMove(Move(bestMove16), pos);
+	//	pos.doMove(bestMove, st);
+	//}
 	if (pos.inCheck())
 		pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
 	else
 		pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+	const Move bestMove = move16toMove(Move(bestMove16), pos);
 	// pv 取得
-	extractPVFromTT<Undo>(pos, moves);
+	return extractPVFromTT<Undo>(pos, moves, bestMove);
 }
 
 #if defined USE_GLOBAL
@@ -575,7 +579,7 @@ namespace {
 	}
 }
 
-constexpr s64 NodesPerIteration = 3000000; // 1回評価値を更新するのに使う教師局面数
+constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
 
 void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 	std::string teacherFileName;
@@ -634,7 +638,8 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const Color rootColor = pos.turn();
 			pos.searcher()->alpha = -ScoreMaxEvaluate;
 			pos.searcher()->beta  =  ScoreMaxEvaluate;
-			qsearch<false>(pos, moves, hcpe.bestMove16); // 末端の局面に移動する。
+			if (!qsearch<false>(pos, moves, hcpe.bestMove16)) // 末端の局面に移動する。
+				continue;
 			// pv を辿って評価値を返す。pos は pv を辿る為に状態が変わる。
 			auto pvEval = [&ss, &rootColor](Position& pos) {
 				ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
