@@ -561,8 +561,11 @@ void Thread::search() {
 				if (mainThread
 					&& multiPV == 1
 					&& (bestScore <= alpha || beta <= bestScore)
-					&& searcher->timeManager.elapsed() > 3000)
+					&& searcher->timeManager.elapsed() > 3000
+					// 将棋所のコンソールが詰まるのを防ぐ。
+					&& (rootDepth < 10 * OnePly || lastInfoTime + 200 < searcher->timeManager.elapsed()))
 				{
+					lastInfoTime = searcher->timeManager.elapsed();
 					SYNCCOUT << pvInfoToUSI(rootPos, multiPV, rootDepth, alpha, beta) << SYNCENDL;
 				}
 
@@ -593,8 +596,13 @@ void Thread::search() {
 			if (searcher->signals.stop)
 				SYNCCOUT << "info nodes " << searcher->threads.nodesSearched()
 						 << " time " << searcher->timeManager.elapsed() << SYNCENDL;
-			else if (pvIdx + 1 == multiPV || searcher->timeManager.elapsed() > 3000)
+			else if ((pvIdx + 1 == multiPV || searcher->timeManager.elapsed() > 3000)
+					 // 将棋所のコンソールが詰まるのを防ぐ。
+					 && (rootDepth < 10 * OnePly || lastInfoTime + 200 < searcher->timeManager.elapsed()))
+			{
+				lastInfoTime = searcher->timeManager.elapsed();
 				SYNCCOUT << pvInfoToUSI(rootPos, multiPV, rootDepth, alpha, beta) << SYNCENDL;
+			}
 		}
 
 		if (!searcher->signals.stop)
@@ -1010,7 +1018,7 @@ movesLoop:
 			const Depth d = (depth / (2 * OnePly)) * OnePly;
 			ss->excludedMove = move;
 			ss->skipEarlyPruning = true;
-			score = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth, cutNode);
+			score = search<NonPV>(pos, ss, rBeta - 1, rBeta, d, cutNode);
 			ss->skipEarlyPruning = false;
 			ss->excludedMove = Move::moveNone();
 
@@ -1347,8 +1355,8 @@ void MainThread::search() {
 	if (options["OwnBook"] && pos.gamePly() <= book_ply) {
 		const std::tuple<Move, Score> bookMoveScore = book.probe(pos, options["Book_File"], options["Best_Book_Move"]);
 		if (std::get<0>(bookMoveScore) && std::find(rootMoves.begin(),
-															  rootMoves.end(),
-															  std::get<0>(bookMoveScore)) != rootMoves.end())
+													rootMoves.end(),
+													std::get<0>(bookMoveScore)) != rootMoves.end())
 		{
 			std::swap(rootMoves[0], *std::find(rootMoves.begin(),
 											   rootMoves.end(),
@@ -1438,7 +1446,7 @@ finalize:
 	if (nyugyokuWin)
 		SYNCCOUT << "bestmove win" << SYNCENDL;
 	else if (!bestThread->rootMoves[0].pv[0])
-			SYNCCOUT << "bestmove resign" << SYNCENDL;
+		SYNCCOUT << "bestmove resign" << SYNCENDL;
 	else
 		SYNCCOUT << "bestmove " << bestThread->rootMoves[0].pv[0].toUSI()
 				 << " ponder " << bestThread->rootMoves[0].pv[1].toUSI()

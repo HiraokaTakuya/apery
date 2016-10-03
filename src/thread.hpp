@@ -36,7 +36,7 @@ enum NodeType {
 // 時間や探索深さの制限を格納する為の構造体
 struct LimitsType {
 	LimitsType() {
-		nodes = time[Black] = time[White] = inc[Black] = inc[White] = movesToGo = depth = moveTime = infinite = ponder = 0;
+		nodes = time[Black] = time[White] = inc[Black] = inc[White] = movesToGo = depth = moveTime = mate = infinite = ponder = 0;
 	}
 	bool useTimeManagement() const { return !(mate | moveTime | depth | nodes | infinite); }
 

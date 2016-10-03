@@ -119,7 +119,7 @@ Move MovePicker::nextMove() {
 			&& move != ss_->killers[0]
 			&& move != ss_->killers[1]
 			&& pos_.moveIsPseudoLegal(move)
-			&& move.isCaptureOrPawnPromotion())
+			&& pos_.piece(move.to()) == Empty)
 		{
 			return move;
 		}
