@@ -1094,12 +1094,14 @@ movesLoop:
 			else {
 				if (cutNode)
 					r += 2 * OnePly;
+#if 0
 				else if (!move.isDrop()
 						 && pieceToPieceType(pos.piece(move.to())) != Pawn
 						 && pos.seeSign(makeMove(pieceToPieceType(pos.piece(move.to())), move.to(), move.from())) < ScoreZero)
 				{
 					r -= 2 * OnePly;
 				}
+#endif
 
 				const Score val = thisThread->history[movedPiece][move.to()]
 					+    (cmh  ? (*cmh )[movedPiece][move.to()] : ScoreZero)
