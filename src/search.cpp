@@ -971,8 +971,7 @@ movesLoop:
 	singularExtensionNode = (!RootNode
 							 &&  depth >= 8 * OnePly
 							 &&  ttMove != Move::moveNone()
-							 //&&  ttScore != ScoreNone
-							 &&  abs(ttScore) < ScoreKnownWin
+							 &&  ttScore != ScoreNone
 							 && !excludedMove
 							 && (tte->bound() & BoundLower)
 							 &&  tte->depth() >= depth - 3 * OnePly);
@@ -1014,7 +1013,7 @@ movesLoop:
 			&& extension == Depth0
 			&& pos.pseudoLegalMoveIsLegal<false, false>(move, ci.pinned))
 		{
-			const Score rBeta = ttScore - 2 * depth / OnePly;
+			const Score rBeta = std::max(ttScore - 2 * depth / OnePly, -ScoreMate0Ply);
 			const Depth d = (depth / (2 * OnePly)) * OnePly;
 			ss->excludedMove = move;
 			ss->skipEarlyPruning = true;
@@ -1031,7 +1030,6 @@ movesLoop:
 		// step13
 		// pruning at shallow depth
 		if (!RootNode
-			&& !inCheck
 			&& bestScore > ScoreMatedInMaxPly)
 		{
 			if (!captureOrPawnPromotion
@@ -1197,6 +1195,8 @@ movesLoop:
 			quietsSearched[quietCount++] = move;
 	}
 
+	assert(moveCount || !inCheck || excludedMove || !MoveList<Legal>(pos).size());
+
 	// step20
 	if (moveCount == 0)
 		bestScore = (excludedMove ? alpha : matedIn(ss->ply));
@@ -1239,6 +1239,9 @@ bool RootMove::extractPonderFromTT(Position& pos) {
 	bool ttHit;
 
 	assert(pv.size() == 1);
+
+	if (!pv[0])
+		return false;
 
 	pos.doMove(pv[0], st/*, pos.moveGivesCheck(pv[0])*/);
 	TTEntry* tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
