@@ -251,21 +251,25 @@ bool extractPVFromTT(Position& pos, Move* moves, const Move bestMove) {
 }
 
 template <bool Undo>
-bool qsearch(Position& pos, Move moves[MaxPly+7], const u16 bestMove16) {
+bool qsearch(Position& pos, const u16 bestMove16) {
 	//static std::atomic<int> i;
 	//StateInfo st;
-	SearchStack ss[MaxPly+7];
-	memset(ss, 0, 5 * sizeof(SearchStack));
-	ss->staticEvalRaw.p[0][0] = (ss+1)->staticEvalRaw.p[0][0] = (ss+2)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+	Move pv[MaxPly+1];
+	Move moves[MaxPly+1];
+	SearchStack stack[MaxPly+7];
+	SearchStack* ss = stack + 5;
+	memset(ss-5, 0, 8 * sizeof(SearchStack));
+	(ss-1)->staticEvalRaw.p[0][0] = (ss+0)->staticEvalRaw.p[0][0] = ScoreNotEvaluated;
+	ss->pv = pv;
 	// 探索の末端がrootと同じ手番に偏るのを防ぐ為に一手進めて探索してみる。
 	//if ((i++ & 1) == 0) {
 	//	const Move bestMove = move16toMove(Move(bestMove16), pos);
 	//	pos.doMove(bestMove, st);
 	//}
 	if (pos.inCheck())
-		pos.searcher()->qsearch<PV, true >(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+		pos.searcher()->qsearch<PV, true >(pos, ss, -ScoreInfinite, ScoreInfinite, Depth0);
 	else
-		pos.searcher()->qsearch<PV, false>(pos, ss+2, -ScoreInfinite, ScoreInfinite, Depth0);
+		pos.searcher()->qsearch<PV, false>(pos, ss, -ScoreInfinite, ScoreInfinite, Depth0);
 	const Move bestMove = move16toMove(Move(bestMove16), pos);
 	// pv 取得
 	return extractPVFromTT<Undo>(pos, moves, bestMove);
@@ -641,7 +645,6 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 
 	Mutex mutex;
 	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluaterGradient& evaluaterGradient, double& loss, std::atomic<s64>& nodes) {
-		Move moves[MaxPly+7];
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
 		evaluaterGradient.clear();
@@ -662,7 +665,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const Color rootColor = pos.turn();
 			pos.searcher()->alpha = -ScoreMaxEvaluate;
 			pos.searcher()->beta  =  ScoreMaxEvaluate;
-			if (!qsearch<false>(pos, moves, hcpe.bestMove16)) // 末端の局面に移動する。
+			if (!qsearch<false>(pos, hcpe.bestMove16)) // 末端の局面に移動する。
 				continue;
 			// pv を辿って評価値を返す。pos は pv を辿る為に状態が変わる。
 			auto pvEval = [&ss, &rootColor](Position& pos) {
