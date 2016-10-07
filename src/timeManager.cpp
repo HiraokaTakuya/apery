@@ -84,7 +84,9 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, Search
 	if (s->options["USI_Ponder"])
 		optimumTime_ += optimumTime_ / 4;
 
-#if 0
+#if 1
+	// 秒読み対応
+
 	// こちらも minThinkingTime 以上にする。
 	optimumTime_ = std::max(optimumTime_, minThinkingTime);
 	optimumTime_ = std::min(optimumTime_, maximumTime_);
@@ -100,6 +102,7 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, Search
 			limits.moveTime = 0;
 	}
 #endif
+
 	SYNCCOUT << "info string optimum_time = " << optimumTime_ << SYNCENDL;
 	SYNCCOUT << "info string maximum_time = " << maximumTime_ << SYNCENDL;
 }
