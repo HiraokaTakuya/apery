@@ -1094,7 +1094,13 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 #endif
 #if !defined MINIMUL
 		// 以下、デバッグ用
-		else if (token == "bench"    ) benchmark(pos);
+		else if (token == "bench"    ) {
+			if (!evalTableIsRead) {
+				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				evalTableIsRead = true;
+			}
+			benchmark(pos);
+		}
 		else if (token == "key"      ) SYNCCOUT << pos.getKey() << SYNCENDL;
 		else if (token == "tosfen"   ) SYNCCOUT << pos.toSFEN() << SYNCENDL;
 		else if (token == "eval"     ) std::cout << evaluateUnUseDiff(pos) / FVScale << std::endl;
