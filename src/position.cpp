@@ -255,11 +255,19 @@ template <bool Searching> bool Position::moveIsPseudoLegal(const Move move) cons
 
 			switch (ptFrom) {
 			case Pawn  :
-				if (!move.isPromotion() && canPromote(us, makeRank(to)))
+				if (move.isPromotion()) {
+					if (!canPromote(us, makeRank(to)))
+						return false;
+				}
+				else if (canPromote(us, makeRank(to)))
 					return false;
 				break;
 			case Lance :
-				if (!move.isPromotion()) {
+				if (move.isPromotion()) {
+					if (!canPromote(us, makeRank(to)))
+						return false;
+				}
+				else {
 					// 1段目の不成は非合法なので省く。2段目の不成と3段目の駒を取らない不成もついでに省く。
 					const Rank toRank = makeRank(to);
 					if (us == Black ? isInFrontOf<Black, Rank3, Rank7>(toRank) : isInFrontOf<White, Rank3, Rank7>(toRank))
@@ -271,8 +279,13 @@ template <bool Searching> bool Position::moveIsPseudoLegal(const Move move) cons
 			case Knight:
 				// hash 値が衝突して別の局面の合法手の ttMove が入力されても、桂馬である事は確定。(桂馬は移動元、移動先が特殊なので。)
 				// よって、行きどころの無い駒になる move は生成されない。
-				// 特にチェックすべき事は無いので、以下の 銀、角、飛と同じように break
-			case Silver: case Bishop: case Rook  : break;
+				// 特にチェックすべき事は無いので、break
+				break;
+			case Silver: case Bishop: case Rook  :
+				if (move.isPromotion())
+					if (!canPromote(us, makeRank(to)) && !canPromote(us, makeRank(from)))
+						return false;
+				break;
 			default: // 成れない駒
 				if (move.isPromotion())
 					return false;
