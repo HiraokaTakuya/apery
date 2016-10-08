@@ -1344,7 +1344,7 @@ void MainThread::search() {
 	static Book book;
 	Position& pos = rootPos;
 	const Color us = pos.turn();
-	searcher->timeManager.init(searcher->limits, us, pos.gamePly(), searcher);
+	searcher->timeManager.init(searcher->limits, us, pos.gamePly(), pos, searcher);
 	std::uniform_int_distribution<int> dist(options["Min_Book_Ply"], options["Max_Book_Ply"]);
 	const Ply book_ply = dist(g_randomTimeSeed);
 	bool searched = false;

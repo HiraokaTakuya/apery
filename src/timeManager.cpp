@@ -57,10 +57,11 @@ namespace {
 	}
 }
 
-void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, Searcher* s) {
+void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, const Position& pos, Searcher* s) {
 	const int minThinkingTime = s->options["Minimum_Thinking_Time"];
 	const int moveOverhead    = s->options["Move_Overhead"];
-    const int slowMover       = s->options["Slow_Mover"];
+    const int slowMover       = (pos.gamePly() < 10 ? s->options["Slow_Mover_10"] :
+								 pos.gamePly() < 20 ? s->options["Slow_Mover_20"] : s->options["Slow_Mover"]);
 
 	startTime_ = limits.startTime;
 	optimumTime_ = maximumTime_ = std::max(limits.time[us], minThinkingTime);
@@ -92,12 +93,14 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, Search
 	optimumTime_ = std::min(optimumTime_, maximumTime_);
 
 	if (limits.moveTime != 0) {
-		if (optimumTime_ < limits.moveTime)
-			optimumTime_ = std::min(limits.time[us], limits.moveTime);
-		if (maximumTime_ < limits.moveTime)
-			maximumTime_ = std::min(limits.time[us], limits.moveTime);
-		optimumTime_ += limits.moveTime;
-		maximumTime_ += limits.moveTime;
+		if (pos.gamePly() >= 20) {
+			if (optimumTime_ < limits.moveTime)
+				optimumTime_ = std::min(limits.time[us], limits.moveTime);
+			if (maximumTime_ < limits.moveTime)
+				maximumTime_ = std::min(limits.time[us], limits.moveTime);
+			optimumTime_ += limits.moveTime;
+			maximumTime_ += limits.moveTime;
+		}
 		if (limits.time[us] != 0)
 			limits.moveTime = 0;
 	}
