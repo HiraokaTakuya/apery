@@ -94,14 +94,16 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["Max_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Min_Book_Score"]              = USIOption(-180, -ScoreInfinite, ScoreInfinite);
 	(*this)["USI_Ponder"]                  = USIOption(true);
+	(*this)["Time_Margin"]                 = USIOption(500, 0, INT_MAX);
 	(*this)["Byoyomi_Margin"]              = USIOption(500, 0, INT_MAX);
-	(*this)["Inc_Margin"]                  = USIOption(4500, 0, INT_MAX);
+	(*this)["Time_Margin"]                 = USIOption(4500, 0, INT_MAX);
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
 	(*this)["Max_Random_Score_Diff_Ply"]   = USIOption(SHRT_MAX, 0, SHRT_MAX);
 	(*this)["Slow_Mover"]                  = USIOption(89, 10, 1000);
 	(*this)["Slow_Mover_10"]               = USIOption(10, 10, 1000);
 	(*this)["Slow_Mover_20"]               = USIOption(50, 10, 1000);
+	(*this)["Draw_Ply"]                    = USIOption(256, 1, INT_MAX);
 	(*this)["Move_Overhead"]               = USIOption(30, 0, 5000);
 	(*this)["Minimum_Thinking_Time"]       = USIOption(20, 0, INT_MAX);
 	(*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
@@ -186,8 +188,8 @@ void go(const Position& pos, std::istringstream& ssCmd) {
 	}
 	if      (limits.moveTime != 0)
 		limits.moveTime -= pos.searcher()->options["Byoyomi_Margin"];
-	else if (limits.inc[pos.turn()] != 0)
-		limits.time[pos.turn()] -= pos.searcher()->options["Inc_Margin"];
+	else if (pos.searcher()->options["Time_Margin"] != 0)
+		limits.time[pos.turn()] -= pos.searcher()->options["Time_Margin"];
 	pos.searcher()->threads.startThinking(pos, limits, pos.searcher()->states);
 }
 
