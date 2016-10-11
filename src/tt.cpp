@@ -22,48 +22,48 @@
 #include "tt.hpp"
 
 void TranspositionTable::resize(const size_t mbSize) { // Mega Byte 指定
-	// 確保する要素数を取得する。
-	const size_t newClusterCount = size_t(1) << msb((mbSize * 1024 * 1024) / sizeof(TTCluster));
-	if (newClusterCount == clusterCount_)
-		// 現在と同じサイズなら何も変更する必要がない。
-		return;
+    // 確保する要素数を取得する。
+    const size_t newClusterCount = size_t(1) << msb((mbSize * 1024 * 1024) / sizeof(TTCluster));
+    if (newClusterCount == clusterCount_)
+        // 現在と同じサイズなら何も変更する必要がない。
+        return;
 
-	clusterCount_ = newClusterCount;
-	free(mem_);
-	mem_ = calloc(newClusterCount * sizeof(TTCluster) + CacheLineSize - 1, 1);
-	if (!mem_) {
-		std::cerr << "Failed to allocate transposition table: " << mbSize << "MB";
-		exit(EXIT_FAILURE);
-	}
-	table_ = reinterpret_cast<TTCluster*>((uintptr_t(mem_) + CacheLineSize - 1) & ~(CacheLineSize - 1));
+    clusterCount_ = newClusterCount;
+    free(mem_);
+    mem_ = calloc(newClusterCount * sizeof(TTCluster) + CacheLineSize - 1, 1);
+    if (!mem_) {
+        std::cerr << "Failed to allocate transposition table: " << mbSize << "MB";
+        exit(EXIT_FAILURE);
+    }
+    table_ = reinterpret_cast<TTCluster*>((uintptr_t(mem_) + CacheLineSize - 1) & ~(CacheLineSize - 1));
 }
 
 void TranspositionTable::clear() {
-	memset(table_, 0, clusterCount_ * sizeof(TTCluster));
+    memset(table_, 0, clusterCount_ * sizeof(TTCluster));
 }
 
 TTEntry* TranspositionTable::probe(const Key posKey, bool& found) const {
-	TTEntry* const tte = firstEntry(posKey);
-	const Key key16 = posKey >> 48;
+    TTEntry* const tte = firstEntry(posKey);
+    const Key key16 = posKey >> 48;
 
-	// firstEntry() で、posKey の下位 (size() - 1) ビットを hash key に使用した。
-	// ここでは posKey の上位 32bit が 保存されている hash key と同じか調べる。
-	for (int i = 0; i < ClusterSize; ++i) {
-		if (!tte[i].key() || tte[i].key() == key16) {
-			if (tte[i].generation() != generation() && tte[i].key())
-				tte[i].genBound8_ = generation() | tte[i].bound();
-			found = static_cast<bool>(tte[i].key());
-			return &tte[i];
-		}
-	}
-	TTEntry* replace = tte;
-	for (int i = 1; i < ClusterSize; ++i) {
-		if (replace->depth() - ((259 + generation() - replace->genBound8_) & 0xfc) * 2
-			> tte[i].depth() - ((259 + generation() -   tte[i].genBound8_) & 0xfc) * 2)
-		{
-			replace = &tte[i];
-		}
-	}
-	found = false;
-	return replace;
+    // firstEntry() で、posKey の下位 (size() - 1) ビットを hash key に使用した。
+    // ここでは posKey の上位 32bit が 保存されている hash key と同じか調べる。
+    for (int i = 0; i < ClusterSize; ++i) {
+        if (!tte[i].key() || tte[i].key() == key16) {
+            if (tte[i].generation() != generation() && tte[i].key())
+                tte[i].genBound8_ = generation() | tte[i].bound();
+            found = static_cast<bool>(tte[i].key());
+            return &tte[i];
+        }
+    }
+    TTEntry* replace = tte;
+    for (int i = 1; i < ClusterSize; ++i) {
+        if (replace->depth() - ((259 + generation() - replace->genBound8_) & 0xfc) * 2
+            > tte[i].depth() - ((259 + generation() -   tte[i].genBound8_) & 0xfc) * 2)
+        {
+            replace = &tte[i];
+        }
+    }
+    found = false;
+    return replace;
 }

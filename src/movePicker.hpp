@@ -27,48 +27,48 @@
 #include "search.hpp"
 
 enum Stages {
-	MainSearch, TacticalInit, GoodTacticals, Killers, Countermove, QuietInit, Quiet, BadCaptures,
-	EvasionSearch, EvasionsInit, AllEvasions,
-	Probcut, ProbcutInit, ProbcutCaptures,
+    MainSearch, TacticalInit, GoodTacticals, Killers, Countermove, QuietInit, Quiet, BadCaptures,
+    EvasionSearch, EvasionsInit, AllEvasions,
+    Probcut, ProbcutInit, ProbcutCaptures,
 #if defined USE_QCHECKS
-	QSearchWithChecks, QCaptures1Init, QCaptures1, QChecks,
+    QSearchWithChecks, QCaptures1Init, QCaptures1, QChecks,
 #endif
-	QSearchNoChecks, QCaptures2Init, QCaptures2,
-	QSearchRecaptures, QRecaptures
+    QSearchNoChecks, QCaptures2Init, QCaptures2,
+    QSearchRecaptures, QRecaptures
 };
 OverloadEnumOperators(Stages);
 
 class MovePicker {
 public:
-	MovePicker(const MovePicker&) = delete;
-	MovePicker& operator = (const MovePicker&) = delete;
+    MovePicker(const MovePicker&) = delete;
+    MovePicker& operator = (const MovePicker&) = delete;
 
-	MovePicker(const Position& pos, const Move ttm, const Score th);
-	MovePicker(const Position& pos, const Move ttm, const Depth depth, const Square sq);
-	MovePicker(const Position& pos, const Move ttm, const Depth depth, SearchStack* searchStack);
+    MovePicker(const Position& pos, const Move ttm, const Score th);
+    MovePicker(const Position& pos, const Move ttm, const Depth depth, const Square sq);
+    MovePicker(const Position& pos, const Move ttm, const Depth depth, SearchStack* searchStack);
 
-	Move nextMove();
+    Move nextMove();
 
 private:
-	void scoreCaptures();
-	template <bool IsDrop> void scoreNonCapturesMinusPro();
-	void scoreEvasions();
-	ExtMove* begin() { return cur_; }
-	ExtMove* end() { return endMoves_; }
-	ExtMove* first() { return &moves_[1]; } // 番兵を除いている。
+    void scoreCaptures();
+    template <bool IsDrop> void scoreNonCapturesMinusPro();
+    void scoreEvasions();
+    ExtMove* begin() { return cur_; }
+    ExtMove* end() { return endMoves_; }
+    ExtMove* first() { return &moves_[1]; } // 番兵を除いている。
 
-	const Position& pos_;
-	const SearchStack* ss_;
-	Move counterMove_;
-	Depth depth_;
-	Move ttMove_;
-	Square recaptureSquare_;
-	Score threshold_;
-	Stages stage_;
-	ExtMove* cur_;
-	ExtMove* endMoves_;
-	ExtMove* endBadCaptures_;
-	ExtMove moves_[MaxLegalMoves];
+    const Position& pos_;
+    const SearchStack* ss_;
+    Move counterMove_;
+    Depth depth_;
+    Move ttMove_;
+    Square recaptureSquare_;
+    Score threshold_;
+    Stages stage_;
+    ExtMove* cur_;
+    ExtMove* endMoves_;
+    ExtMove* endBadCaptures_;
+    ExtMove moves_[MaxLegalMoves];
 };
 
 #endif // #ifndef APERY_MOVEPICKER_HPP

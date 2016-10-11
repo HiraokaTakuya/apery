@@ -120,91 +120,91 @@ using u64 = uint64_t;
 // Binary<11110>::value とすれば、30 となる。
 // 符合なし64bitなので19桁まで表記可能。
 template <u64 n> struct Binary {
-	static const u64 value = n % 10 + (Binary<n / 10>::value << 1);
+    static const u64 value = n % 10 + (Binary<n / 10>::value << 1);
 };
 // template 特殊化
 template <> struct Binary<0> {
-	static const u64 value = 0;
+    static const u64 value = 0;
 };
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && defined(_WIN64)
 #include <intrin.h>
 FORCE_INLINE int firstOneFromLSB(const u64 b) {
-	unsigned long index;
-	_BitScanForward64(&index, b);
-	return index;
+    unsigned long index;
+    _BitScanForward64(&index, b);
+    return index;
 }
 FORCE_INLINE int lsb(const u64 b) {
-	return firstOneFromLSB(b);
+    return firstOneFromLSB(b);
 }
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
-	unsigned long index;
-	_BitScanReverse64(&index, b);
-	return 63 - index;
+    unsigned long index;
+    _BitScanReverse64(&index, b);
+    return 63 - index;
 }
 FORCE_INLINE int msb(const u64 b) {
-	return 63 - firstOneFromMSB(b);
+    return 63 - firstOneFromMSB(b);
 }
 #elif defined(__GNUC__) && ( defined(__i386__) || defined(__x86_64__) )
 FORCE_INLINE int firstOneFromLSB(const u64 b) {
-	return __builtin_ctzll(b);
+    return __builtin_ctzll(b);
 }
 FORCE_INLINE int lsb(const u64 b) {
-	return __builtin_ctzll(b);
+    return __builtin_ctzll(b);
 }
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
-	return __builtin_clzll(b);
+    return __builtin_clzll(b);
 }
 FORCE_INLINE int msb(const u64 b) {
-	return 63 - __builtin_clzll(b);
+    return 63 - __builtin_clzll(b);
 }
 #else
 // firstOneFromLSB() で使用する table
 const int BitTable[64] = {
-	63, 30, 3, 32, 25, 41, 22, 33, 15, 50, 42, 13, 11, 53, 19, 34, 61, 29, 2,
-	51, 21, 43, 45, 10, 18, 47, 1, 54, 9, 57, 0, 35, 62, 31, 40, 4, 49, 5, 52,
-	26, 60, 6, 23, 44, 46, 27, 56, 16, 7, 39, 48, 24, 59, 14, 12, 55, 38, 28,
-	58, 20, 37, 17, 36, 8
+    63, 30, 3, 32, 25, 41, 22, 33, 15, 50, 42, 13, 11, 53, 19, 34, 61, 29, 2,
+    51, 21, 43, 45, 10, 18, 47, 1, 54, 9, 57, 0, 35, 62, 31, 40, 4, 49, 5, 52,
+    26, 60, 6, 23, 44, 46, 27, 56, 16, 7, 39, 48, 24, 59, 14, 12, 55, 38, 28,
+    58, 20, 37, 17, 36, 8
 };
 // LSB から数えて初めに bit が 1 になるのは何番目の bit かを返す。
 // b = 8 だったら 3 を返す。
 // b = 0 のとき、63 を返す。
 FORCE_INLINE int firstOneFromLSB(const u64 b) {
-	const u64 tmp = b ^ (b - 1);
-	const u32 old = static_cast<u32>((tmp & 0xffffffff) ^ (tmp >> 32));
-	return BitTable[(old * 0x783a9b23) >> 26];
+    const u64 tmp = b ^ (b - 1);
+    const u32 old = static_cast<u32>((tmp & 0xffffffff) ^ (tmp >> 32));
+    return BitTable[(old * 0x783a9b23) >> 26];
 }
 FORCE_INLINE int lsb(const u64 b) {
-	return firstOneFromLSB(b);
+    return firstOneFromLSB(b);
 }
 // 超絶遅いコードなので後で書き換えること。
 FORCE_INLINE int firstOneFromMSB(const u64 b) {
-	for (int i = 63; 0 <= i; --i) {
-		if (b >> i)
-			return 63 - i;
-	}
-	return 0;
+    for (int i = 63; 0 <= i; --i) {
+        if (b >> i)
+            return 63 - i;
+    }
+    return 0;
 }
 FORCE_INLINE int msb(const u64 b) {
-	return 63 - firstOneFromMSB(b);
+    return 63 - firstOneFromMSB(b);
 }
 #endif
 
 #if defined(HAVE_SSE42)
 #include <nmmintrin.h>
 inline int count1s(u64 x) {
-	return _mm_popcnt_u64(x);
+    return _mm_popcnt_u64(x);
 }
 #else
 inline int count1s(u64 x) //任意の値の1のビットの数を数える。( x is not a const value.)
 {
-	x = x - ((x >> 1) & UINT64_C(0x5555555555555555));
-	x = (x & UINT64_C(0x3333333333333333)) + ((x >> 2) & UINT64_C(0x3333333333333333));
-	x = (x + (x >> 4)) & UINT64_C(0x0f0f0f0f0f0f0f0f);
-	x = x + (x >> 8);
-	x = x + (x >> 16);
-	x = x + (x >> 32);
-	return (static_cast<int>(x)) & 0x0000007f;
+    x = x - ((x >> 1) & UINT64_C(0x5555555555555555));
+    x = (x & UINT64_C(0x3333333333333333)) + ((x >> 2) & UINT64_C(0x3333333333333333));
+    x = (x + (x >> 4)) & UINT64_C(0x0f0f0f0f0f0f0f0f);
+    x = x + (x >> 8);
+    x = x + (x >> 16);
+    x = x + (x >> 32);
+    return (static_cast<int>(x)) & 0x0000007f;
 }
 #endif
 
@@ -212,18 +212,18 @@ inline int count1s(u64 x) //任意の値の1のビットの数を数える。( x
 // 2進表示
 template <typename T>
 inline std::string putb(const T value, const int msb = sizeof(T)*8 - 1, const int lsb = 0) {
-	std::string str;
-	u64 tempValue = (static_cast<u64>(value) >> lsb);
+    std::string str;
+    u64 tempValue = (static_cast<u64>(value) >> lsb);
 
-	for (int length = msb - lsb + 1; length; --length)
-		str += ((tempValue & (UINT64_C(1) << (length - 1))) ? "1" : "0");
+    for (int length = msb - lsb + 1; length; --length)
+        str += ((tempValue & (UINT64_C(1) << (length - 1))) ? "1" : "0");
 
-	return str;
+    return str;
 }
 
 enum SyncCout {
-	IOLock,
-	IOUnlock
+    IOLock,
+    IOUnlock
 };
 std::ostream& operator << (std::ostream& os, SyncCout sc);
 #define SYNCCOUT std::cout << IOLock
@@ -242,27 +242,27 @@ template <typename T> Eraser& operator << (Eraser& temp, const T&) { return temp
 // こんな感じに書くと、lambda がテンプレート引数の数値の分だけ繰り返し生成される。
 // Unroller<5>()([&](const int i){std::cout << i << std::endl;});
 template <int N> struct Unroller {
-	template <typename T> FORCE_INLINE void operator () (T t) {
-		Unroller<N-1>()(t);
-		t(N-1);
-	}
+    template <typename T> FORCE_INLINE void operator () (T t) {
+        Unroller<N-1>()(t);
+        t(N-1);
+    }
 };
 template <> struct Unroller<0> {
-	template <typename T> FORCE_INLINE void operator () (T) {}
+    template <typename T> FORCE_INLINE void operator () (T) {}
 };
 
 const size_t CacheLineSize = 64; // 64byte
 
 inline void prefetch(void* addr) {
 #if defined(__INTEL_COMPILER)
-	// これでプリフェッチが最適化で消えるのを防ぐ。
-	__asm__("");
+    // これでプリフェッチが最適化で消えるのを防ぐ。
+    __asm__("");
 #endif
 
 #  if defined(__INTEL_COMPILER) || defined(_MSC_VER)
-	_mm_prefetch((char*)addr, _MM_HINT_T0);
+    _mm_prefetch((char*)addr, _MM_HINT_T0);
 #  elif defined(__GNUC__)
-	__builtin_prefetch(addr);
+    __builtin_prefetch(addr);
 #  endif
 }
 
@@ -271,37 +271,37 @@ using Key = u64;
 // Size は 2のべき乗であること。
 template <typename T, size_t Size>
 struct HashTable {
-	HashTable() {
-		//entries_ = (T*)(boost::alignment::aligned_alloc(sizeof(T), sizeof(T)*Size));
-		clear();
-	}
-	T* operator [] (const Key k) { return entries_ + (static_cast<size_t>(k) & (Size-1)); }
-	void clear() { memset(entries_, 0, sizeof(T)*Size); }
-	// Size が 2のべき乗であることのチェック
-	static_assert((Size & (Size-1)) == 0, "");
+    HashTable() {
+        //entries_ = (T*)(boost::alignment::aligned_alloc(sizeof(T), sizeof(T)*Size));
+        clear();
+    }
+    T* operator [] (const Key k) { return entries_ + (static_cast<size_t>(k) & (Size-1)); }
+    void clear() { memset(entries_, 0, sizeof(T)*Size); }
+    // Size が 2のべき乗であることのチェック
+    static_assert((Size & (Size-1)) == 0, "");
 
 private:
-	//T* entries_;
-	T entries_[Size];
+    //T* entries_;
+    T entries_[Size];
 };
 
 // ミリ秒単位の時間を表すクラス
 class Timer {
 public:
-	void restart() { t_ = std::chrono::system_clock::now(); }
-	int elapsed() const {
-		using std::chrono::duration_cast;
-		using std::chrono::milliseconds;
-		return static_cast<int>(duration_cast<milliseconds>(std::chrono::system_clock::now() - t_).count());
-	}
-	static Timer currentTime() {
-		Timer t;
-		t.restart();
-		return t;
-	}
+    void restart() { t_ = std::chrono::system_clock::now(); }
+    int elapsed() const {
+        using std::chrono::duration_cast;
+        using std::chrono::milliseconds;
+        return static_cast<int>(duration_cast<milliseconds>(std::chrono::system_clock::now() - t_).count());
+    }
+    static Timer currentTime() {
+        Timer t;
+        t.restart();
+        return t;
+    }
 
 private:
-	std::chrono::time_point<std::chrono::system_clock> t_;
+    std::chrono::time_point<std::chrono::system_clock> t_;
 };
 
 extern std::mt19937_64 g_randomTimeSeed;
@@ -317,13 +317,13 @@ extern std::mt19937_64 g_randomTimeSeed;
 #undef NOMINMAX
 
 struct Mutex {
-	Mutex() { InitializeCriticalSection(&cs); }
-	~Mutex() { DeleteCriticalSection(&cs); }
-	void lock() { EnterCriticalSection(&cs); }
-	void unlock() { LeaveCriticalSection(&cs); }
+    Mutex() { InitializeCriticalSection(&cs); }
+    ~Mutex() { DeleteCriticalSection(&cs); }
+    void lock() { EnterCriticalSection(&cs); }
+    void unlock() { LeaveCriticalSection(&cs); }
 
 private:
-	CRITICAL_SECTION cs;
+    CRITICAL_SECTION cs;
 };
 using ConditionVariable = std::condition_variable_any;
 #else
@@ -334,26 +334,26 @@ using ConditionVariable = std::condition_variable;
 // 三角配列。at(i, j) と at(j, i) で同じアドレスを指す事でメモリを役半分で2次元配列を表す事が出来る。
 template <typename ElementType, typename KeyType, size_t Size_i, size_t Size_j>
 struct TriangularArray {
-	static constexpr KeyType index(const KeyType i, const KeyType j) { return i * (i + 1)/2 + j; }
-	static constexpr size_t Size = index(Size_i - 1, Size_j - 1) + 1;
-	const ElementType& at(const KeyType i, const KeyType j) const { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
-	ElementType& at(const KeyType i, const KeyType j) { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
-	const ElementType* begin() const { return data_; }
-	ElementType* begin() { return data_; }
-	const ElementType* end() const { return data_ + Size; }
-	ElementType* end() { return data_ + Size; }
+    static constexpr KeyType index(const KeyType i, const KeyType j) { return i * (i + 1)/2 + j; }
+    static constexpr size_t Size = index(Size_i - 1, Size_j - 1) + 1;
+    const ElementType& at(const KeyType i, const KeyType j) const { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
+    ElementType& at(const KeyType i, const KeyType j) { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
+    const ElementType* begin() const { return data_; }
+    ElementType* begin() { return data_; }
+    const ElementType* end() const { return data_ + Size; }
+    ElementType* end() { return data_ + Size; }
 
-	ElementType data_[Size];
+    ElementType data_[Size];
 };
 
 #if 0
 #include <boost/detail/endian.hpp>
 template <typename T> inline void reverseEndian(T& r) {
-	u8* begin = reinterpret_cast<u8*>(&r);
-	u8* end = reinterpret_cast<u8*>(&r) + sizeof(T);
-	for (; begin < end; ++begin, --end) {
-		std::swap(*begin, *(end - 1));
-	}
+    u8* begin = reinterpret_cast<u8*>(&r);
+    u8* end = reinterpret_cast<u8*>(&r) + sizeof(T);
+    for (; begin < end; ++begin, --end) {
+        std::swap(*begin, *(end - 1));
+    }
 }
 #endif
 
