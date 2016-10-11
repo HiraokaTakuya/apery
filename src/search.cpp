@@ -1452,10 +1452,12 @@ finalize:
 		SYNCCOUT << "bestmove win" << SYNCENDL;
 	else if (!bestThread->rootMoves[0].pv[0])
 		SYNCCOUT << "bestmove resign" << SYNCENDL;
-	else
-		SYNCCOUT << "bestmove " << bestThread->rootMoves[0].pv[0].toUSI()
-				 << " ponder " << bestThread->rootMoves[0].pv[1].toUSI()
-				 << SYNCENDL;
+	else {
+		SYNCCOUT << "bestmove " << bestThread->rootMoves[0].pv[0].toUSI();
+		if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extractPonderFromTT(pos))
+			std::cout << " ponder " << bestThread->rootMoves[0].pv[1].toUSI();
+		std::cout << SYNCENDL;
+	}
 #endif
 }
 
