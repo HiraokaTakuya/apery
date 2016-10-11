@@ -100,10 +100,10 @@ void OptionsMap::init(Searcher* s) {
 	(*this)["MultiPV"]                     = USIOption(1, 1, MaxLegalMoves);
 	(*this)["Max_Random_Score_Diff"]       = USIOption(0, 0, ScoreMate0Ply);
 	(*this)["Max_Random_Score_Diff_Ply"]   = USIOption(SHRT_MAX, 0, SHRT_MAX);
+	(*this)["Slow_Mover_10"]               = USIOption(10, 1, 1000); // 持ち時間15分, 秒読み10秒では10, 持ち時間2時間では3にした。(sdt4)
+	(*this)["Slow_Mover_16"]               = USIOption(20, 1, 1000); // 持ち時間15分, 秒読み10秒では50, 持ち時間2時間では20にした。(sdt4)
+	(*this)["Slow_Mover_20"]               = USIOption(40, 1, 1000); // 持ち時間15分, 秒読み10秒では50, 持ち時間2時間では40にした。(sdt4)
 	(*this)["Slow_Mover"]                  = USIOption(89, 1, 1000);
-	(*this)["Slow_Mover_10"]               = USIOption(3, 1, 1000);
-	(*this)["Slow_Mover_16"]               = USIOption(20, 1, 1000);
-	(*this)["Slow_Mover_20"]               = USIOption(40, 1, 1000);
 	(*this)["Draw_Ply"]                    = USIOption(256, 1, INT_MAX);
 	(*this)["Move_Overhead"]               = USIOption(30, 0, 5000);
 	(*this)["Minimum_Thinking_Time"]       = USIOption(20, 0, INT_MAX);

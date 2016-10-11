@@ -1277,8 +1277,8 @@ struct EvalSum {
 class Position;
 struct SearchStack;
 
-//const size_t EvaluateTableSize = 0x400000; // 134MB
-const size_t EvaluateTableSize = 0x2000000; // 1GB
+const size_t EvaluateTableSize = 0x400000; // 134MB
+//const size_t EvaluateTableSize = 0x2000000; // 1GB
 //const size_t EvaluateTableSize = 0x10000000; // 8GB
 //const size_t EvaluateTableSize = 0x20000000; // 17GB
 
