@@ -1152,14 +1152,14 @@ movesLoop:
 			RootMove& rm = *std::find(std::begin(thisThread->rootMoves), std::end(thisThread->rootMoves), move);
 			if (moveCount == 1 || score > alpha) {
 				rm.score = score;
+#if 0
 				rm.pv.resize(1);
-				//rm.extractPvFromTT(pos);
-
 				assert((ss+1)->pv);
-
 				for (Move* m = (ss+1)->pv; *m != Move::moveNone(); ++m)
 					rm.pv.push_back(*m);
-
+#else
+				rm.extractPVFromTT(pos);
+#endif
 				if (moveCount > 1 && thisThread == threads.main())
 					++static_cast<MainThread*>(thisThread)->bestMoveChanges;
 			}
@@ -1254,6 +1254,36 @@ bool RootMove::extractPonderFromTT(Position& pos) {
 
 	pos.undoMove(pv[0]);
 	return pv.size() > 1;
+}
+
+void RootMove::extractPVFromTT(Position& pos) {
+	StateInfo state[MaxPly+7];
+	StateInfo* st = state;
+	TTEntry* tte;
+	Ply ply = 0;
+	Move m = pv[0];
+	bool ttHit;
+
+	assert(m && pos.moveIsPseudoLegal(m));
+
+	pv.clear();
+
+	do {
+		pv.push_back(m);
+
+		assert(pos.moveIsLegal(pv[ply]));
+		pos.doMove(pv[ply++], *st++);
+		tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
+	}
+	while (ttHit
+		   // このチェックは少し無駄。駒打ちのときはmove16toMove() 呼ばなくて良い。
+		   && pos.moveIsPseudoLegal(m = move16toMove(tte->move(), pos))
+		   && pos.pseudoLegalMoveIsLegal<false, false>(m, pos.pinnedBB())
+		   && ply < MaxPly
+		   && (!pos.isDraw(20) || ply < 6));
+
+	while (ply)
+		pos.undoMove(pv[--ply]);
 }
 
 void initSearchTable() {

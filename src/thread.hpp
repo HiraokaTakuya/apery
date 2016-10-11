@@ -92,6 +92,7 @@ struct RootMove {
 	bool operator < (const RootMove& m) const { return m.score < score; } // Descending sort
 	bool operator == (const Move& m) const { return pv[0] == m; }
 	bool extractPonderFromTT(Position& pos);
+	void extractPVFromTT(Position& pos);
 
 	Score score = -ScoreInfinite;
 	Score previousScore = -ScoreInfinite;
