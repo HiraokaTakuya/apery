@@ -108,6 +108,11 @@ void OptionsMap::init(Searcher* s) {
     (*this)["Move_Overhead"]               = USIOption(30, 0, 5000);
     (*this)["Minimum_Thinking_Time"]       = USIOption(20, 0, INT_MAX);
     (*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
+#ifdef NDEBUG
+    (*this)["Engine_Name"]                 = USIOption("ukamuse_SDT4");
+#else
+    (*this)["Engine_Name"]                 = USIOption("Apery Debug Build");
+#endif
 }
 
 USIOption::USIOption(const char* v, Fn* f, Searcher* s) :
@@ -1015,12 +1020,6 @@ void measureGenerateMoves(const Position& pos) {
 }
 #endif
 
-#ifdef NDEBUG
-const std::string MyName = "ukamuse";
-#else
-const std::string MyName = "Apery Debug Build";
-#endif
-
 void Searcher::doUSICommandLoop(int argc, char* argv[]) {
     bool evalTableIsRead = false;
     Position pos(DefaultStartPositionSFEN, threads.main(), thisptr);
@@ -1052,7 +1051,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         else if (token == "go"       ) go(pos, ssCmd);
         else if (token == "position" ) setPosition(pos, ssCmd);
         else if (token == "usinewgame"); // isready で準備は出来たので、対局開始時に特にする事はない。
-        else if (token == "usi"      ) SYNCCOUT << "id name " << MyName
+        else if (token == "usi"      ) SYNCCOUT << "id name " << std::string(options["Engine_Name"])
                                                 << "\nid author Hiraoka Takuya"
                                                 << "\n" << options
                                                 << "\nusiok" << SYNCENDL;
