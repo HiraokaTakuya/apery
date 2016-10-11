@@ -40,7 +40,7 @@ namespace {
 		return pow((1 + exp((ply - XShift) / XScale)), -Skew) + std::numeric_limits<double>::min();
 	}
 
-	template <TimeType T> int remaining(const int myTime, const int movesToGo, const Ply ply, const int slowMover, const int drawPly) {
+	template <TimeType T> int remaining(const int myTime, const int movesToGo, const Ply ply, const int slowMover) {
 		const float TMaxRatio   = (T == OptimumTime ? 1 : MaxRatio);
 		const float TStealRatio = (T == OptimumTime ? 0 : StealRatio);
 
@@ -63,9 +63,9 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, const 
     const int slowMover       = (pos.gamePly() < 10 ? s->options["Slow_Mover_10"] :
 								 pos.gamePly() < 16 ? s->options["Slow_Mover_16"] :
 								 pos.gamePly() < 20 ? s->options["Slow_Mover_20"] : s->options["Slow_Mover"]);
-	const int drawPly         = s->options["Draw_Ply"];
+	const Ply drawPly         = s->options["Draw_Ply"];
 	// Draw_Ply までで引き分けになるから、そこまでで時間を使い切る。
-	auto moveHorizon = [&](const Ply p) { return std::min(MoveHorizon, s->options["Draw_Ply"] - p); };
+	auto moveHorizon = [&](const Ply p) { return std::min(MoveHorizon, drawPly - p); };
 
 	startTime_ = limits.startTime;
 	optimumTime_ = maximumTime_ = std::max(limits.time[us], minThinkingTime);
@@ -79,8 +79,8 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, const 
 
 		hypMyTime = std::max(hypMyTime, 0);
 
-		const int t1 = minThinkingTime + remaining<OptimumTime>(hypMyTime, hypMTG, ply, slowMover, drawPly);
-		const int t2 = minThinkingTime + remaining<MaxTime    >(hypMyTime, hypMTG, ply, slowMover, drawPly);
+		const int t1 = minThinkingTime + remaining<OptimumTime>(hypMyTime, hypMTG, ply, slowMover);
+		const int t2 = minThinkingTime + remaining<MaxTime    >(hypMyTime, hypMTG, ply, slowMover);
 
 		optimumTime_ = std::min(t1, optimumTime_);
 		maximumTime_ = std::min(t2, maximumTime_);
