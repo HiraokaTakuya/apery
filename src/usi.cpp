@@ -682,7 +682,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const Score eval = pvEval(pos);
 			const Score teacherEval = static_cast<Score>(hcpe.eval); // root から見た評価値が入っている。
 			const Color leafColor = pos.turn(); // pos は末端の局面になっている。
-			// x を浅い読みの評価値、y を深い読みの評価値として、 
+			// x を浅い読みの評価値、y を深い読みの評価値として、
 			// 目的関数 f(x, y) は、勝率の誤差の最小化を目指す以下の式とする。
 			// また、** 2 は 2 乗を表すとする。
 			// f(x,y) = (sigmoidWinningRate(x) - sigmoidWinningRate(y)) ** 2

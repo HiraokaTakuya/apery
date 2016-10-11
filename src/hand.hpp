@@ -111,12 +111,12 @@ private:
 	static const u32 HandPieceMask[HandPieceNum];
 	// 特定の種類の持ち駒を 1 つ増やしたり減らしたりするときに使用するテーブル
 	static const u32 HandPieceOne[HandPieceNum];
-	static const u32 BorrowMask = ((HPawnMask   + (1 << HPawnShiftBits  )) | 
-								   (HLanceMask  + (1 << HLanceShiftBits )) | 
-								   (HKnightMask + (1 << HKnightShiftBits)) | 
-								   (HSilverMask + (1 << HSilverShiftBits)) | 
-								   (HGoldMask   + (1 << HGoldShiftBits  )) | 
-								   (HBishopMask + (1 << HBishopShiftBits)) | 
+	static const u32 BorrowMask = ((HPawnMask   + (1 << HPawnShiftBits  )) |
+								   (HLanceMask  + (1 << HLanceShiftBits )) |
+								   (HKnightMask + (1 << HKnightShiftBits)) |
+								   (HSilverMask + (1 << HSilverShiftBits)) |
+								   (HGoldMask   + (1 << HGoldShiftBits  )) |
+								   (HBishopMask + (1 << HBishopShiftBits)) |
 								   (HRookMask   + (1 << HRookShiftBits  )));
 
 	u32 value_;

@@ -26,7 +26,7 @@ namespace {
 	// 角, 飛車の場合
 	template <MoveType MT, PieceType PT, Color US, bool ALL>
 	FORCE_INLINE ExtMove* generateBishopOrRookMoves(ExtMove* moveList, const Position& pos,
-													  const Bitboard& target, const Square /*ksq*/)
+													const Bitboard& target, const Square /*ksq*/)
 	{
 		Bitboard fromBB = pos.bbOf(PT, US);
 		while (fromBB) {
@@ -321,8 +321,8 @@ namespace {
 			case Empty    : assert(false); break; // 最適化の為のダミー
 			case Pawn     : case Lance    : case Knight   : case Silver   : case Bishop   : case Rook     :
 				(*moveList++).move = ((canPromote(us, makeRank(to)) | canPromote(us, makeRank(from))) ?
-										   makePromoteMove<Capture>(pt, from, to, pos) :
-										   makeNonPromoteMove<Capture>(pt, from, to, pos));
+									  makePromoteMove<Capture>(pt, from, to, pos) :
+									  makeNonPromoteMove<Capture>(pt, from, to, pos));
 				break;
 			case Gold     : case King     : case ProPawn  : case ProLance : case ProKnight: case ProSilver: case Horse    : case Dragon   :
 				(*moveList++).move = makeNonPromoteMove<Capture>(pt, from, to, pos);

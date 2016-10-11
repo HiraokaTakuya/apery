@@ -474,7 +474,7 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
 	if (INCHECK && bestScore == -ScoreInfinite)
 		return matedIn(ss->ply);
 
-	tte->save(posKey, scoreToTT(bestScore, ss->ply), 
+	tte->save(posKey, scoreToTT(bestScore, ss->ply),
 			  ((PVNode && bestScore > oldAlpha) ? BoundExact : BoundUpper),
 			  ttDepth, bestMove, ss->staticEval, tt.generation());
 

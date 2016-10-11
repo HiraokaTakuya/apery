@@ -505,16 +505,16 @@ inline Bitboard goldAndSilverAttacks(const Color c, const Square sq) { return go
 // これはマクロの制約。
 // 同じ処理のコードが 2 箇所で生成されるため、コードサイズが膨れ上がる。
 // その為、あまり多用すべきでないかも知れない。
-#define FOREACH_BB(bb, sq, xxx)						\
-	do {											\
-		while (bb.p(0)) {							\
-			sq = bb.firstOneRightFromSQ11();		\
-			xxx;									\
-		}											\
-		while (bb.p(1)) {							\
-			sq = bb.firstOneLeftFromSQ81();			\
-			xxx;									\
-		}											\
+#define FOREACH_BB(bb, sq, xxx)					\
+	do {										\
+		while (bb.p(0)) {						\
+			sq = bb.firstOneRightFromSQ11();	\
+			xxx;								\
+		}										\
+		while (bb.p(1)) {						\
+			sq = bb.firstOneLeftFromSQ81();		\
+			xxx;								\
+		}										\
 	} while (false)
 
 template <typename T> FORCE_INLINE void foreachBB(Bitboard& bb, Square& sq, T t) {

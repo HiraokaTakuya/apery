@@ -1030,10 +1030,10 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
 		setEvaluate();
 	}
 
-#define ALL_SYNTHESIZED_EVAL {									\
-		FOO(KPP);												\
-		FOO(KKP);												\
-		FOO(KK);												\
+#define ALL_SYNTHESIZED_EVAL {					\
+		FOO(KPP);								\
+		FOO(KKP);								\
+		FOO(KK);								\
 	}
 	static bool readSynthesized(const std::string& dirName) {
 #define FOO(x) {														\
@@ -1073,63 +1073,63 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
 #undef ALL_SYNTHESIZED_EVAL
 
 #if defined EVAL_PHASE1
-#define BASE_PHASE1 {								\
-		FOO(kpps.kee);								\
-		FOO(kpps.r_kpe_b);							\
-		FOO(kpps.r_kpe_h);							\
-		FOO(kpps.r_kee);							\
-		FOO(kpps.xee);								\
-		FOO(kpps.yee);								\
-		FOO(kpps.pe);								\
-		FOO(kpps.ee);								\
-		FOO(kpps.r_pe_b);							\
-		FOO(kpps.r_pe_h);							\
-		FOO(kpps.r_ee);								\
-		FOO(kkps.ke);								\
-		FOO(kkps.r_kke);							\
-		FOO(kkps.r_ke);								\
-		FOO(kks.k);									\
+#define BASE_PHASE1 {							\
+		FOO(kpps.kee);							\
+		FOO(kpps.r_kpe_b);						\
+		FOO(kpps.r_kpe_h);						\
+		FOO(kpps.r_kee);						\
+		FOO(kpps.xee);							\
+		FOO(kpps.yee);							\
+		FOO(kpps.pe);							\
+		FOO(kpps.ee);							\
+		FOO(kpps.r_pe_b);						\
+		FOO(kpps.r_pe_h);						\
+		FOO(kpps.r_ee);							\
+		FOO(kkps.ke);							\
+		FOO(kkps.r_kke);						\
+		FOO(kkps.r_ke);							\
+		FOO(kks.k);								\
 	}
 #else
 #define BASE_PHASE1
 #endif
 
 #if defined EVAL_PHASE2
-#define BASE_PHASE2 {								\
-		FOO(kpps.r_pp_bb);							\
-		FOO(kpps.r_pp_hb);							\
-		FOO(kkps.r_kp_b);							\
-		FOO(kkps.r_kp_h);							\
-		FOO(kks.r_kk);								\
+#define BASE_PHASE2 {							\
+		FOO(kpps.r_pp_bb);						\
+		FOO(kpps.r_pp_hb);						\
+		FOO(kkps.r_kp_b);						\
+		FOO(kkps.r_kp_h);						\
+		FOO(kks.r_kk);							\
 	}
 #else
 #define BASE_PHASE2
 #endif
 
 #if defined EVAL_PHASE3
-#define BASE_PHASE3 {								\
-		FOO(kpps.r_kpp_bb);							\
-		FOO(kpps.r_kpp_hb);							\
-		FOO(kpps.pp);								\
-		FOO(kpps.kpe);								\
-		FOO(kpps.xpe);								\
-		FOO(kpps.ype);								\
-		FOO(kkps.kp);								\
-		FOO(kkps.r_kkp_b);							\
-		FOO(kkps.r_kkp_h);							\
-		FOO(kkps.kke);								\
-		FOO(kks.kk);								\
+#define BASE_PHASE3 {							\
+		FOO(kpps.r_kpp_bb);						\
+		FOO(kpps.r_kpp_hb);						\
+		FOO(kpps.pp);							\
+		FOO(kpps.kpe);							\
+		FOO(kpps.xpe);							\
+		FOO(kpps.ype);							\
+		FOO(kkps.kp);							\
+		FOO(kkps.r_kkp_b);						\
+		FOO(kkps.r_kkp_h);						\
+		FOO(kkps.kke);							\
+		FOO(kks.kk);							\
 	}
 #else
 #define BASE_PHASE3
 #endif
 
 #if defined EVAL_PHASE4
-#define BASE_PHASE4 {								\
-		FOO(kpps.kpp);								\
-		FOO(kpps.xpp);								\
-		FOO(kpps.ypp);								\
-		FOO(kkps.kkp);								\
+#define BASE_PHASE4 {							\
+		FOO(kpps.kpp);							\
+		FOO(kpps.xpp);							\
+		FOO(kpps.ypp);							\
+		FOO(kkps.kkp);							\
 	}
 #else
 #define BASE_PHASE4

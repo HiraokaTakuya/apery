@@ -34,12 +34,12 @@ EvaluateHashTable g_evalTable;
 
 const int kppArray[31] = {
 	0,        f_pawn,   f_lance,  f_knight,
-	f_silver, f_bishop, f_rook,   f_gold,   
+	f_silver, f_bishop, f_rook,   f_gold,
 	0,        f_gold,   f_gold,   f_gold,
 	f_gold,   f_horse,  f_dragon,
 	0,
 	0,        e_pawn,   e_lance,  e_knight,
-	e_silver, e_bishop, e_rook,   e_gold,   
+	e_silver, e_bishop, e_rook,   e_gold,
 	0,        e_gold,   e_gold,   e_gold,
 	e_gold,   e_horse,  e_dragon
 };
