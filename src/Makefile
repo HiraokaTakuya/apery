@@ -1,7 +1,7 @@
 COMPILER = g++
 #COMPILER = mpicxx
 CFLAGS   = -std=c++11 -fno-exceptions -fno-rtti -Wextra -Ofast -MMD -MP -fopenmp
-CFLAGS   += -march=native # make publish の時はここをコメントアウトする必要がある。
+#CFLAGS   += -march=native # make publish の時はここをコメントアウトする必要がある。
 LDFLAGS  = -lpthread #-lboost_mpi -lboost_serialization
 LIBS     =
 INCLUDE  = #-I../include
@@ -87,28 +87,28 @@ publish:
 	@./$(TARGET) bench
 	@touch $(SOURCES)
 	$(MAKE) profuse
-	@strip $(TARGET)
+	#@strip $(TARGET)
 	@mv $(TARGET) $(TARGET_BMI2)
 	$(MAKE) clean
 	$(MAKE) profgen_sse
 	@./$(TARGET) bench
 	@touch $(SOURCES)
 	$(MAKE) profuse_sse
-	@strip $(TARGET)
+	#@strip $(TARGET)
 	@mv $(TARGET) $(TARGET_SSE42)
 	$(MAKE) clean
 	$(MAKE) profgen_sse41
 	@./$(TARGET) bench
 	@touch $(SOURCES)
 	$(MAKE) profuse_sse41
-	@strip $(TARGET)
+	#@strip $(TARGET)
 	@mv $(TARGET) $(TARGET_SSE41)
 	$(MAKE) clean
 	$(MAKE) profgen_sse2
 	@./$(TARGET) bench
 	@touch $(SOURCES)
 	$(MAKE) profuse_sse2
-	@strip $(TARGET)
+	#@strip $(TARGET)
 	@mv $(TARGET) $(TARGET_SSE2)
 
 clean:
