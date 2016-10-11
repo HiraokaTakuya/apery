@@ -916,13 +916,25 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
-template <typename KPPType, typename KKPType, typename KKType>
-struct EvaluaterSynthesizer : public EvaluaterBase<KPPType, KKPType, KKType> {
+using KPPType = std::array<s16, 2>;
+using KKPType = std::array<s32, 2>;
+using KKType = std::array<s32, 2>;
+struct Evaluater : public EvaluaterBase<KPPType, KKPType, KKType> {
 	using Base = EvaluaterBase<KPPType, KKPType, KKType>;
 	static KPPType KPP[SquareNum][fe_end][fe_end];
 	static KKPType KKP[SquareNum][SquareNum][fe_end];
 	static KKType KK[SquareNum][SquareNum];
-	// 相対位置などに分解した要素の値を全て足し込んで、KPP, KKP, KK の値を設定する。
+	static std::string evalDir;
+
+	static std::string addSlashIfNone(const std::string& str) {
+		std::string ret = str;
+		if (ret == "")
+			ret += ".";
+		if (ret.back() != '/')
+			ret += "/";
+		return ret;
+	}
+
 	void setEvaluate() {
 #if !defined LEARN
 		SYNCCOUT << "info string start setting eval table" << SYNCENDL;
@@ -1003,24 +1015,7 @@ struct EvaluaterSynthesizer : public EvaluaterBase<KPPType, KKPType, KKType> {
 		SYNCCOUT << "info string end setting eval table" << SYNCENDL;
 #endif
 	}
-};
-// template struct の static 変数の定義は .hpp ファイルに書く。
-template <typename KPPType, typename KKPType, typename KKType> KPPType EvaluaterSynthesizer<KPPType, KKPType, KKType>::KPP[SquareNum][fe_end][fe_end];
-template <typename KPPType, typename KKPType, typename KKType> KKPType EvaluaterSynthesizer<KPPType, KKPType, KKType>::KKP[SquareNum][SquareNum][fe_end];
-template <typename KPPType, typename KKPType, typename KKType> KKType  EvaluaterSynthesizer<KPPType, KKPType, KKType>::KK[SquareNum][SquareNum];
 
-struct Evaluater : public EvaluaterSynthesizer<std::array<s16, 2>, std::array<s32, 2>, std::array<s32, 2> > {
-	static std::string evalDir;
-	// 探索時に参照する評価関数テーブル
-
-	static std::string addSlashIfNone(const std::string& str) {
-		std::string ret = str;
-		if (ret == "")
-			ret += ".";
-		if (ret.back() != '/')
-			ret += "/";
-		return ret;
-	}
 	void init(const std::string& dirName, const bool Synthesized, const bool readBase = true) {
 		// 合成された評価関数バイナリがあればそちらを使う。
 		if (Synthesized) {
