@@ -11,11 +11,6 @@ TARGET_SSE42 = $(TARGET)_sse42
 TARGET_SSE41 = $(TARGET)_sse41
 TARGET_SSE2  = $(TARGET)_sse2
 ifeq ($(OS),Windows_NT)
-  TARGET = $(TARGET).exe
-  TARGET_BMI2 = $(TARGET_BMI2).exe
-  TARGET_SSE42 = $(TARGET_SSE42).exe
-  TARGET_SSE41 = $(TARGET_SSE41).exe
-  TARGET_SSE2 = $(TARGET_SSE2).exe
   LDFLAGS += -static
 endif
 OBJDIR   = ../obj
