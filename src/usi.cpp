@@ -486,15 +486,15 @@ void make_teacher(std::istringstream& ssCmd) {
 namespace {
 	// Learner とほぼ同じもの。todo: Learner と共通化する。
 
-	using LowerDimensionedEvaluaterGradient = EvaluaterBase<std::array<std::atomic<double>, 2>,
+	using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<double>, 2>,
 															std::array<std::atomic<double>, 2>,
 															std::array<std::atomic<double>, 2> >;
-	using EvalBaseType = EvaluaterBase<std::array<double, 2>,
+	using EvalBaseType = EvaluatorBase<std::array<double, 2>,
 									   std::array<double, 2>,
 									   std::array<double, 2> >;
 
 	// 小数の評価値を round して整数に直す。
-	void copyEval(Evaluater& eval, EvalBaseType& evalBase) {
+	void copyEval(Evaluator& eval, EvalBaseType& evalBase) {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -518,7 +518,7 @@ namespace {
 				(*eval.oneArrayKK(i))[boardTurn] = round((*evalBase.oneArrayKK(i))[boardTurn]);
 	}
 	// 整数の評価値を小数に直す。
-	void copyEval(EvalBaseType& evalBase, Evaluater& eval) {
+	void copyEval(EvalBaseType& evalBase, Evaluator& eval) {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -584,8 +584,8 @@ namespace {
 		}
 	}
 	void updateEval(EvalBaseType& evalBase,
-					LowerDimensionedEvaluaterGradient& lowerDimentionedEvaluaterGradient,
-					LowerDimensionedEvaluaterGradient& meanSquareOfLowerDimensionedEvaluaterGradient)
+					LowerDimensionedEvaluatorGradient& lowerDimentionedEvaluatorGradient,
+					LowerDimensionedEvaluatorGradient& meanSquareOfLowerDimensionedEvaluatorGradient)
 	{
 		std::atomic<double> max;
 		max = 0.0;
@@ -596,17 +596,17 @@ namespace {
 #pragma omp for
 #endif
 		for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
-			updateFV(*evalBase.oneArrayKPP(i), *lowerDimentionedEvaluaterGradient.oneArrayKPP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKPP(i), max);
+			updateFV(*evalBase.oneArrayKPP(i), *lowerDimentionedEvaluatorGradient.oneArrayKPP(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKPP(i), max);
 #ifdef _OPENMP
 #pragma omp for
 #endif
 		for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
-			updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluaterGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKKP(i), max);
+			updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluatorGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKKP(i), max);
 #ifdef _OPENMP
 #pragma omp for
 #endif
 		for (size_t i = 0; i < evalBase.kks_end_index(); ++i)
-			updateFV(*evalBase.oneArrayKK(i), *lowerDimentionedEvaluaterGradient.oneArrayKK(i), *meanSquareOfLowerDimensionedEvaluaterGradient.oneArrayKK(i), max);
+			updateFV(*evalBase.oneArrayKK(i), *lowerDimentionedEvaluatorGradient.oneArrayKK(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKK(i), max);
 
 		std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
 	}
@@ -623,12 +623,12 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 	std::vector<Searcher> searchers(threadNum);
 	std::vector<Position> positions;
-	// std::vector<TriangularEvaluaterGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
+	// std::vector<TriangularEvaluatorGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
 	// 例えメモリ量が余っていても、連続で確保出来ない場合は bad_alloc してしまうので、unordered_map にする。
-	std::unordered_map<int, std::unique_ptr<TriangularEvaluaterGradient> > evaluaterGradients;
-	// evaluaterGradients(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
+	std::unordered_map<int, std::unique_ptr<TriangularEvaluatorGradient> > evaluatorGradients;
+	// evaluatorGradients(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
 	for (int i = 0; i < threadNum; ++i)
-		evaluaterGradients.emplace(i, std::move(std::unique_ptr<TriangularEvaluaterGradient>(new TriangularEvaluaterGradient)));
+		evaluatorGradients.emplace(i, std::move(std::unique_ptr<TriangularEvaluatorGradient>(new TriangularEvaluatorGradient)));
 	for (auto& s : searchers) {
 		s.init();
 		const std::string options[] = {"name Threads value 1",
@@ -649,10 +649,10 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		exit(EXIT_FAILURE);
 
 	Mutex mutex;
-	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluaterGradient& evaluaterGradient, double& loss, std::atomic<s64>& nodes) {
+	auto func = [&mutex, &ifs](Position& pos, TriangularEvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes) {
 		SearchStack ss[2];
 		HuffmanCodedPosAndEval hcpe;
-		evaluaterGradient.clear();
+		evaluatorGradient.clear();
 		pos.searcher()->tt.clear();
 		while (true) {
 			{
@@ -694,16 +694,16 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			const double tmp = sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval);
 			loss += tmp * tmp;
 			std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
-			evaluaterGradient.incParam(pos, dT);
+			evaluatorGradient.incParam(pos, dT);
 		}
 	};
 
-	auto lowerDimensionedEvaluaterGradient = std::unique_ptr<LowerDimensionedEvaluaterGradient>(new LowerDimensionedEvaluaterGradient);
-	auto meanSquareOfLowerDimensionedEvaluaterGradient = std::unique_ptr<LowerDimensionedEvaluaterGradient>(new LowerDimensionedEvaluaterGradient); // 過去の gradient の mean square (二乗総和)
+	auto lowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient);
+	auto meanSquareOfLowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient); // 過去の gradient の mean square (二乗総和)
 	auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // double で保持した評価関数の要素。相対位置などに分解して保持する。
 	auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
-	auto eval = std::unique_ptr<Evaluater>(new Evaluater); // 整数化した表関数。相対位置などに分解して保持する。
-	eval->init(Evaluater::evalDir, false);
+	auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した表関数。相対位置などに分解して保持する。
+	eval->init(Evaluator::evalDir, false);
 	copyEval(*evalBase, *eval); // 小数に直してコピー。
 	memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
 	const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
@@ -716,14 +716,14 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
 		//copyEval(*eval, *evalBase); // 平均化せずに整数の評価値にコピー
 		std::cout << "write eval ... " << std::flush;
-		eval->write(Evaluater::evalDir);
+		eval->write(Evaluator::evalDir);
 		std::cout << "done" << std::endl;
 	};
 	// 平均化していない合成後の評価関数バイナリも出力しておく。
 	auto writeSyn = [&] {
-		std::ofstream((Evaluater::evalDir + "/KPP_synthesized.bin").c_str()).write((char*)Evaluater::KPP, sizeof(Evaluater::KPP));
-		std::ofstream((Evaluater::evalDir + "/KKP_synthesized.bin").c_str()).write((char*)Evaluater::KKP, sizeof(Evaluater::KKP));
-		std::ofstream((Evaluater::evalDir + "/KK_synthesized.bin" ).c_str()).write((char*)Evaluater::KK , sizeof(Evaluater::KK ));
+		std::ofstream((Evaluator::evalDir + "/KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
+		std::ofstream((Evaluator::evalDir + "/KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
+		std::ofstream((Evaluator::evalDir + "/KK_synthesized.bin" ).c_str()).write((char*)Evaluator::KK , sizeof(Evaluator::KK ));
 	};
 	Timer t;
 	// 教師データ全てから学習した時点で終了する。
@@ -735,18 +735,18 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 		std::vector<std::thread> threads(threadNum);
 		std::vector<double> losses(threadNum, 0.0);
 		for (int i = 0; i < threadNum; ++i)
-			threads[i] = std::thread([&positions, i, &func, &evaluaterGradients, &losses, &nodes] { func(positions[i], *(evaluaterGradients[i]), losses[i], nodes); });
+			threads[i] = std::thread([&positions, i, &func, &evaluatorGradients, &losses, &nodes] { func(positions[i], *(evaluatorGradients[i]), losses[i], nodes); });
 		for (int i = 0; i < threadNum; ++i)
 			threads[i].join();
 		if (nodes < NodesPerIteration)
 			break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
 		for (size_t size = 1; size < (size_t)threadNum; ++size)
-			*(evaluaterGradients[0]) += *(evaluaterGradients[size]); // 複数スレッドで個別に保持していた gradients を [0] の要素に集約する。
-		lowerDimensionedEvaluaterGradient->clear();
-		lowerDimension(*lowerDimensionedEvaluaterGradient, *(evaluaterGradients[0]));
+			*(evaluatorGradients[0]) += *(evaluatorGradients[size]); // 複数スレッドで個別に保持していた gradients を [0] の要素に集約する。
+		lowerDimensionedEvaluatorGradient->clear();
+		lowerDimension(*lowerDimensionedEvaluatorGradient, *(evaluatorGradients[0]));
 
-		updateEval(*evalBase, *lowerDimensionedEvaluaterGradient, *meanSquareOfLowerDimensionedEvaluaterGradient);
+		updateEval(*evalBase, *lowerDimensionedEvaluatorGradient, *meanSquareOfLowerDimensionedEvaluatorGradient);
 		averageEval(*averagedEvalBase, *evalBase); // 平均化する。
 		if (iteration < 10) // 最初は値の変動が大きいので適当に変動させないでおく。
 			memset(&(*evalBase), 0, sizeof(EvalBaseType));
@@ -755,7 +755,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
 			writeSyn();
 		}
 		copyEval(*eval, *evalBase); // 整数の評価値にコピー
-		eval->init(Evaluater::evalDir, false, false); // 探索で使う評価関数の更新
+		eval->init(Evaluator::evalDir, false, false); // 探索で使う評価関数の更新
 		g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
 		std::cout << "iteration elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 		std::cout << "loss: " << std::accumulate(std::begin(losses), std::end(losses), 0.0) << std::endl;
@@ -1060,9 +1060,9 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 			tt.clear();
 			threads.main()->previousScore = ScoreInfinite;
 			if (!evalTableIsRead) {
-				// 一時オブジェクトを生成して Evaluater::init() を呼んだ直後にオブジェクトを破棄する。
+				// 一時オブジェクトを生成して Evaluator::init() を呼んだ直後にオブジェクトを破棄する。
 				// 評価関数の次元下げをしたデータを格納する分のメモリが無駄な為、
-				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
 				evalTableIsRead = true;
 			}
 			SYNCCOUT << "readyok" << SYNCENDL;
@@ -1070,8 +1070,8 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		else if (token == "setoption") setOption(ssCmd);
 		else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
 			if (!evalTableIsRead)
-				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
-			Evaluater::writeSynthesized(Evaluater::evalDir);
+				std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
+			Evaluator::writeSynthesized(Evaluator::evalDir);
 		}
 #if defined LEARN
 		else if (token == "l"        ) {
@@ -1080,14 +1080,14 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		}
 		else if (token == "make_teacher") {
 			if (!evalTableIsRead) {
-				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
 				evalTableIsRead = true;
 			}
 			make_teacher(ssCmd);
 		}
 		else if (token == "use_teacher") {
 			if (!evalTableIsRead) {
-				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
 				evalTableIsRead = true;
 			}
 			use_teacher(pos, ssCmd);
@@ -1101,7 +1101,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
 		// 以下、デバッグ用
 		else if (token == "bench"    ) {
 			if (!evalTableIsRead) {
-				std::unique_ptr<Evaluater>(new Evaluater)->init(Evaluater::evalDir, true);
+				std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
 				evalTableIsRead = true;
 			}
 			benchmark(pos);

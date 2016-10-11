@@ -26,10 +26,10 @@
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-std::string Evaluater::evalDir = "20161007";
-KPPType Evaluater::KPP[SquareNum][fe_end][fe_end];
-KKPType Evaluater::KKP[SquareNum][SquareNum][fe_end];
-KKType  Evaluater::KK[SquareNum][SquareNum];
+std::string Evaluator::evalDir = "20161007";
+KPPType Evaluator::KPP[SquareNum][fe_end][fe_end];
+KKPType Evaluator::KKP[SquareNum][SquareNum][fe_end];
+KKType  Evaluator::KK[SquareNum][SquareNum];
 EvaluateHashTable g_evalTable;
 
 const int kppArray[31] = {
@@ -59,10 +59,10 @@ namespace {
 		const int* list1 = pos.cplist1();
 
 		EvalSum sum;
-		sum.p[2][0] = Evaluater::KKP[sq_bk][sq_wk][index[0]][0];
-		sum.p[2][1] = Evaluater::KKP[sq_bk][sq_wk][index[0]][1];
-		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
-		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
+		sum.p[2][0] = Evaluator::KKP[sq_bk][sq_wk][index[0]][0];
+		sum.p[2][1] = Evaluator::KKP[sq_bk][sq_wk][index[0]][1];
+		const auto* pkppb = Evaluator::KPP[sq_bk         ][index[0]];
+		const auto* pkppw = Evaluator::KPP[inverse(sq_wk)][index[1]];
 #if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
 		sum.m[0] = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[list1[0]][0]), *reinterpret_cast<const s32*>(&pkppb[list0[0]][0]));
 		sum.m[0] = _mm_cvtepi16_epi32(sum.m[0]);
@@ -89,7 +89,7 @@ namespace {
 		const Square sq_bk = pos.kingSquare(Black);
 		const int* list0 = pos.cplist0();
 
-		const auto* pkppb = Evaluater::KPP[sq_bk         ][index[0]];
+		const auto* pkppb = Evaluator::KPP[sq_bk         ][index[0]];
 		std::array<s32, 2> sum = {{pkppb[list0[0]][0], pkppb[list0[0]][1]}};
 		for (int i = 1; i < pos.nlist(); ++i) {
 			sum[0] += pkppb[list0[i]][0];
@@ -101,7 +101,7 @@ namespace {
 		const Square sq_wk = pos.kingSquare(White);
 		const int* list1 = pos.cplist1();
 
-		const auto* pkppw = Evaluater::KPP[inverse(sq_wk)][index[1]];
+		const auto* pkppw = Evaluator::KPP[inverse(sq_wk)][index[1]];
 		std::array<s32, 2> sum = {{pkppw[list1[0]][0], pkppw[list1[0]][1]}};
 		for (int i = 1; i < pos.nlist(); ++i) {
 			sum[0] += pkppw[list1[i]][0];
@@ -174,10 +174,10 @@ namespace {
 			EvalSum diff = (ss-1)->staticEvalRaw; // 本当は diff ではないので名前が良くない。
 			const Square sq_bk = pos.kingSquare(Black);
 			const Square sq_wk = pos.kingSquare(White);
-			diff.p[2] = Evaluater::KK[sq_bk][sq_wk];
+			diff.p[2] = Evaluator::KK[sq_bk][sq_wk];
 			diff.p[2][0] += pos.material() * FVScale;
 			if (pos.turn() == Black) {
-				const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
+				const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
 				const int* list1 = pos.plist1();
 				diff.p[1][0] = 0;
 				diff.p[1][1] = 0;
@@ -188,8 +188,8 @@ namespace {
 						const int l1 = list1[j];
 						diff.p[1] += pkppw[l1];
 					}
-					diff.p[2][0] -= Evaluater::KKP[inverse(sq_wk)][inverse(sq_bk)][k1][0];
-					diff.p[2][1] += Evaluater::KKP[inverse(sq_wk)][inverse(sq_bk)][k1][1];
+					diff.p[2][0] -= Evaluator::KKP[inverse(sq_wk)][inverse(sq_bk)][k1][0];
+					diff.p[2][1] += Evaluator::KKP[inverse(sq_wk)][inverse(sq_bk)][k1][1];
 				}
 
 				if (pos.cl().size == 2) {
@@ -201,7 +201,7 @@ namespace {
 				}
 			}
 			else {
-				const auto* ppkppb = Evaluater::KPP[sq_bk         ];
+				const auto* ppkppb = Evaluator::KPP[sq_bk         ];
 				const int* list0 = pos.plist0();
 				diff.p[0][0] = 0;
 				diff.p[0][1] = 0;
@@ -212,7 +212,7 @@ namespace {
 						const int l0 = list0[j];
 						diff.p[0] += pkppb[l0];
 					}
-					diff.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
+					diff.p[2] += Evaluator::KKP[sq_bk][sq_wk][k0];
 				}
 
 				if (pos.cl().size == 2) {
@@ -236,8 +236,8 @@ namespace {
 			else {
 				assert(pos.cl().size == 2);
 				diff += doapc(pos, pos.cl().clistpair[1].newlist);
-				diff.p[0] -= Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
-				diff.p[1] -= Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
+				diff.p[0] -= Evaluator::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
+				diff.p[1] -= Evaluator::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
 				const int listIndex_cap = pos.cl().listindex[1];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
@@ -247,8 +247,8 @@ namespace {
 				diff -= doapc(pos, pos.cl().clistpair[0].oldlist);
 
 				diff -= doapc(pos, pos.cl().clistpair[1].oldlist);
-				diff.p[0] += Evaluater::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
-				diff.p[1] += Evaluater::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
+				diff.p[0] += Evaluator::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
+				diff.p[1] += Evaluator::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
 				pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
 				pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
 			}
@@ -308,11 +308,11 @@ namespace {
 		const int* list0 = pos.plist0();
 		const int* list1 = pos.plist1();
 
-		const auto* ppkppb = Evaluater::KPP[sq_bk         ];
-		const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
+		const auto* ppkppb = Evaluator::KPP[sq_bk         ];
+		const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
 
 		EvalSum sum;
-		sum.p[2] = Evaluater::KK[sq_bk][sq_wk];
+		sum.p[2] = Evaluator::KK[sq_bk][sq_wk];
 #if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
 		sum.m[0] = _mm_setzero_si128();
 		for (int i = 0; i < pos.nlist(); ++i) {
@@ -328,11 +328,11 @@ namespace {
 				tmp = _mm_cvtepi16_epi32(tmp);
 				sum.m[0] = _mm_add_epi32(sum.m[0], tmp);
 			}
-			sum.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
+			sum.p[2] += Evaluator::KKP[sq_bk][sq_wk][k0];
 		}
 #else
 		// loop 開始を i = 1 からにして、i = 0 の分のKKPを先に足す。
-		sum.p[2] += Evaluater::KKP[sq_bk][sq_wk][list0[0]];
+		sum.p[2] += Evaluator::KKP[sq_bk][sq_wk][list0[0]];
 		sum.p[0][0] = 0;
 		sum.p[0][1] = 0;
 		sum.p[1][0] = 0;
@@ -348,7 +348,7 @@ namespace {
 				sum.p[0] += pkppb[l0];
 				sum.p[1] += pkppw[l1];
 			}
-			sum.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
+			sum.p[2] += Evaluator::KKP[sq_bk][sq_wk][k0];
 		}
 #endif
 
@@ -398,11 +398,11 @@ Score evaluateUnUseDiff(const Position& pos) {
 
 	nlist = make_list_unUseDiff(pos, list0, list1, nlist);
 
-	const auto* ppkppb = Evaluater::KPP[sq_bk         ];
-	const auto* ppkppw = Evaluater::KPP[inverse(sq_wk)];
+	const auto* ppkppb = Evaluator::KPP[sq_bk         ];
+	const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
 
 	EvalSum score;
-	score.p[2] = Evaluater::KK[sq_bk][sq_wk];
+	score.p[2] = Evaluator::KK[sq_bk][sq_wk];
 
 	score.p[0][0] = 0;
 	score.p[0][1] = 0;
@@ -419,7 +419,7 @@ Score evaluateUnUseDiff(const Position& pos) {
 			score.p[0] += pkppb[l0];
 			score.p[1] += pkppw[l1];
 		}
-		score.p[2] += Evaluater::KKP[sq_bk][sq_wk][k0];
+		score.p[2] += Evaluator::KKP[sq_bk][sq_wk][k0];
 	}
 
 	score.p[2][0] += pos.material() * FVScale;

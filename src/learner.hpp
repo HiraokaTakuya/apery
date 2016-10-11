@@ -34,7 +34,7 @@
 #define PRINT_PV(x)
 #endif
 
-struct EvaluaterGradient {
+struct EvaluatorGradient {
 	std::array<float, 2> kpp_grad[SquareNum][fe_end][fe_end];
 	std::array<float, 2> kkp_grad[SquareNum][SquareNum][fe_end];
 	std::array<float, 2> kk_grad[SquareNum][SquareNum];
@@ -64,8 +64,8 @@ struct EvaluaterGradient {
 	void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
-// EvaluaterGradient のメモリ使用量を三角配列を用いて抑えた代わりに、double にして精度を高めたもの。
-struct TriangularEvaluaterGradient {
+// EvaluatorGradient のメモリ使用量を三角配列を用いて抑えた代わりに、double にして精度を高めたもの。
+struct TriangularEvaluatorGradient {
 	TriangularArray<std::array<double, 2>, int, fe_end, fe_end> kpp_grad[SquareNum];
 	std::array<double, 2> kkp_grad[SquareNum][SquareNum][fe_end];
 	std::array<double, 2> kk_grad[SquareNum][SquareNum];
@@ -108,7 +108,7 @@ inline T atomicAdd(std::atomic<T> &x, const T diff) {
 template <typename T>
 inline T atomicSub(std::atomic<T> &x, const T diff) { return atomicAdd(x, -diff); }
 
-EvaluaterGradient& operator += (EvaluaterGradient& lhs, EvaluaterGradient& rhs) {
+EvaluatorGradient& operator += (EvaluatorGradient& lhs, EvaluatorGradient& rhs) {
 	for (auto lit = &(***std::begin(lhs.kpp_grad)), rit = &(***std::begin(rhs.kpp_grad)); lit != &(***std::end(lhs.kpp_grad)); ++lit, ++rit)
 		*lit += *rit;
 	for (auto lit = &(***std::begin(lhs.kkp_grad)), rit = &(***std::begin(rhs.kkp_grad)); lit != &(***std::end(lhs.kkp_grad)); ++lit, ++rit)
@@ -119,7 +119,7 @@ EvaluaterGradient& operator += (EvaluaterGradient& lhs, EvaluaterGradient& rhs) 
 	return lhs;
 }
 
-TriangularEvaluaterGradient& operator += (TriangularEvaluaterGradient& lhs, TriangularEvaluaterGradient& rhs) {
+TriangularEvaluatorGradient& operator += (TriangularEvaluatorGradient& lhs, TriangularEvaluatorGradient& rhs) {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -138,9 +138,9 @@ TriangularEvaluaterGradient& operator += (TriangularEvaluaterGradient& lhs, Tria
 }
 
 // kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>,
 										 std::array<std::atomic<float>, 2>,
-										 std::array<std::atomic<float>, 2> >& base, const EvaluaterGradient& grad)
+										 std::array<std::atomic<float>, 2> >& base, const EvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)										\
 	for (auto indexAndWeight : indices) {								\
@@ -206,9 +206,9 @@ inline void lowerDimension(EvaluaterBase<std::array<std::atomic<float>, 2>,
 }
 
 // kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluaterBase<std::array<std::atomic<double>, 2>,
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>,
 										 std::array<std::atomic<double>, 2>,
-										 std::array<std::atomic<double>, 2> >& base, const TriangularEvaluaterGradient& grad)
+										 std::array<std::atomic<double>, 2> >& base, const TriangularEvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)										\
 	for (auto indexAndWeight : indices) {								\
@@ -296,7 +296,7 @@ inline void printEvalTable(const Square ksq, const int p0, const int p1_base, co
 	for (Rank r = Rank1; r < RankNum; ++r) {
 		for (File f = File9; File1 <= f; --f) {
 			const Square sq = makeSquare(f, r);
-			printf("%5d", Evaluater::KPP[ksq][p0][p1_base + sq][isTurn]);
+			printf("%5d", Evaluator::KPP[ksq][p0][p1_base + sq][isTurn]);
 		}
 		printf("\n");
 	}
@@ -305,7 +305,7 @@ inline void printEvalTable(const Square ksq, const int p0, const int p1_base, co
 }
 
 struct Parse2Data {
-	EvaluaterGradient params;
+	EvaluatorGradient params;
 
 	void clear() {
 		params.clear();
@@ -334,7 +334,7 @@ struct BookMoveData {
 class Learner {
 public:
 	void learn(Position& pos, std::istringstream& ssCmd) {
-		eval_.init(Evaluater::evalDir, false);
+		eval_.init(Evaluator::evalDir, false);
 		s64 gameNum;
 		std::string recordFileName;
 		std::string blackRecordFileName;
@@ -709,8 +709,8 @@ private:
 			setUpdateMask(step);
 			std::cout << "update eval ... " << std::flush;
 			const bool writeReadBase = (step == stepNum_);
-			if (usePenalty_) updateEval<true >(Evaluater::evalDir, writeReadBase);
-			else             updateEval<false>(Evaluater::evalDir, writeReadBase);
+			if (usePenalty_) updateEval<true >(Evaluator::evalDir, writeReadBase);
+			else             updateEval<false>(Evaluator::evalDir, writeReadBase);
 			std::cout << "done" << std::endl;
 			std::cout << "parse2 1 step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
 			print();
@@ -735,10 +735,10 @@ private:
 	std::atomic<s64> predictions_[PredSize];
 	Parse2Data parse2Data_;
 	std::vector<Parse2Data> parse2Datum_;
-	EvaluaterBase<std::array<std::atomic<float>, 2>,
+	EvaluatorBase<std::array<std::atomic<float>, 2>,
 				  std::array<std::atomic<float>, 2>,
 				  std::array<std::atomic<float>, 2> > parse2EvalBase_;
-	Evaluater eval_;
+	Evaluator eval_;
 	int stepNum_;
 	size_t gameNumForIteration_;
 	size_t testGameNumForIteration_;

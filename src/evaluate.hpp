@@ -175,7 +175,7 @@ const int KPPIndicesMax = 3000;
 const int KKPIndicesMax = 130;
 const int KKIndicesMax = 7;
 
-template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterBase {
+template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorBase {
 	static const int R_Mid = 8; // 相対位置の中心のindex
 #if defined EVAL_ONLINE
 	constexpr int MaxWeight() const { return 1; }
@@ -919,8 +919,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluaterB
 using KPPType = std::array<s16, 2>;
 using KKPType = std::array<s32, 2>;
 using KKType = std::array<s32, 2>;
-struct Evaluater : public EvaluaterBase<KPPType, KKPType, KKType> {
-	using Base = EvaluaterBase<KPPType, KKPType, KKType>;
+struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
+	using Base = EvaluatorBase<KPPType, KKPType, KKType>;
 	static KPPType KPP[SquareNum][fe_end][fe_end];
 	static KKPType KKP[SquareNum][SquareNum][fe_end];
 	static KKType KK[SquareNum][SquareNum];
@@ -968,7 +968,7 @@ struct Evaluater : public EvaluaterBase<KPPType, KKPType, KKType> {
 				std::pair<ptrdiff_t, int> indices[KPPIndicesMax];
 				for (int i = 0; i < fe_end; ++i) {
 					for (int j = 0; j < fe_end; ++j) {
-						EvaluaterBase<KPPType, KKPType, KKType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
+						EvaluatorBase<KPPType, KKPType, KKType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
 						std::array<s64, 2> sum = {{}};
 						FOO(indices, Base::oneArrayKPP, sum);
 						KPP[ksq][i][j] += sum;
@@ -985,7 +985,7 @@ struct Evaluater : public EvaluaterBase<KPPType, KKPType, KKType> {
 				std::pair<ptrdiff_t, int> indices[KKPIndicesMax];
 				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
 					for (int i = 0; i < fe_end; ++i) {
-						EvaluaterBase<KPPType, KKPType, KKType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
+						EvaluatorBase<KPPType, KKPType, KKType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
 						std::array<s64, 2> sum = {{}};
 						FOO(indices, Base::oneArrayKKP, sum);
 						KKP[ksq0][ksq1][i] += sum;
@@ -1001,7 +1001,7 @@ struct Evaluater : public EvaluaterBase<KPPType, KKPType, KKType> {
 			for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
 				std::pair<ptrdiff_t, int> indices[KKIndicesMax];
 				for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-					EvaluaterBase<KPPType, KKPType, KKType>::kkIndices(indices, static_cast<Square>(ksq0), ksq1);
+					EvaluatorBase<KPPType, KKPType, KKType>::kkIndices(indices, static_cast<Square>(ksq0), ksq1);
 					std::array<s64, 2> sum = {{}};
 					FOO(indices, Base::oneArrayKK, sum);
 					KK[ksq0][ksq1][0] += sum[0] / 2;
