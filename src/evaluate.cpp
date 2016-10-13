@@ -26,7 +26,6 @@
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-std::string Evaluator::evalDir = "20161007";
 KPPType Evaluator::KPP[SquareNum][fe_end][fe_end];
 KKPType Evaluator::KKP[SquareNum][SquareNum][fe_end];
 KKType  Evaluator::KK[SquareNum][SquareNum];

@@ -334,7 +334,7 @@ struct BookMoveData {
 class Learner {
 public:
     void learn(Position& pos, std::istringstream& ssCmd) {
-        eval_.init(Evaluator::evalDir, false);
+        eval_.init(pos.searcher()->options["Eval_Dir"], false);
         s64 gameNum;
         std::string recordFileName;
         std::string blackRecordFileName;
@@ -709,8 +709,8 @@ private:
             setUpdateMask(step);
             std::cout << "update eval ... " << std::flush;
             const bool writeReadBase = (step == stepNum_);
-            if (usePenalty_) updateEval<true >(Evaluator::evalDir, writeReadBase);
-            else             updateEval<false>(Evaluator::evalDir, writeReadBase);
+            if (usePenalty_) updateEval<true >(pos.searcher()->options["Eval_Dir"], writeReadBase);
+            else             updateEval<false>(pos.searcher()->options["Eval_Dir"], writeReadBase);
             std::cout << "done" << std::endl;
             std::cout << "parse2 1 step elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
             print();

@@ -924,7 +924,6 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
     static KPPType KPP[SquareNum][fe_end][fe_end];
     static KKPType KKP[SquareNum][SquareNum][fe_end];
     static KKType KK[SquareNum][SquareNum];
-    static std::string evalDir;
 
     static std::string addSlashIfNone(const std::string& str) {
         std::string ret = str;

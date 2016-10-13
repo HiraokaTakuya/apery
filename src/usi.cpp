@@ -88,6 +88,7 @@ void OptionsMap::init(Searcher* s) {
     (*this)["USI_Hash"]                    = USIOption(256, 1, MaxHashMB, onHashSize, s);
     (*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
     (*this)["Book_File"]                   = USIOption("book/20150503/book.bin");
+    (*this)["Eval_Dir"]                    = USIOption("20161007");
     (*this)["Best_Book_Move"]              = USIOption(false);
     (*this)["OwnBook"]                     = USIOption(true);
     (*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
@@ -619,7 +620,7 @@ namespace {
 
 constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
 
-void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
+void use_teacher(Position& pos, std::istringstream& ssCmd) {
     std::string teacherFileName;
     int threadNum;
     ssCmd >> teacherFileName;
@@ -707,8 +708,8 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
     auto meanSquareOfLowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient); // 過去の gradient の mean square (二乗総和)
     auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // double で保持した評価関数の要素。相対位置などに分解して保持する。
     auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
-    auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した表関数。相対位置などに分解して保持する。
-    eval->init(Evaluator::evalDir, false);
+    auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
+    eval->init(pos.searcher()->options["Eval_Dir"], false);
     copyEval(*evalBase, *eval); // 小数に直してコピー。
     memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
     const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
@@ -721,14 +722,14 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
         copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
         //copyEval(*eval, *evalBase); // 平均化せずに整数の評価値にコピー
         std::cout << "write eval ... " << std::flush;
-        eval->write(Evaluator::evalDir);
+        eval->write(pos.searcher()->options["Eval_Dir"]);
         std::cout << "done" << std::endl;
     };
     // 平均化していない合成後の評価関数バイナリも出力しておく。
     auto writeSyn = [&] {
-        std::ofstream((Evaluator::evalDir + "/KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
-        std::ofstream((Evaluator::evalDir + "/KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
-        std::ofstream((Evaluator::evalDir + "/KK_synthesized.bin" ).c_str()).write((char*)Evaluator::KK , sizeof(Evaluator::KK ));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KK_synthesized.bin" ).c_str()).write((char*)Evaluator::KK , sizeof(Evaluator::KK ));
     };
     Timer t;
     // 教師データ全てから学習した時点で終了する。
@@ -760,7 +761,7 @@ void use_teacher(Position& /*pos*/, std::istringstream& ssCmd) {
             writeSyn();
         }
         copyEval(*eval, *evalBase); // 整数の評価値にコピー
-        eval->init(Evaluator::evalDir, false, false); // 探索で使う評価関数の更新
+        eval->init(pos.searcher()->options["Eval_Dir"], false, false); // 探索で使う評価関数の更新
         g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
         std::cout << "iteration elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
         std::cout << "loss: " << std::accumulate(std::begin(losses), std::end(losses), 0.0) << std::endl;
@@ -1061,7 +1062,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
             if (!evalTableIsRead) {
                 // 一時オブジェクトを生成して Evaluator::init() を呼んだ直後にオブジェクトを破棄する。
                 // 評価関数の次元下げをしたデータを格納する分のメモリが無駄な為、
-                std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
                 evalTableIsRead = true;
             }
             SYNCCOUT << "readyok" << SYNCENDL;
@@ -1069,8 +1070,8 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         else if (token == "setoption") setOption(ssCmd);
         else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
             if (!evalTableIsRead)
-                std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
-            Evaluator::writeSynthesized(Evaluator::evalDir);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
+            Evaluator::writeSynthesized(options["Eval_Dir"]);
         }
 #if defined LEARN
         else if (token == "l"        ) {
@@ -1079,14 +1080,14 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         }
         else if (token == "make_teacher") {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
                 evalTableIsRead = true;
             }
             make_teacher(ssCmd);
         }
         else if (token == "use_teacher") {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
                 evalTableIsRead = true;
             }
             use_teacher(pos, ssCmd);
@@ -1100,7 +1101,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         // 以下、デバッグ用
         else if (token == "bench"    ) {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(Evaluator::evalDir, true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
                 evalTableIsRead = true;
             }
             benchmark(pos);
