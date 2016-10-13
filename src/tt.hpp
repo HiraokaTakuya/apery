@@ -45,7 +45,7 @@ public:
     Move  move() const       { return static_cast<Move>(move16_); }
     Score score() const      { return static_cast<Score>(score16_); }
     Score evalScore() const  { return static_cast<Score>(eval16_); }
-    Depth depth() const      { return static_cast<Depth>(depth8_); }
+    Depth depth() const      { return static_cast<Depth>(depth8_ * OnePly); }
     Bound bound() const      { return static_cast<Bound>(genBound8_ & 0x3); }
     u8    generation() const { return genBound8_ & 0xfc; }
 
