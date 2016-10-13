@@ -110,7 +110,7 @@ void OptionsMap::init(Searcher* s) {
     (*this)["Minimum_Thinking_Time"]       = USIOption(20, 0, INT_MAX);
     (*this)["Threads"]                     = USIOption(cpuCoreCount(), 1, MaxThreads, onThreads, s);
 #ifdef NDEBUG
-    (*this)["Engine_Name"]                 = USIOption("ukamuse_SDT4");
+    (*this)["Engine_Name"]                 = USIOption("Apery");
 #else
     (*this)["Engine_Name"]                 = USIOption("Apery Debug Build");
 #endif
