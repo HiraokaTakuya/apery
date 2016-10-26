@@ -71,7 +71,7 @@ namespace {
     const int SkillLevel = 20; // [0, 20] 大きいほど強くする予定。現状 20 以外未対応。
 
     const int RazorMargin[4] = { 483, 570, 603, 554 };
-    inline Score futilityMargin(const Depth depth) { return static_cast<Score>(150 * depth / OnePly); }
+    inline Score futilityMargin(const Depth depth) { return static_cast<Score>(75 * depth / OnePly); }
 
     int FutilityMoveCounts[2][16]; // [improving][depth]
     int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
@@ -868,7 +868,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
         && eval - futilityMargin(depth) >= beta
         && eval < ScoreKnownWin) // todo: non_pawn_material に相当する条件を付けるべきか？
     {
-        return eval - futilityMargin(depth);
+        return eval;
     }
 
     // step8
