@@ -250,9 +250,6 @@ template <bool Searching> bool Position::moveIsPseudoLegal(const Move move) cons
             return false;
 
         if (Searching) {
-            // 内部で生成した move は、from, to, promotion だけで矛盾が生じる事はない。
-            assert(!move.isPromotion() || (canPromote(us, makeRank(from)) || canPromote(us, makeRank(to))));
-
             switch (ptFrom) {
             case Pawn  :
                 if (move.isPromotion()) {
