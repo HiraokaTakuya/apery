@@ -438,7 +438,7 @@ void make_teacher(std::istringstream& ssCmd) {
                     const Color rootTurn = pos.turn();
                     StateInfo state[MaxPly+7];
                     StateInfo* st = state;
-                    while (pv[tmpPly])
+                    for (size_t i = 0; i < pv.size(); ++i)
                         pos.doMove(pv[tmpPly++], *st++);
                     // evaluate() の差分計算を無効化する。
                     SearchStack ss[2];
