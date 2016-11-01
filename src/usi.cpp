@@ -434,12 +434,11 @@ void make_teacher(std::istringstream& ssCmd) {
                     HuffmanCodedPosAndEval hcpe;
                     hcpe.hcp = pos.toHuffmanCodedPos();
                     auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv;
-                    Ply tmpPly = 0;
                     const Color rootTurn = pos.turn();
                     StateInfo state[MaxPly+7];
                     StateInfo* st = state;
                     for (size_t i = 0; i < pv.size(); ++i)
-                        pos.doMove(pv[tmpPly++], *st++);
+                        pos.doMove(pv[i], *st++);
                     // evaluate() の差分計算を無効化する。
                     SearchStack ss[2];
                     ss[0].staticEvalRaw.p[0][0] = ss[1].staticEvalRaw.p[0][0] = ScoreNotEvaluated;
@@ -448,8 +447,8 @@ void make_teacher(std::istringstream& ssCmd) {
                     hcpe.eval = (rootTurn == pos.turn() ? eval : -eval);
                     hcpe.bestMove16 = static_cast<u16>(pv[0].value());
 
-                    while (tmpPly)
-                        pos.undoMove(pv[--tmpPly]);
+                    for (size_t i = pv.size(); i > 0;)
+                        pos.undoMove(pv[--i]);
 
                     std::unique_lock<Mutex> lock(omutex);
                     ofs.write(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
