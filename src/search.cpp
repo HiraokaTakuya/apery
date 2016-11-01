@@ -593,9 +593,12 @@ void Thread::search() {
             if (!mainThread)
                 continue;
 
-            if (searcher->signals.stop)
+            if (searcher->signals.stop) {
+#if 0
                 SYNCCOUT << "info nodes " << searcher->threads.nodesSearched()
                          << " time " << searcher->timeManager.elapsed() << SYNCENDL;
+#endif
+            }
             else if ((pvIdx + 1 == multiPV || searcher->timeManager.elapsed() > 3000)
                      // 将棋所のコンソールが詰まるのを防ぐ。
                      && (rootDepth < 10 * OnePly || lastInfoTime + 200 < searcher->timeManager.elapsed()))
@@ -1475,8 +1478,12 @@ finalize:
 
     previousScore = bestThread->rootMoves[0].score;
 
+#if 0
     if (bestThread != this)
         SYNCCOUT << pvInfoToUSI(bestThread->rootPos, 1, bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
+#else
+    SYNCCOUT << pvInfoToUSI(bestThread->rootPos, 1, bestThread->completedDepth, -ScoreInfinite, ScoreInfinite) << SYNCENDL;
+#endif
 
     if (nyugyokuWin)
         SYNCCOUT << "bestmove win" << SYNCENDL;
