@@ -360,7 +360,6 @@ Score Searcher::qsearch(Position& pos, SearchStack* ss, Score alpha, Score beta,
         && ttScore != ScoreNone // アクセス競合が起きたときのみ、ここに引っかかる。
         && (ttScore >= beta ? (tte->bound() & BoundLower) : (tte->bound() & BoundUpper)))
     {
-        ss->currentMove = ttMove;
         return ttScore;
     }
 
@@ -794,7 +793,6 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
         && ttScore != ScoreNone
         && (ttScore >= beta ? (tte->bound() & BoundLower) : (tte->bound() & BoundUpper)))
     {
-        ss->currentMove = ttMove;
         if (ttScore >= beta && ttMove) {
             const int d = depth / OnePly;
             if (!ttMove.isCaptureOrPawnPromotion()) {
