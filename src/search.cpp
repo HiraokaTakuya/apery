@@ -1053,6 +1053,7 @@ movesLoop:
 
                 // futility pruning: parent node
                 if (lmrDepth < 7
+                    && !inCheck
                     && ss->staticEval + 256 + 200 * lmrDepth <= alpha)
                     continue;
 
@@ -1062,6 +1063,7 @@ movesLoop:
                     continue;
             }
             else if (depth < 7 * OnePly
+                     && !extension
                      && pos.seeSign(move) < Score(-35 * depth / OnePly * depth / OnePly))
                 continue;
         }
