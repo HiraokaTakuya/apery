@@ -272,12 +272,9 @@ void MovePicker::scoreEvasions() {
     const HistoryStats& history = pos_.thisThread()->history;
     const FromToStats& fromTo = pos_.thisThread()->fromTo;
     Color c = pos_.turn();
-    Score see;
 
     for (ExtMove& m : *this)
-        if ((see = pos_.seeSign(m.move)) < ScoreZero)
-            m.score = see - HistoryStats::Max;
-        else if (m.move.isCaptureOrPawnPromotion()) {
+        if (m.move.isCaptureOrPawnPromotion()) {
             m.score = pos_.capturePieceScore(pos_.piece(m.move.to())) + HistoryStats::Max;
             if (m.move.isPromotion()) {
                 const PieceType pt = pieceToPieceType(pos_.piece(m.move.from()));
