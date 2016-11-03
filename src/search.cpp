@@ -733,6 +733,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
     Thread* thisThread = pos.thisThread();
     inCheck = pos.inCheck();
     moveCount = quietCount = ss->moveCount = 0;
+    ss->history = ScoreZero;
     bestScore = -ScoreInfinite;
     ss->ply = (ss-1)->ply + 1;
 
@@ -1103,14 +1104,19 @@ movesLoop:
                     r -= 2 * OnePly;
                 }
 #endif
+                ss->history = thisThread->history[movedPiece][move.to()]
+                    +             (cmh  ? (*cmh )[movedPiece][move.to()] : ScoreZero)
+                    +             (fmh  ? (*fmh )[movedPiece][move.to()] : ScoreZero)
+                    +             (fmh2 ? (*fmh2)[movedPiece][move.to()] : ScoreZero)
+                    +             thisThread->fromTo.get(oppositeColor(pos.turn()), move)
+                    -             8000;
 
-                const Score val = thisThread->history[movedPiece][move.to()]
-                    +    (cmh  ? (*cmh )[movedPiece][move.to()] : ScoreZero)
-                    +    (fmh  ? (*fmh )[movedPiece][move.to()] : ScoreZero)
-                    +    (fmh2 ? (*fmh2)[movedPiece][move.to()] : ScoreZero)
-                    +    thisThread->fromTo.get(oppositeColor(pos.turn()), move);
-                const int rHist = (val - 8000) / 20000;
-                r = std::max(Depth0, (r / OnePly - rHist) * OnePly);
+                if (ss->history > ScoreZero && (ss-1)->history < ScoreZero)
+                    r -= OnePly;
+                else if (ss->history < ScoreZero && (ss-1)->history > ScoreZero)
+                    r += OnePly;
+
+                r = std::max(Depth0, (r / OnePly - ss->history / 20000) * OnePly);
             }
 
             const Depth d = std::max(newDepth - r, OnePly);
