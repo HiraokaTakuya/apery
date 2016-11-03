@@ -158,8 +158,7 @@ Move MovePicker::nextMove() {
     case EvasionsInit:
         cur_ = first();
         endMoves_ = generateMoves<Evasion>(cur_, pos_);
-        if (endMoves_ - cur_ - (ttMove_ != Move::moveNone()) > 1)
-            scoreEvasions();
+        scoreEvasions();
         ++stage_;
     case AllEvasions:
         while (cur_ < endMoves_) {
