@@ -4,6 +4,7 @@
 @<center>@<h3>open source shogi engine@</h3>@</center>
 * Engine Binaries
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT4][第4回将棋電王トーナメント version (for Windows 64bit) (出場ソフト名「浮かむ瀬」)]]
+- [[https://drive.google.com/open?id=0B0d3atdVgIH2ZS1WTTFBTmdEUU0][浮かむ瀬 を Google Drive にも置きました。]]
 
 * Source Code
 - [[https://github.com/HiraokaTakuya/apery][Apery on GitHub]]
