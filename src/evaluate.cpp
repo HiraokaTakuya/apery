@@ -173,7 +173,8 @@ namespace {
             EvalSum diff = (ss-1)->staticEvalRaw; // 本当は diff ではないので名前が良くない。
             const Square sq_bk = pos.kingSquare(Black);
             const Square sq_wk = pos.kingSquare(White);
-            diff.p[2] = Evaluator::KK[sq_bk][sq_wk];
+            diff.p[2][0] = Evaluator::KK[sq_bk][sq_wk][0];
+            diff.p[2][1] = Evaluator::KK[sq_bk][sq_wk][1];
             diff.p[2][0] += pos.material() * FVScale;
             if (pos.turn() == Black) {
                 const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
@@ -311,7 +312,8 @@ namespace {
         const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
 
         EvalSum sum;
-        sum.p[2] = Evaluator::KK[sq_bk][sq_wk];
+        sum.p[2][0] = Evaluator::KK[sq_bk][sq_wk][0];
+        sum.p[2][1] = Evaluator::KK[sq_bk][sq_wk][1];
 #if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
         sum.m[0] = _mm_setzero_si128();
         for (int i = 0; i < pos.nlist(); ++i) {
@@ -401,7 +403,8 @@ func(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
     const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
 
     EvalSum score;
-    score.p[2] = Evaluator::KK[sq_bk][sq_wk];
+    score.p[2][0] = Evaluator::KK[sq_bk][sq_wk][0];
+    score.p[2][1] = Evaluator::KK[sq_bk][sq_wk][1];
 
     score.p[0][0] = 0;
     score.p[0][1] = 0;

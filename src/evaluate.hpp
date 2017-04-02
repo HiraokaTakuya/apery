@@ -386,8 +386,8 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorB
 };
 
 using KPPType = std::array<s16, 2>;
-using KKPType = std::array<s32, 2>;
-using KKType = std::array<s32, 2>;
+using KKPType = std::array<s16, 2>;
+using KKType = std::array<s16, 2>;
 struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
     using Base = EvaluatorBase<KPPType, KKPType, KKType>;
     static KPPType KPP[SquareNum][fe_end][fe_end];
