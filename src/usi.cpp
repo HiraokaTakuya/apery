@@ -88,7 +88,7 @@ void OptionsMap::init(Searcher* s) {
     (*this)["USI_Hash"]                    = USIOption(256, 1, MaxHashMB, onHashSize, s);
     (*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
     (*this)["Book_File"]                   = USIOption("book/20150503/book.bin");
-    (*this)["Eval_Dir"]                    = USIOption("20161007");
+    (*this)["Eval_Dir"]                    = USIOption("20170329");
     (*this)["Best_Book_Move"]              = USIOption(false);
     (*this)["OwnBook"]                     = USIOption(true);
     (*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
@@ -238,8 +238,8 @@ bool extractPVFromTT(Position& pos, Move* moves, const Move bestMove) {
     bool ttHit;
 
     tte = pos.csearcher()->tt.probe(pos.getKey(), ttHit);
-    if (ttHit && move16toMove(tte->move(), pos) != bestMove)
-        return false; // 教師の手と異なる手の場合は学習しないので false。手が無い時は学習するので true
+    //if (ttHit && move16toMove(tte->move(), pos) != bestMove)
+    //    return false; // 教師の手と異なる手の場合は学習しないので false。手が無い時は学習するので true
     while (ttHit
            && pos.moveIsPseudoLegal(m = move16toMove(tte->move(), pos))
            && pos.pseudoLegalMoveIsLegal<false, false>(m, pos.pinnedBB())
