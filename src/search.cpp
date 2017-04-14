@@ -1368,6 +1368,11 @@ void MainThread::search() {
 #if defined LEARN
     maxPly = 0;
     rootDepth = Depth0;
+    if (rootMoves.empty()) {
+        rootMoves.push_back(RootMove(Move::moveNone()));
+        rootMoves.back().score = -ScoreMate0Ply;
+        return;
+    }
     Thread::search();
 #else
     auto& options = searcher->options;
