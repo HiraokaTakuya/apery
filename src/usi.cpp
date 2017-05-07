@@ -409,29 +409,44 @@ void make_teacher(std::istringstream& ssCmd) {
             double randomMoveRateThresh = 0.2;
             std::unordered_set<Key> keyHash;
             StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
+            std::vector<HuffmanCodedPosAndEval> hcpevec;
+            GameResult gameResult = Draw;
             for (Ply ply = pos.gamePly(); ply < 400; ++ply, ++idx) { // 400 手くらいで終了しておく。
+#if 0 // 自己対局の勝敗を記録する為、対局途中でのランダムムーブは行わない。
                 if (!pos.inCheck() && doRandomMoveDist(mt) <= randomMoveRateThresh) { // 王手が掛かっていない局面で、randomMoveRateThresh の確率でランダムに局面を動かす。
                     randomMove(pos, mt);
                     ply = 0;
                     randomMoveRateThresh /= 2; // 局面を進めるごとに未知の局面になっていくので、ランダムに動かす確率を半分ずつ減らす。
                 }
+#endif
                 const Key key = pos.getKey();
                 if (keyHash.find(key) == std::end(keyHash))
                     keyHash.insert(key);
-                else // 同一局面 2 回目で千日手判定とする。
+                else { // 同一局面 2 回目で千日手判定とする。
+                    gameResult = Draw;
                     break;
+                }
                 pos.searcher()->alpha = -ScoreMaxEvaluate;
                 pos.searcher()->beta  =  ScoreMaxEvaluate;
                 go(pos, static_cast<Depth>(6));
                 const Score score = pos.searcher()->threads.main()->rootMoves[0].score;
                 const Move bestMove = pos.searcher()->threads.main()->rootMoves[0].pv[0];
-                if (3000 < abs(score)) // 差が付いたので投了した事にする。
+                const int ScoreThresh = 3000; // 自己対局を決着がついたとして止める閾値
+                if (ScoreThresh < abs(score)) { // 差が付いたので投了した事にする。
+                    if (pos.turn() == Black)
+                        gameResult = (score < ScoreZero ? WhiteWin : BlackWin);
+                    else
+                        gameResult = (score < ScoreZero ? BlackWin : WhiteWin);
                     break;
-                else if (!bestMove) // 勝ち宣言など
+                }
+                else if (!bestMove) { // 勝ち宣言
+                    gameResult = (pos.turn() == Black ? BlackWin : WhiteWin);
                     break;
+                }
 
                 {
-                    HuffmanCodedPosAndEval hcpe;
+                    hcpevec.emplace_back(HuffmanCodedPosAndEval());
+                    HuffmanCodedPosAndEval& hcpe = hcpevec.back();
                     hcpe.hcp = pos.toHuffmanCodedPos();
                     auto& pv = pos.searcher()->threads.main()->rootMoves[0].pv;
                     const Color rootTurn = pos.turn();
@@ -449,14 +464,16 @@ void make_teacher(std::istringstream& ssCmd) {
 
                     for (size_t i = pv.size(); i > 0;)
                         pos.undoMove(pv[--i]);
-
-                    std::unique_lock<Mutex> lock(omutex);
-                    ofs.write(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
                 }
 
                 states->push_back(StateInfo());
                 pos.doMove(bestMove, states->back());
             }
+            // 勝敗を1局全てに付ける。
+            for (auto& elem : hcpevec)
+                elem.gameResult = gameResult;
+            std::unique_lock<Mutex> lock(omutex);
+            ofs.write(reinterpret_cast<char*>(hcpevec.data()), sizeof(HuffmanCodedPosAndEval) * hcpevec.size());
         }
     };
     auto progressFunc = [&teacherNodes] (std::atomic<s64>& index, Timer& t) {

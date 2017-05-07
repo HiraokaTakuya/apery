@@ -33,6 +33,10 @@
 
 class Position;
 
+enum GameResult : int8_t {
+    Draw, BlackWin, WhiteWin, GameResultNum
+};
+
 enum RepetitionType {
     NotRepetition, RepetitionDraw, RepetitionWin, RepetitionLose,
     RepetitionSuperior, RepetitionInferior
@@ -175,8 +179,9 @@ struct HuffmanCodedPosAndEval {
     HuffmanCodedPos hcp;
     s16 eval;
     u16 bestMove16; // 使うかは分からないが教師データ生成時についでに取得しておく。
+    GameResult gameResult; // 自己対局で勝ったかどうか。
 };
-static_assert(sizeof(HuffmanCodedPosAndEval) == 36, "");
+static_assert(sizeof(HuffmanCodedPosAndEval) == 38, "");
 
 class Move;
 struct Thread;
