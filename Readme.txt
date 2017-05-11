@@ -66,6 +66,15 @@ apery をビルドして、
 棋譜の形式はCSA1行形式です。詳しくは learner.hpp のコメントを参照して下さい。
 棋譜はプロの棋譜60000棋譜程度、最低探索深さ 3 最大探索深さ 4 で学習する事を推奨します。
 
+./apery make_teacher <対局開始局面集データ(ハフマン符号化したもの)> <出力教師データ> <スレッド数> <出力教師局面数>
+とコマンドすると、強化学習用の教師データを生成します。
+
+./apery_use_teacher <教師データ> <スレッド数>
+とコマンドすると、強化学習を開始します。既存評価関数から学習する際には、
+KPP_synthesized.bin, KKP_synthesized.bin, KK_synthesized.bin はそれぞれ
+KPP_some_synthesized.bin, KKP_some_synthesized.bin, KK_some_synthesized.bin に名前を変更しておいて下さい。
+
+
 定跡を生成するには
 apery をビルドして、
 ./apery b <定跡用棋譜ファイル名>
