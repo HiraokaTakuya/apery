@@ -760,17 +760,19 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
             const Score eval = pvEval(pos);
             const Score teacherEval = static_cast<Score>(hcpe.eval); // root から見た評価値が入っている。
             const Color leafColor = pos.turn(); // pos は末端の局面になっている。
-            // x を浅い読みの評価値、y を深い読みの評価値として、
-            // 目的関数 f(x, y) は、勝率の誤差の最小化を目指す以下の式とする。
-            // また、** 2 は 2 乗を表すとする。
-            // f(x,y) = (sigmoidWinningRate(x) - sigmoidWinningRate(y)) ** 2
-            //        = sigmoidWinningRate(x)**2 - 2*sigmoidWinningRate(x)*sigmoidWinningRate(y) + sigmoidWinningRate(y)**2
-            // 浅い読みの点数を修正したいので、x について微分すると。
-            // df(x,y)/dx = 2*sigmoidWinningRate(x)*dsigmoidWinningRate(x)-2*sigmoidWinningRate(y)*dsigmoidWinningRate(x)
-            //            = 2*dsigmoidWinningRate(x)*(sigmoidWinningRate(x) - sigmoidWinningRate(y))
-            const double dsig = 2*dsigmoidWinningRate(eval)*(sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval));
-            const double tmp = sigmoidWinningRate(eval) - sigmoidWinningRate(teacherEval);
-            loss += tmp * tmp;
+            // 目的関数をelmoと同様に変更。
+            // 
+            const double evalWinRate = sigmoidWinningRate(eval);
+            const double teacherEvalWinRate = sigmoidWinningRate(teacherEval);
+            const double t = (hcpe.gameResult == BlackWin ? (rootColor == Black ? 1.0 : 0.0) :
+                              hcpe.gameResult == WhiteWin ? (rootColor == White ? 1.0 : 0.0) :
+                              /*hcpe.gameResult == Draw ?*/ 0.5);
+            const double L = 1.0 / 3; // elmo と同様の配分
+            const double dsig = (1.0 - L) * (evalWinRate - t) + L * (evalWinRate - teacherEvalWinRate);
+            //const double tmp = -1 * (hcpe.gameResult == BlackWin ? (rootColor == Black ? log(evalWinRate) : log(1.0 - evalWinRate)) :
+            //                         hcpe.gameResult == WhiteWin ? (rootColor == White ? log(evalWinRate) : log(1.0 - evalWinRate)) :
+            //                         log(fabs(0.5 - evalWinRate))) + L * (-teacherEvalWinRate*log(evalWinRate) - (1 - teacherEvalWinRate) * log(1 - evalWinRate));
+            //loss += tmp;
             std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
             evaluatorGradient.incParam(pos, dT);
         }
