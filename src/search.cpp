@@ -274,6 +274,58 @@ namespace {
         return NotBishopInDanger;
     }
 #endif
+
+    // 入玉勝ちかどうかを判定
+    bool nyugyoku(const Position& pos) {
+        // CSA ルールでは、一 から 六 の条件を全て満たすとき、入玉勝ち宣言が出来る。
+        // 判定が高速に出来るものから順に判定していく事にする。
+
+        // 一 宣言側の手番である。
+
+        // この関数を呼び出すのは自分の手番のみとする。ponder では呼び出さない。
+
+        // 六 宣言側の持ち時間が残っている。
+
+        // 持ち時間が無ければ既に負けなので、何もチェックしない。
+
+        // 五 宣言側の玉に王手がかかっていない。
+        if (pos.inCheck())
+            return false;
+
+        const Color us = pos.turn();
+        // 敵陣のマスク
+        const Bitboard opponentsField = (us == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
+
+        // 二 宣言側の玉が敵陣三段目以内に入っている。
+        if (!pos.bbOf(King, us).andIsAny(opponentsField))
+            return false;
+
+        // 四 宣言側の敵陣三段目以内の駒は、玉を除いて10枚以上存在する。
+
+        // 玉は敵陣にいるので、自駒が敵陣に11枚以上あればよい。
+        const int ownPiecesCount = (pos.bbOf(us) & opponentsField).popCount();
+        if (ownPiecesCount < 11)
+            return false;
+
+        // 三 宣言側が、大駒5点小駒1点で計算して
+        //     先手の場合28点以上の持点がある。
+        //     後手の場合27点以上の持点がある。
+        //     点数の対象となるのは、宣言側の持駒と敵陣三段目以内に存在する玉を除く宣言側の駒のみである。
+        const int ownBigPiecesCount = (pos.bbOf(Rook, Dragon, Bishop, Horse) & opponentsField & pos.bbOf(us)).popCount();
+        const Hand hand = pos.hand(us);
+        const int val = ownPiecesCount + (ownBigPiecesCount + hand.numOf<HRook>() + hand.numOf<HBishop>()) * 4
+            + hand.numOf<HPawn>() + hand.numOf<HLance>() + hand.numOf<HKnight>()
+            + hand.numOf<HSilver>() + hand.numOf<HGold>();
+#if defined LAW_24
+        if (val < 31)
+            return false;
+#else
+        if (val < (us == Black ? 28 : 27))
+            return false;
+#endif
+
+        return true;
+    }
 }
 
 std::string pvInfoToUSI(Position& pos, const size_t pvSize, const Depth depth, const Score alpha, const Score beta) {
@@ -1310,58 +1362,6 @@ void initSearchTable() {
         FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
         FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
     }
-}
-
-// 入玉勝ちかどうかを判定
-bool nyugyoku(const Position& pos) {
-    // CSA ルールでは、一 から 六 の条件を全て満たすとき、入玉勝ち宣言が出来る。
-    // 判定が高速に出来るものから順に判定していく事にする。
-
-    // 一 宣言側の手番である。
-
-    // この関数を呼び出すのは自分の手番のみとする。ponder では呼び出さない。
-
-    // 六 宣言側の持ち時間が残っている。
-
-    // 持ち時間が無ければ既に負けなので、何もチェックしない。
-
-    // 五 宣言側の玉に王手がかかっていない。
-    if (pos.inCheck())
-        return false;
-
-    const Color us = pos.turn();
-    // 敵陣のマスク
-    const Bitboard opponentsField = (us == Black ? inFrontMask<Black, Rank4>() : inFrontMask<White, Rank6>());
-
-    // 二 宣言側の玉が敵陣三段目以内に入っている。
-    if (!pos.bbOf(King, us).andIsAny(opponentsField))
-        return false;
-
-    // 四 宣言側の敵陣三段目以内の駒は、玉を除いて10枚以上存在する。
-
-    // 玉は敵陣にいるので、自駒が敵陣に11枚以上あればよい。
-    const int ownPiecesCount = (pos.bbOf(us) & opponentsField).popCount();
-    if (ownPiecesCount < 11)
-        return false;
-
-    // 三 宣言側が、大駒5点小駒1点で計算して
-    //     先手の場合28点以上の持点がある。
-    //     後手の場合27点以上の持点がある。
-    //     点数の対象となるのは、宣言側の持駒と敵陣三段目以内に存在する玉を除く宣言側の駒のみである。
-    const int ownBigPiecesCount = (pos.bbOf(Rook, Dragon, Bishop, Horse) & opponentsField & pos.bbOf(us)).popCount();
-    const Hand hand = pos.hand(us);
-    const int val = ownPiecesCount + (ownBigPiecesCount + hand.numOf<HRook>() + hand.numOf<HBishop>()) * 4
-        + hand.numOf<HPawn>() + hand.numOf<HLance>() + hand.numOf<HKnight>()
-        + hand.numOf<HSilver>() + hand.numOf<HGold>();
-#if defined LAW_24
-    if (val < 31)
-        return false;
-#else
-    if (val < (us == Black ? 28 : 27))
-        return false;
-#endif
-
-    return true;
 }
 
 void MainThread::search() {
