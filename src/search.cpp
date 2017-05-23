@@ -861,7 +861,15 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
         return ttScore;
     }
 
-#if 1
+    if (!RootNode) {
+        if (nyugyoku(pos)) {
+            ss->staticEval = bestScore = mateIn(ss->ply);
+            tte->save(posKey, scoreToTT(bestScore, ss->ply), BoundExact, depth,
+                      Move::moveNone(), ss->staticEval, tt.generation());
+            return bestScore;
+        }
+    }
+
     if (!RootNode
         && !inCheck)
     {
@@ -873,7 +881,6 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
             return bestScore;
         }
     }
-#endif
 
     // step5
     // evaluate the position statically
