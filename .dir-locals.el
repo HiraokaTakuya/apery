@@ -1,0 +1,11 @@
+((c++-mode . ((eval . (progn
+                        (c-set-style "BSD")
+                        (setq-default indent-tabs-mode nil)
+                        ;(setq-default indent-tabs-mode t)
+                        (setq-default tab-width 4)
+                        (setq c-basic-offset 4)
+                        ;(c-set-offset 'innamespace 2)
+                        ;(c-set-offset 'defun-block-intro 2)
+                        ;(c-set-offset 'inclass 2)
+                        ;(c-set-offset 'brace-list-intro 2)
+                        )))))
