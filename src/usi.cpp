@@ -731,7 +731,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     ifs.clear(); // 読み込み完了をクリアする。
     ifs.seekg(0, std::ios::beg); // ストリームポインタを先頭に戻す。
     const s64 MaxNodes = fileSize / sizeof(HuffmanCodedPosAndEval);
-    std::atomic<s64> nodes; // 今回のイテレーションで読み込んだ学習局面数。
+    std::atomic<s64> nodes(0); // 今回のイテレーションで読み込んだ学習局面数。
     auto writeEval = [&] {
         // ファイル保存
         copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
