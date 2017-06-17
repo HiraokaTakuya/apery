@@ -631,9 +631,46 @@ namespace {
 
         std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
     }
-}
 
-constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
+    constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
+
+    // 別スレッドで読み込む教師データを読み込む為のstruct。
+    // ファイルの終端では、buffer の途中までしか値を入れる事が出来ないので、
+    // データがどこまで有効かはこの構造体の外で管理しておく必要がある。
+    struct TeacherBuffer {
+        enum State : int8_t {
+            WaitFilling, Filling, WaitUsing, Using
+        };
+        std::vector<HuffmanCodedPosAndEval> buffer;
+        std::atomic<State> state;
+
+        void init() {
+            buffer.assign(NodesPerIteration, HuffmanCodedPosAndEval());
+            state = WaitFilling;
+        }
+
+        void fill(std::ifstream& ifs) {
+            assert(state == WaitFilling);
+            state = Filling;
+            ifs.read((char*)buffer.data(), sizeof(HuffmanCodedPosAndEval) * NodesPerIteration);
+            state = WaitUsing;
+        }
+    };
+
+    // 教師データ読み込みの待ち時間を無くす為、２つのバッファを切り替えて使う。
+    struct TeacherBuffers {
+        TeacherBuffer teacherBuffers[2];
+        std::atomic<int> index;
+
+        void init() {
+            for (auto& elem : teacherBuffers)
+                elem.init();
+            index = 0;
+        }
+        TeacherBuffer& currentBuffer() { return teacherBuffers[index]; }
+        void setAnotherBuffer() { index = index ^ 1; }
+    };
+}
 
 void use_teacher(Position& pos, std::istringstream& ssCmd) {
     std::string teacherFileName;
@@ -669,20 +706,40 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     if (!ifs)
         exit(EXIT_FAILURE);
 
-    Mutex mutex;
-    auto func = [&mutex, &ifs](Position& pos, TriangularEvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes) {
+    TeacherBuffers teacherBuffers;
+    teacherBuffers.init();
+
+    auto readFunc = [&ifs, &teacherBuffers] {
+        while (true) {
+            if (ifs.eof()) // ファイルを全部読み終えたら終了。
+                break;
+            for (auto& elem : teacherBuffers.teacherBuffers) {
+                if (elem.state == TeacherBuffer::WaitFilling) {
+                    elem.state = TeacherBuffer::Filling;
+                    ifs.read((char*)elem.buffer.data(), elem.buffer.size() * sizeof(elem.buffer[0]));
+                    // ファイル末端まで読み込んで不完全な場合でも state は更新する。
+                    elem.state = TeacherBuffer::WaitUsing;
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500)); // 適当な時間だけ待ってからループ
+        }
+    };
+
+    auto func = [&teacherBuffers](Position& pos, TriangularEvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes, const s64 iteration, const s64 MaxNodes) {
         SearchStack ss[2];
         HuffmanCodedPosAndEval hcpe;
         evaluatorGradient.clear();
         pos.searcher()->tt.clear();
         while (true) {
             {
-                std::unique_lock<Mutex> lock(mutex);
-                if (NodesPerIteration < nodes++)
+                // std::atomic<Integer>::operator++(int) (後置インクリメント)は std::atomic<Integer>::fetch_add(11) なので、
+                // nodes の読み込みと加算の間に別のスレッドからの読み込みが挟まって、複数のスレッドが同じ値を読み込む心配は無い。
+                const s64 current_node = nodes++;
+                if (NodesPerIteration <= current_node || MaxNodes <= NodesPerIteration * iteration + current_node) {
+                    --nodes;
                     return;
-                ifs.read(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
-                if (ifs.eof())
-                    return;
+                }
+                hcpe = teacherBuffers.currentBuffer().buffer[current_node];
             }
             auto setpos = [](HuffmanCodedPosAndEval& hcpe, Position& pos) {
                 setPosition(pos, hcpe.hcp);
@@ -746,19 +803,27 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KK_synthesized.bin" ).c_str()).write((char*)Evaluator::KK , sizeof(Evaluator::KK ));
     };
+    auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
     Timer t;
     // 教師データ全てから学習した時点で終了する。
-    for (s64 iteration = 0; NodesPerIteration * iteration + nodes <= MaxNodes; ++iteration) {
+    for (s64 iteration = 0; NodesPerIteration * iteration + nodes < MaxNodes; ++iteration, teacherBuffers.setAnotherBuffer()) {
         t.restart();
         nodes = 0;
         std::cout << "iteration: " << iteration << ", nodes: " << NodesPerIteration * iteration + nodes << "/" << MaxNodes
                   << " (" << std::fixed << std::setprecision(2) << static_cast<double>(NodesPerIteration * iteration + nodes) * 100 / MaxNodes << "%)" << std::endl;
         std::vector<std::thread> threads(threadNum);
         std::vector<double> losses(threadNum, 0.0);
+
+        // データが使用可能になるまで待つ。
+        // ファイル末端で 1 iteration 分のデータが無くても、TeacherBuffer::WaitUsing になるので、これで問題無い。
+        while (teacherBuffers.currentBuffer().state != TeacherBuffer::WaitUsing)
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
         for (int i = 0; i < threadNum; ++i)
-            threads[i] = std::thread([&positions, i, &func, &evaluatorGradients, &losses, &nodes] { func(positions[i], *(evaluatorGradients[i]), losses[i], nodes); });
+            threads[i] = std::thread([&positions, i, &func, &evaluatorGradients, &losses, &nodes, &iteration, &MaxNodes] { func(positions[i], *(evaluatorGradients[i]), losses[i], nodes, iteration, MaxNodes); });
         for (int i = 0; i < threadNum; ++i)
             threads[i].join();
+        teacherBuffers.currentBuffer().state = TeacherBuffer::WaitFilling;
         if (nodes < NodesPerIteration)
             break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
@@ -782,6 +847,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         std::cout << "loss: " << std::accumulate(std::begin(losses), std::end(losses), 0.0) << std::endl;
         printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
     }
+    readThread.join();
     writeEval();
     writeSyn();
 }
