@@ -241,34 +241,11 @@ namespace {
             }
             else if (pos.hand(pos.turn()).exists<HBishop>()
                      && pos.hand(them).exists<HBishop>()
-                     && pos.piece(inverseIfWhite(them, SQ78)) == Empty
-                     && pos.piece(inverseIfWhite(them, SQ79)) == Empty
-                     && pos.piece(inverseIfWhite(them, SQ68)) == Empty
-                     && pos.piece(inverseIfWhite(them, SQ69)) == Empty
-                     && pos.piece(inverseIfWhite(them, SQ98)) == Empty
-                     && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ77))) == Silver
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ88))) == Silver)
-                     && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ77))) == Knight
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ89))) == Knight)
-                     && ((pieceToPieceType(pos.piece(inverseIfWhite(them, SQ58))) == Gold
-                          && pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == King)
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == Gold))
+                     && !pos.hand(pos.turn()).exists<HRook>()
+                     && !pos.hand(pos.turn()).exists<HGold>()
+                     && !pos.hand(pos.turn()).exists<HSilver>())
             {
-                return (pos.turn() == Black ? BlackBishopInDangerIn78 : WhiteBishopInDangerIn78);
-            }
-            else if (pos.hand(pos.turn()).exists<HBishop>()
-                     && pos.hand(them).exists<HBishop>()
-                     && pos.piece(inverseIfWhite(them, SQ38)) == Empty
-                     && pos.piece(inverseIfWhite(them, SQ18)) == Empty
-                     && pieceToPieceType(pos.piece(inverseIfWhite(them, SQ28))) == Silver
-                     && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ58))) == King
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ57))) == King
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ58))) == Gold
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ57))) == Gold)
-                     && (pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == King
-                         || pieceToPieceType(pos.piece(inverseIfWhite(them, SQ59))) == Gold))
-            {
-                return (pos.turn() == Black ? BlackBishopInDangerIn38 : WhiteBishopInDangerIn38);
+                return (pos.turn() == Black ? BlackBishopInDangerIn785838 : WhiteBishopInDangerIn785838);
             }
         }
         return NotBishopInDanger;
@@ -1421,7 +1398,7 @@ void MainThread::search() {
     }
 #if defined BISHOP_IN_DANGER
     {
-        auto deleteFunc = [](const std::string& str) {
+        auto deleteFunc = [&](const std::string& str) {
             auto it = std::find_if(std::begin(rootMoves), std::end(rootMoves), [&str](const RootMove& rm) {
                     return rm.pv[0].toCSA() == str;
                 });
@@ -1430,19 +1407,17 @@ void MainThread::search() {
         };
         switch (detectBishopInDanger(pos)) {
         case NotBishopInDanger: break;
-        case BlackBishopInDangerIn28: deleteFunc("0082KA"); break;
-        case WhiteBishopInDangerIn28: deleteFunc("0028KA"); break;
-        case BlackBishopInDangerIn78: deleteFunc("0032KA"); break;
-        case WhiteBishopInDangerIn78: deleteFunc("0078KA"); break;
-        case BlackBishopInDangerIn38: deleteFunc("0072KA"); break;
-        case WhiteBishopInDangerIn38: deleteFunc("0038KA"); break;
+        case BlackBishopInDangerIn28    : deleteFunc("0082KA"); break;
+        case WhiteBishopInDangerIn28    : deleteFunc("0028KA"); break;
+        case BlackBishopInDangerIn785838: deleteFunc("0032KA"); deleteFunc("0052KA"); deleteFunc("0072KA"); break;
+        case WhiteBishopInDangerIn785838: deleteFunc("0078KA"); deleteFunc("0058KA"); deleteFunc("0038KA"); break;
         default: UNREACHABLE;
         }
     }
 #endif
 
 #if defined INANIWA_SHIFT
-    detectInaniwa(pos);
+    searcher->detectInaniwa(pos);
 #endif
     if (rootMoves.empty()) {
         rootMoves.push_back(RootMove(Move::moveNone()));
