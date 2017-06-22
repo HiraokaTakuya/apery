@@ -204,6 +204,7 @@ public:
     Position& operator = (const Position& pos);
     void set(const std::string& sfen, Thread* th);
     bool set(const HuffmanCodedPos& hcp, Thread* th);
+    void set(std::mt19937& mt, Thread* th);
 
     Bitboard bbOf(const PieceType pt) const                                            { return byTypeBB_[pt]; }
     Bitboard bbOf(const Color c) const                                                 { return byColorBB_[c]; }
