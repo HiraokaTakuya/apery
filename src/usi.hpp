@@ -80,6 +80,7 @@ void go(const Position& pos, const Ply depth);
 #endif
 void setPosition(Position& pos, std::istringstream& ssCmd);
 bool setPosition(Position& pos, const HuffmanCodedPos& hcp);
+void setPosition(Position& pos, std::mt19937& mt);
 Move csaToMove(const Position& pos, const std::string& moveStr);
 Move usiToMove(const Position& pos, const std::string& moveStr);
 
