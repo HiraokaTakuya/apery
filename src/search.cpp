@@ -783,7 +783,7 @@ Score Searcher::search(Position& pos, SearchStack* ss, Score alpha, Score beta, 
         // step2
         // stop と最大探索深さのチェック
         switch (pos.isDraw(16)) {
-        case NotRepetition      : if (!signals.stop.load(std::memory_order_relaxed) && ss->ply <= MaxPly) break; // else の場合は fallthrough
+        case NotRepetition      : if (!signals.stop.load(std::memory_order_relaxed) && ss->ply <= MaxPly) break; [[fallthrough]];
         case RepetitionDraw     : return ScoreDraw;
         case RepetitionWin      : return mateIn(ss->ply);
         case RepetitionLose     : return matedIn(ss->ply);
