@@ -177,14 +177,7 @@ const int KKIndicesMax = 7;
 
 template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
-#if defined EVAL_ONLINE
     constexpr int MaxWeight() const { return 1; }
-#else
-    // todo: Bonanza Method とか 低次元要素を削除する時にこれも消す。
-    constexpr int MaxWeight() const { return 1 << 22; } // KPE自体が1/32の寄与。更にKPEの遠隔駒の利きが1マスごとに1/2に減衰する分(最大でKEEの際に8マス離れが2枚)
-                                                        // 更に重みを下げる場合、MaxWeightを更に大きくしておく必要がある。
-                                                        // なぜか clang で static const int MaxWeight を使っても Undefined symbols for architecture x86_64 と言われる。
-#endif
     constexpr int TurnWeight() const { return 8; }
     // 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
     // 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
@@ -539,91 +532,16 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
     }
 #undef ALL_SYNTHESIZED_EVAL
 
-#if defined EVAL_PHASE1
-#define BASE_PHASE1 {                           \
-        FOO(kpps.kee);                          \
-        FOO(kpps.r_kpe_b);                      \
-        FOO(kpps.r_kpe_h);                      \
-        FOO(kpps.r_kee);                        \
-        FOO(kpps.xee);                          \
-        FOO(kpps.yee);                          \
-        FOO(kpps.pe);                           \
-        FOO(kpps.ee);                           \
-        FOO(kpps.r_pe_b);                       \
-        FOO(kpps.r_pe_h);                       \
-        FOO(kpps.r_ee);                         \
-        FOO(kkps.ke);                           \
-        FOO(kkps.r_kke);                        \
-        FOO(kkps.r_ke);                         \
-        FOO(kks.k);                             \
-    }
-#else
-#define BASE_PHASE1
-#endif
-
-#if defined EVAL_PHASE2
-#define BASE_PHASE2 {                           \
-        FOO(kpps.r_pp_bb);                      \
-        FOO(kpps.r_pp_hb);                      \
-        FOO(kkps.r_kp_b);                       \
-        FOO(kkps.r_kp_h);                       \
-        FOO(kks.r_kk);                          \
-    }
-#else
-#define BASE_PHASE2
-#endif
-
-#if defined EVAL_PHASE3
-#define BASE_PHASE3 {                           \
-        FOO(kpps.r_kpp_bb);                     \
-        FOO(kpps.r_kpp_hb);                     \
-        FOO(kpps.pp);                           \
-        FOO(kpps.kpe);                          \
-        FOO(kpps.xpe);                          \
-        FOO(kpps.ype);                          \
-        FOO(kkps.kp);                           \
-        FOO(kkps.r_kkp_b);                      \
-        FOO(kkps.r_kkp_h);                      \
-        FOO(kkps.kke);                          \
-        FOO(kks.kk);                            \
-    }
-#else
-#define BASE_PHASE3
-#endif
-
-#if defined EVAL_PHASE4
-#define BASE_PHASE4 {                           \
-        FOO(kpps.kpp);                          \
-        FOO(kpps.xpp);                          \
-        FOO(kpps.ypp);                          \
-        FOO(kkps.kkp);                          \
-    }
-#else
-#define BASE_PHASE4
-#endif
-
-#if defined EVAL_ONLINE
 #define BASE_ONLINE {                           \
         FOO(kpps.kpp);                          \
         FOO(kkps.kkp);                          \
         FOO(kks.kk);                            \
     }
-#else
-#define BASE_ONLINE
-#endif
 
 #define READ_BASE_EVAL {                        \
-        BASE_PHASE1;                            \
-        BASE_PHASE2;                            \
-        BASE_PHASE3;                            \
-        BASE_PHASE4;                            \
         BASE_ONLINE;                            \
     }
 #define WRITE_BASE_EVAL {                       \
-        BASE_PHASE1;                            \
-        BASE_PHASE2;                            \
-        BASE_PHASE3;                            \
-        BASE_PHASE4;                            \
         BASE_ONLINE;                            \
     }
     void read(const std::string& dirName) {
