@@ -138,9 +138,7 @@ TriangularEvaluatorGradient& operator += (TriangularEvaluatorGradient& lhs, Tria
 }
 
 // kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>,
-                           std::array<std::atomic<float>, 2>,
-                           std::array<std::atomic<float>, 2> >& base, const EvaluatorGradient& grad)
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>>& base, const EvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)                                     \
     for (auto index : indices) {                                        \
@@ -206,9 +204,7 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>,
 }
 
 // kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>,
-                           std::array<std::atomic<double>, 2>,
-                           std::array<std::atomic<double>, 2> >& base, const TriangularEvaluatorGradient& grad)
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>>& base, const TriangularEvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)                                     \
     for (auto index : indices) {                                        \
@@ -735,9 +731,7 @@ private:
     std::atomic<s64> predictions_[PredSize];
     Parse2Data parse2Data_;
     std::vector<Parse2Data> parse2Datum_;
-    EvaluatorBase<std::array<std::atomic<float>, 2>,
-                  std::array<std::atomic<float>, 2>,
-                  std::array<std::atomic<float>, 2> > parse2EvalBase_;
+    EvaluatorBase<std::array<std::atomic<float>, 2>> parse2EvalBase_;
     Evaluator eval_;
     int stepNum_;
     size_t gameNumForIteration_;

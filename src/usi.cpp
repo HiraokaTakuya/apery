@@ -499,12 +499,8 @@ void make_teacher(std::istringstream& ssCmd) {
 namespace {
     // Learner とほぼ同じもの。todo: Learner と共通化する。
 
-    using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<double>, 2>,
-                                                            std::array<std::atomic<double>, 2>,
-                                                            std::array<std::atomic<double>, 2> >;
-    using EvalBaseType = EvaluatorBase<std::array<double, 2>,
-                                       std::array<double, 2>,
-                                       std::array<double, 2> >;
+    using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<double>, 2>>;
+    using EvalBaseType = EvaluatorBase<std::array<double, 2>>;
 
     // 小数の評価値を round して整数に直す。
     void copyEval(Evaluator& eval, EvalBaseType& evalBase) {

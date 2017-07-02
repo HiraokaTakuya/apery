@@ -176,7 +176,7 @@ const int KPPIndicesMax = 3000;
 const int KKPIndicesMax = 130;
 const int KKIndicesMax = 7;
 
-template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorBase {
+template <typename KPPType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
     constexpr int MaxWeight() const { return 1; }
     constexpr int TurnWeight() const { return 8; }
@@ -190,14 +190,14 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorB
     KPPElements kpps;
 
     struct KKPElements {
-        KKPType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
-        KKPType kkp[SquareNoLeftNum][SquareNum][fe_end];
+        KPPType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
+        KPPType kkp[SquareNoLeftNum][SquareNum][fe_end];
     };
     KKPElements kkps;
 
     struct KKElements {
-        KKType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
-        KKType kk[SquareNoLeftNum][SquareNum];
+        KPPType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
+        KPPType kk[SquareNoLeftNum][SquareNum];
     };
     KKElements kks;
 
@@ -205,15 +205,15 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorB
     // 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
     // 先頭さえ分かれば良いので要素数1で良い。
     KPPType* oneArrayKPP(const u64 i) { return reinterpret_cast<KPPType*>(&kpps) + i; }
-    KKPType* oneArrayKKP(const u64 i) { return reinterpret_cast<KKPType*>(&kkps) + i; }
-    KKType* oneArrayKK(const u64 i) { return reinterpret_cast<KKType*>(&kks) + i; }
+    KPPType* oneArrayKKP(const u64 i) { return reinterpret_cast<KPPType*>(&kkps) + i; }
+    KPPType* oneArrayKK(const u64 i) { return reinterpret_cast<KPPType*>(&kks) + i; }
 
     // todo: これらややこしいし汚いので使わないようにする。
     //       型によっては kkps_begin_index などの値が異なる。
     //       ただ、end - begin のサイズは型によらず一定。
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(KPPType); }
-    constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(KKPType); }
-    constexpr size_t kks_end_index() const { return sizeof(kks)/sizeof(KKType); }
+    constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(KPPType); }
+    constexpr size_t kks_end_index() const { return sizeof(kks)/sizeof(KPPType); }
 
     // KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
@@ -380,13 +380,11 @@ template <typename KPPType, typename KKPType, typename KKType> struct EvaluatorB
 };
 
 using KPPType = std::array<s16, 2>;
-using KKPType = std::array<s16, 2>;
-using KKType = std::array<s16, 2>;
-struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
-    using Base = EvaluatorBase<KPPType, KKPType, KKType>;
+struct Evaluator : public EvaluatorBase<KPPType> {
+    using Base = EvaluatorBase<KPPType>;
     static KPPType KPP[SquareNum][fe_end][fe_end];
-    static KKPType KKP[SquareNum][SquareNum][fe_end];
-    static KKType KK[SquareNum][SquareNum];
+    static KPPType KKP[SquareNum][SquareNum][fe_end];
+    static KPPType KK[SquareNum][SquareNum];
 
     static std::string addSlashIfNone(const std::string& str) {
         std::string ret = str;
@@ -429,7 +427,7 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
                 ptrdiff_t indices[KPPIndicesMax];
                 for (int i = 0; i < fe_end; ++i) {
                     for (int j = 0; j < fe_end; ++j) {
-                        EvaluatorBase<KPPType, KKPType, KKType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
+                        EvaluatorBase<KPPType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
                         std::array<s64, 2> sum = {{}};
                         FOO(indices, Base::oneArrayKPP, sum);
                         KPP[ksq][i][j] += sum;
@@ -446,7 +444,7 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
                 ptrdiff_t indices[KKPIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                     for (int i = 0; i < fe_end; ++i) {
-                        EvaluatorBase<KPPType, KKPType, KKType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
+                        EvaluatorBase<KPPType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
                         std::array<s64, 2> sum = {{}};
                         FOO(indices, Base::oneArrayKKP, sum);
                         KKP[ksq0][ksq1][i] += sum;
@@ -462,7 +460,7 @@ struct Evaluator : public EvaluatorBase<KPPType, KKPType, KKType> {
             for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
                 ptrdiff_t indices[KKIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                    EvaluatorBase<KPPType, KKPType, KKType>::kkIndices(indices, static_cast<Square>(ksq0), ksq1);
+                    EvaluatorBase<KPPType>::kkIndices(indices, static_cast<Square>(ksq0), ksq1);
                     std::array<s64, 2> sum = {{}};
                     FOO(indices, Base::oneArrayKK, sum);
                     KK[ksq0][ksq1][0] += sum[0] / 2;

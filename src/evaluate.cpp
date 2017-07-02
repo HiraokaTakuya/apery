@@ -27,8 +27,8 @@
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
 KPPType Evaluator::KPP[SquareNum][fe_end][fe_end];
-KKPType Evaluator::KKP[SquareNum][SquareNum][fe_end];
-KKType  Evaluator::KK[SquareNum][SquareNum];
+KPPType Evaluator::KKP[SquareNum][SquareNum][fe_end];
+KPPType Evaluator::KK[SquareNum][SquareNum];
 EvaluateHashTable g_evalTable;
 
 const int kppArray[31] = {
