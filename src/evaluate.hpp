@@ -33,7 +33,7 @@
 // f_xxx が味方の駒、e_xxx が敵の駒
 // Bonanza の影響で持ち駒 0 の場合のインデックスが存在するが、参照する事は無い。
 // todo: 持ち駒 0 の位置を詰めてテーブルを少しでも小さくする。(キャッシュに少しは乗りやすい?)
-enum {
+enum EvalIndex {
     f_hand_pawn   = 0, // 0
     e_hand_pawn   = f_hand_pawn   + 19,
     f_hand_lance  = e_hand_pawn   + 19,
@@ -70,6 +70,7 @@ enum {
     e_dragon      = f_dragon      + 81,
     fe_end        = e_dragon      + 81
 };
+OverloadEnumOperators(EvalIndex);
 
 const int FVScale = 32;
 
