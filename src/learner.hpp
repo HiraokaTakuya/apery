@@ -187,19 +187,6 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>>& bas
             }
         }
     }
-    // KK
-    {
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-            ptrdiff_t indices[KKIndicesMax];
-            for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                base.kkIndices(indices, static_cast<Square>(ksq0), ksq1);
-                FOO(indices, base.oneArrayKK, grad.kk_grad[ksq0][ksq1]);
-            }
-        }
-    }
 #undef FOO
 }
 
@@ -250,19 +237,6 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>>& ba
                     base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
                     FOO(indices, base.oneArrayKKP, grad.kkp_grad[ksq0][ksq1][i]);
                 }
-            }
-        }
-    }
-    // KK
-    {
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-            ptrdiff_t indices[KKIndicesMax];
-            for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                base.kkIndices(indices, static_cast<Square>(ksq0), ksq1);
-                FOO(indices, base.oneArrayKK, grad.kk_grad[ksq0][ksq1]);
             }
         }
     }
@@ -608,8 +582,6 @@ private:
             updateFV<UsePenalty>(*eval_.oneArrayKPP(i), *parse2EvalBase_.oneArrayKPP(i));
         for (size_t i = 0; i < eval_.kkps_end_index(); ++i)
             updateFV<UsePenalty>(*eval_.oneArrayKKP(i), *parse2EvalBase_.oneArrayKKP(i));
-        for (size_t i = 0; i < eval_.kks_end_index(); ++i)
-            updateFV<UsePenalty>(*eval_.oneArrayKK(i), *parse2EvalBase_.oneArrayKK(i));
 
         // 学習しないパラメータがある時は、一旦 write() で学習しているパラメータだけ書きこんで、再度読み込む事で、
         // updateFV()で学習しないパラメータに入ったノイズを無くす。

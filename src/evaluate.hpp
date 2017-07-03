@@ -174,7 +174,6 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
 
 const int KPPIndicesMax = 2;
 const int KKPIndicesMax = 2;
-const int KKIndicesMax = 3;
 
 template <typename EvalElementType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
@@ -195,25 +194,17 @@ template <typename EvalElementType> struct EvaluatorBase {
     };
     KKPElements kkps;
 
-    struct KKElements {
-        EvalElementType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
-        EvalElementType kk[SquareNoLeftNum][SquareNum];
-    };
-    KKElements kks;
-
     // これらは↑のメンバ変数に一次元配列としてアクセスする為のもの。
     // 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
     // 先頭さえ分かれば良いので要素数1で良い。
     EvalElementType* oneArrayKPP(const u64 i) { return reinterpret_cast<EvalElementType*>(&kpps) + i; }
     EvalElementType* oneArrayKKP(const u64 i) { return reinterpret_cast<EvalElementType*>(&kkps) + i; }
-    EvalElementType* oneArrayKK(const u64 i) { return reinterpret_cast<EvalElementType*>(&kks) + i; }
 
     // todo: これらややこしいし汚いので使わないようにする。
     //       型によっては kkps_begin_index などの値が異なる。
     //       ただ、end - begin のサイズは型によらず一定。
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(EvalElementType); }
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
-    constexpr size_t kks_end_index() const { return sizeof(kks)/sizeof(EvalElementType); }
 
     // KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
@@ -343,39 +334,6 @@ template <typename EvalElementType> struct EvaluatorBase {
         ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
         assert(retIdx <= KKPIndicesMax);
     }
-    void kkIndices(ptrdiff_t ret[KKIndicesMax], Square ksq0, Square ksq1) {
-        int retIdx = 0;
-        auto kk_func = [this, &retIdx, &ret](Square ksq0, Square ksq1, int sign) {
-            {
-                // 常に ksq0 < ksq1 となるテーブルにアクセスする為の変換
-                const Square ksq0Arr[] = {
-                    ksq0,
-                    inverseFile(ksq0),
-                };
-                const Square ksq1Arr[] = {
-                    inverse(ksq1),
-                    inverse(inverseFile(ksq1)),
-                };
-                auto ksq0ArrIdx = std::min_element(std::begin(ksq0Arr), std::end(ksq0Arr)) - std::begin(ksq0Arr);
-                auto ksq1ArrIdx = std::min_element(std::begin(ksq1Arr), std::end(ksq1Arr)) - std::begin(ksq1Arr);
-                if (ksq0Arr[ksq0ArrIdx] <= ksq1Arr[ksq1ArrIdx]) {
-                    ksq0 = ksq0Arr[ksq0ArrIdx];
-                    ksq1 = inverse(ksq1Arr[ksq0ArrIdx]);
-                }
-                else {
-                    sign = -sign; // ksq0 と ksq1 を入れ替えるので符号反転
-                    ksq0 = ksq1Arr[ksq1ArrIdx];
-                    ksq1 = inverse(ksq0Arr[ksq1ArrIdx]);
-                }
-            }
-            ret[retIdx++] = sign*(&kks.kk[ksq0][ksq1] - oneArrayKK(0));
-            assert(ksq0 <= SQ59);
-        };
-        kk_func(ksq0         , ksq1         ,  1);
-        kk_func(inverse(ksq1), inverse(ksq0), -1);
-        ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-        assert(retIdx <= KKIndicesMax);
-    }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
@@ -384,7 +342,6 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
     using Base = EvaluatorBase<EvalElementType>;
     static EvalElementType KPP[SquareNum][fe_end][fe_end];
     static EvalElementType KKP[SquareNum][SquareNum][fe_end];
-    static EvalElementType KK[SquareNum][SquareNum];
 
     static std::string addSlashIfNone(const std::string& str) {
         std::string ret = str;
@@ -452,22 +409,6 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
                 }
             }
         }
-        // KK
-        {
-#ifdef _OPENMP
-#pragma omp for
-#endif
-            for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-                ptrdiff_t indices[KKIndicesMax];
-                for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                    EvaluatorBase<EvalElementType>::kkIndices(indices, static_cast<Square>(ksq0), ksq1);
-                    std::array<s64, 2> sum = {{}};
-                    FOO(indices, Base::oneArrayKK, sum);
-                    KK[ksq0][ksq1][0] += sum[0] / 2;
-                    KK[ksq0][ksq1][1] += sum[1] / 2;
-                }
-            }
-        }
 #undef FOO
 
 #if !defined LEARN
@@ -492,7 +433,6 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
 #define ALL_SYNTHESIZED_EVAL {                  \
         FOO(KPP);                               \
         FOO(KKP);                               \
-        FOO(KK);                                \
     }
     static bool readSynthesized(const std::string& dirName) {
 #define FOO(x) {                                                        \
@@ -534,7 +474,6 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
 #define BASE_ONLINE {                           \
         FOO(kpps.kpp);                          \
         FOO(kkps.kkp);                          \
-        FOO(kks.kk);                            \
     }
 
 #define READ_BASE_EVAL {                        \

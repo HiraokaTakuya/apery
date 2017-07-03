@@ -519,12 +519,6 @@ namespace {
         for (size_t i = 0; i < eval.kkps_end_index(); ++i)
             for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
                 (*eval.oneArrayKKP(i))[boardTurn] = round((*evalBase.oneArrayKKP(i))[boardTurn]);
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (size_t i = 0; i < eval.kks_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*eval.oneArrayKK(i))[boardTurn] = round((*evalBase.oneArrayKK(i))[boardTurn]);
     }
     // 整数の評価値を小数に直す。
     void copyEval(EvalBaseType& evalBase, Evaluator& eval) {
@@ -543,12 +537,6 @@ namespace {
         for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
             for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
                 (*evalBase.oneArrayKKP(i))[boardTurn] = (*eval.oneArrayKKP(i))[boardTurn];
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (size_t i = 0; i < evalBase.kks_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*evalBase.oneArrayKK(i))[boardTurn] = (*eval.oneArrayKK(i))[boardTurn];
     }
     void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
         constexpr double AverageDecay = 0.8; // todo: 過去のデータの重みが強すぎる可能性あり。
@@ -567,12 +555,6 @@ namespace {
         for (size_t i = 0; i < averagedEvalBase.kkps_end_index(); ++i)
             for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
                 (*averagedEvalBase.oneArrayKKP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKKP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKKP(i))[boardTurn];
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (size_t i = 0; i < averagedEvalBase.kks_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*averagedEvalBase.oneArrayKK(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKK(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKK(i))[boardTurn];
     }
     constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
     // RMSProp(実質、改造してAdaGradになっている) でパラメータを更新する。
@@ -611,11 +593,6 @@ namespace {
 #endif
         for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
             updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluatorGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKKP(i), max);
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (size_t i = 0; i < evalBase.kks_end_index(); ++i)
-            updateFV(*evalBase.oneArrayKK(i), *lowerDimentionedEvaluatorGradient.oneArrayKK(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKK(i), max);
 
         std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
     }
@@ -791,7 +768,6 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     auto writeSyn = [&] {
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KK_synthesized.bin" ).c_str()).write((char*)Evaluator::KK , sizeof(Evaluator::KK ));
     };
     auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
     Timer t;
