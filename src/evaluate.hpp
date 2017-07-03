@@ -172,9 +172,9 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
     return lhs;
 }
 
-const int KPPIndicesMax = 3000;
-const int KKPIndicesMax = 130;
-const int KKIndicesMax = 7;
+const int KPPIndicesMax = 2;
+const int KKPIndicesMax = 2;
+const int KKIndicesMax = 3;
 
 template <typename EvalElementType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
