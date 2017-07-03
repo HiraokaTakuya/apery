@@ -199,10 +199,10 @@ Move MovePicker::nextMove() {
         scoreCaptures();
         ++stage_;
         // fallthrough
+    case QCaptures2:
 #if defined USE_QCHECKS
     case QCaptures1:
 #endif
-    case QCaptures2:
         while (cur_ < endMoves_) {
             move = pickBest(cur_++, endMoves_);
             if (move != ttMove_)
