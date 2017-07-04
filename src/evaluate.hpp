@@ -74,7 +74,7 @@ OverloadEnumOperators(EvalIndex);
 
 const int FVScale = 32;
 
-const int KPPIndexArray[] = {
+const EvalIndex KPPIndexArray[] = {
     f_hand_pawn, e_hand_pawn, f_hand_lance, e_hand_lance, f_hand_knight,
     e_hand_knight, f_hand_silver, e_hand_silver, f_hand_gold, e_hand_gold,
     f_hand_bishop, e_hand_bishop, f_hand_rook, e_hand_rook, /*fe_hand_end,*/
@@ -83,50 +83,50 @@ const int KPPIndexArray[] = {
     f_dragon, e_dragon, fe_end
 };
 
-inline Square kppIndexToSquare(const int i) {
+inline Square kppIndexToSquare(const EvalIndex i) {
     const auto it = std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i);
     return static_cast<Square>(i - *(it - 1));
 }
-inline int kppIndexBegin(const int i) {
+inline EvalIndex kppIndexBegin(const EvalIndex i) {
     return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 1);
 }
-inline bool kppIndexIsBlack(const int i) {
+inline bool kppIndexIsBlack(const EvalIndex i) {
     // f_xxx と e_xxx が交互に配列に格納されているので、インデックスが偶数の時は Black
     return !((std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 1) - std::begin(KPPIndexArray) & 1);
 }
-inline int kppBlackIndexToWhiteBegin(const int i) {
+inline EvalIndex kppBlackIndexToWhiteBegin(const EvalIndex i) {
     assert(kppIndexIsBlack(i));
     return *std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i);
 }
-inline int kppWhiteIndexToBlackBegin(const int i) {
+inline EvalIndex kppWhiteIndexToBlackBegin(const EvalIndex i) {
     return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 2);
 }
-inline int kppIndexToOpponentBegin(const int i, const bool isBlack) {
+inline EvalIndex kppIndexToOpponentBegin(const EvalIndex i, const bool isBlack) {
     return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - static_cast<int>(!isBlack) * 2);
 }
-inline int kppIndexToOpponentBegin(const int i) {
+inline EvalIndex kppIndexToOpponentBegin(const EvalIndex i) {
     // todo: 高速化
     return kppIndexToOpponentBegin(i, kppIndexIsBlack(i));
 }
 
-inline int inverseFileIndexIfLefterThanMiddle(const int index) {
+inline EvalIndex inverseFileIndexIfLefterThanMiddle(const EvalIndex index) {
     if (index < fe_hand_end) return index;
-    const int begin = kppIndexBegin(index);
+    const auto begin = kppIndexBegin(index);
     const Square sq = static_cast<Square>(index - begin);
     if (sq <= SQ59) return index;
-    return static_cast<int>(begin + inverseFile(sq));
+    return static_cast<EvalIndex>(begin + inverseFile(sq));
 };
-inline int inverseFileIndexIfOnBoard(const int index) {
+inline EvalIndex inverseFileIndexIfOnBoard(const EvalIndex index) {
     if (index < fe_hand_end) return index;
-    const int begin = kppIndexBegin(index);
+    const auto begin = kppIndexBegin(index);
     const Square sq = static_cast<Square>(index - begin);
-    return static_cast<int>(begin + inverseFile(sq));
+    return static_cast<EvalIndex>(begin + inverseFile(sq));
 };
-inline int inverseFileIndexOnBoard(const int index) {
+inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index) {
     assert(f_pawn <= index);
-    const int begin = kppIndexBegin(index);
+    const auto begin = kppIndexBegin(index);
     const Square sq = static_cast<Square>(index - begin);
-    return static_cast<int>(begin + inverseFile(sq));
+    return static_cast<EvalIndex>(begin + inverseFile(sq));
 };
 
 struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
@@ -210,7 +210,7 @@ template <typename EvalElementType> struct EvaluatorBase {
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
     // 0 の時だけは正負が不明だが、0 は歩の持ち駒 0 枚を意味していて無効な値なので問題なし。
     // ptrdiff_t はインデックス、int は寄与の大きさ。MaxWeight分のいくつかで表記することにする。
-    void kppIndices(ptrdiff_t ret[KPPIndicesMax], Square ksq, int i, int j) {
+    void kppIndices(ptrdiff_t ret[KPPIndicesMax], Square ksq, EvalIndex i, EvalIndex j) {
         int retIdx = 0;
         auto pushLastIndex = [&] {
             ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
@@ -261,9 +261,9 @@ template <typename EvalElementType> struct EvaluatorBase {
         else if (makeFile(ksq) == File5) {
             assert(i < j);
             if (f_pawn <= i) {
-                const int ibegin = kppIndexBegin(i);
+                const EvalIndex ibegin = kppIndexBegin(i);
                 const Square isq = static_cast<Square>(i - ibegin);
-                const int jbegin = kppIndexBegin(j);
+                const EvalIndex jbegin = kppIndexBegin(j);
                 const Square jsq = static_cast<Square>(j - jbegin);
                 if (ibegin == jbegin) {
                     if (std::min(inverseFile(isq), inverseFile(jsq)) < std::min(isq, jsq)) {
@@ -285,7 +285,7 @@ template <typename EvalElementType> struct EvaluatorBase {
         ret[retIdx++] = &kpps.kpp[ksq][i][j] - oneArrayKPP(0);
         pushLastIndex();
     }
-    void kkpIndices(ptrdiff_t ret[KKPIndicesMax], Square ksq0, Square ksq1, int i) {
+    void kkpIndices(ptrdiff_t ret[KKPIndicesMax], Square ksq0, Square ksq1, EvalIndex i) {
         int retIdx = 0;
         auto pushLastIndex = [&] {
             ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
@@ -314,9 +314,9 @@ template <typename EvalElementType> struct EvaluatorBase {
             const Square tmp = ksq0;
             ksq0 = inverse(ksq1);
             ksq1 = inverse(tmp);
-            const int ibegin = kppIndexBegin(i);
-            const int opp_ibegin = kppWhiteIndexToBlackBegin(i);
-            i = opp_ibegin + (i < fe_hand_end ? i - ibegin : inverse(static_cast<Square>(i - ibegin)));
+            const EvalIndex ibegin = kppIndexBegin(i);
+            const EvalIndex opp_ibegin = kppWhiteIndexToBlackBegin(i);
+            i = opp_ibegin + (i < fe_hand_end ? i - ibegin : (EvalIndex)inverse(static_cast<Square>(i - ibegin)));
             sign = -1;
         }
         if (SQ59 < ksq0) {
@@ -382,8 +382,8 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
             for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
                 // indices は更に for ループの外側に置きたいが、OpenMP 使っているとアクセス競合しそうなのでループの中に置く。
                 ptrdiff_t indices[KPPIndicesMax];
-                for (int i = 0; i < fe_end; ++i) {
-                    for (int j = 0; j < fe_end; ++j) {
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                         EvaluatorBase<EvalElementType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
                         std::array<s64, 2> sum = {{}};
                         FOO(indices, Base::oneArrayKPP, sum);
@@ -400,7 +400,7 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
             for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
                 ptrdiff_t indices[KKPIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                    for (int i = 0; i < fe_end; ++i) {
+                    for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                         EvaluatorBase<EvalElementType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
                         std::array<s64, 2> sum = {{}};
                         FOO(indices, Base::oneArrayKKP, sum);

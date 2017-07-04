@@ -164,8 +164,8 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>>& bas
 #endif
         for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
             ptrdiff_t indices[KPPIndicesMax];
-            for (int i = 0; i < fe_end; ++i) {
-                for (int j = 0; j < fe_end; ++j) {
+            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                     base.kppIndices(indices, static_cast<Square>(ksq), i, j);
                     FOO(indices, base.oneArrayKPP, grad.kpp_grad[ksq][i][j]);
                 }
@@ -180,7 +180,7 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>>& bas
         for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
             ptrdiff_t indices[KKPIndicesMax];
             for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                for (int i = 0; i < fe_end; ++i) {
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
                     FOO(indices, base.oneArrayKKP, grad.kkp_grad[ksq0][ksq1][i]);
                 }
@@ -217,8 +217,8 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>>& ba
 #endif
         for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
             ptrdiff_t indices[KPPIndicesMax];
-            for (int i = 0; i < fe_end; ++i) {
-                for (int j = 0; j <= i; ++j) { // 三角配列なので、i までで良い。
+            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                for (EvalIndex j = (EvalIndex)0; j <= i; ++j) { // 三角配列なので、i までで良い。
                     base.kppIndices(indices, static_cast<Square>(ksq), i, j);
                     FOO(indices, base.oneArrayKPP, grad.kpp_grad[ksq].at(i, j));
                 }
@@ -233,7 +233,7 @@ inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>>& ba
         for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
             ptrdiff_t indices[KKPIndicesMax];
             for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                for (int i = 0; i < fe_end; ++i) {
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     base.kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
                     FOO(indices, base.oneArrayKKP, grad.kkp_grad[ksq0][ksq1][i]);
                 }
