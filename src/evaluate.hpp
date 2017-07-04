@@ -221,68 +221,13 @@ template <typename EvalElementType> struct EvaluatorBase {
             pushLastIndex();
             return;
         }
-        if (j < i) std::swap(i, j);
-        // 盤上の駒のSquareが同じ位置の場合と、持ち駒の0枚目は参照する事は無いので、有効なindexを返さない。
-        if (j < fe_hand_end) {
-            // i, j 共に持ち駒
-            if ((i < fe_hand_end && i == kppIndexBegin(i)) // 0 枚目の持ち駒
-                || (j < fe_hand_end && j == kppIndexBegin(j))) // 0 枚目の持ち駒
-            {
-                pushLastIndex();
-                return;
-            }
-        }
-        else if (i < fe_hand_end) {
-            // i 持ち駒、 j 盤上
-            const Square jsq = static_cast<Square>(j - kppIndexBegin(j));
-            if ((i < fe_hand_end && i == kppIndexBegin(i)) // 0 枚目の持ち駒
-                || ksq == jsq)
-            {
-                pushLastIndex();
-                return;
-            }
-        }
-        else {
-            // i, j 共に盤上
-            const Square isq = static_cast<Square>(i - kppIndexBegin(i));
-            const Square jsq = static_cast<Square>(j - kppIndexBegin(j));
-            if (ksq == isq || ksq == jsq || isq == jsq) {
-                pushLastIndex();
-                return;
-            }
-        }
 
-        if (SQ59 < ksq) {
-            ksq = inverseFile(ksq);
-            i = inverseFileIndexIfOnBoard(i);
-            j = inverseFileIndexIfOnBoard(j);
-            if (j < i) std::swap(i, j);
-        }
-        else if (makeFile(ksq) == File5) {
-            assert(i < j);
-            if (f_pawn <= i) {
-                const EvalIndex ibegin = kppIndexBegin(i);
-                const Square isq = static_cast<Square>(i - ibegin);
-                const EvalIndex jbegin = kppIndexBegin(j);
-                const Square jsq = static_cast<Square>(j - jbegin);
-                if (ibegin == jbegin) {
-                    if (std::min(inverseFile(isq), inverseFile(jsq)) < std::min(isq, jsq)) {
-                        i = ibegin + inverseFile(isq);
-                        j = jbegin + inverseFile(jsq);
-                    }
-                }
-                else if (SQ59 < isq) {
-                    i = ibegin + inverseFile(isq);
-                    j = jbegin + inverseFile(jsq);
-                }
-                else if (makeFile(isq) == File5)
-                    j = inverseFileIndexIfLefterThanMiddle(j);
-            }
-            else if (f_pawn <= j)
-                j = inverseFileIndexIfLefterThanMiddle(j);
-        }
-        if (j < i) std::swap(i, j);
-        ret[retIdx++] = &kpps.kpp[ksq][i][j] - oneArrayKPP(0);
+        // 左右対称や、玉以外の2駒の入れ替えにより本質的に同じ位置関係のものは、常に同じアドレスを参照するようにする。
+        const auto invk = inverseFile(ksq);
+        const auto invi = inverseFileIndexIfOnBoard(i);
+        const auto invj = inverseFileIndexIfOnBoard(j);
+        auto p = std::min({&kpps.kpp[ksq][i][j], &kpps.kpp[ksq][j][i], &kpps.kpp[invk][invi][invj], &kpps.kpp[invk][invj][invi]});
+        ret[retIdx++] = p - oneArrayKPP(0);
         pushLastIndex();
     }
     void kkpIndices(ptrdiff_t ret[KKPIndicesMax], Square ksq0, Square ksq1, EvalIndex i) {
