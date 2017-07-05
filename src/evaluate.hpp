@@ -128,6 +128,11 @@ inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index) {
     const Square sq = static_cast<Square>(index - begin);
     return static_cast<EvalIndex>(begin + inverseFile(sq));
 };
+inline EvalIndex kppWhiteIndexToBlackIndex(const EvalIndex index) {
+    const EvalIndex indexBegin = kppIndexBegin(index);
+    const EvalIndex blackBegin = kppWhiteIndexToBlackBegin(index);
+    return blackBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
+}
 
 struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
     KPPBoardIndexStartToPiece() {
@@ -259,9 +264,7 @@ template <typename EvalElementType> struct EvaluatorBase {
             const Square tmp = ksq0;
             ksq0 = inverse(ksq1);
             ksq1 = inverse(tmp);
-            const EvalIndex ibegin = kppIndexBegin(i);
-            const EvalIndex opp_ibegin = kppWhiteIndexToBlackBegin(i);
-            i = opp_ibegin + (i < fe_hand_end ? i - ibegin : (EvalIndex)inverse(static_cast<Square>(i - ibegin)));
+            i = kppWhiteIndexToBlackIndex(i);
             sign = -1;
         }
         if (SQ59 < ksq0) {
