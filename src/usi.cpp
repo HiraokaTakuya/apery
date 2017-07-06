@@ -1121,10 +1121,6 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
             Evaluator::writeSynthesized(options["Eval_Dir"]);
         }
 #if defined LEARN
-        else if (token == "l"        ) {
-            auto learner = std::unique_ptr<Learner>(new Learner);
-            learner->learn(pos, ssCmd);
-        }
         else if (token == "make_teacher") {
             if (!evalTableIsRead) {
                 std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
