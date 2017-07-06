@@ -38,7 +38,6 @@
 struct TriangularEvaluatorGradient {
     TriangularArray<std::array<double, 2>, int, fe_end, fe_end> kpp_grad[SquareNum];
     std::array<double, 2> kkp_grad[SquareNum][SquareNum][fe_end];
-    std::array<double, 2> kk_grad[SquareNum][SquareNum];
 
     void incParam(const Position& pos, const std::array<double, 2>& dinc) {
         const Square sq_bk = pos.kingSquare(Black);
@@ -47,7 +46,6 @@ struct TriangularEvaluatorGradient {
         const int* list1 = pos.cplist1();
         const std::array<double, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
 
-        kk_grad[sq_bk][sq_wk] += f;
         for (int i = 0; i < pos.nlist(); ++i) {
             const int k0 = list0[i];
             const int k1 = list1[i];
@@ -90,13 +88,11 @@ TriangularEvaluatorGradient& operator += (TriangularEvaluatorGradient& lhs, Tria
             *lit += *rit;
     for (auto lit = &(***std::begin(lhs.kkp_grad)), rit = &(***std::begin(rhs.kkp_grad)); lit != &(***std::end(lhs.kkp_grad)); ++lit, ++rit)
         *lit += *rit;
-    for (auto lit = &(** std::begin(lhs.kk_grad )), rit = &(** std::begin(rhs.kk_grad )); lit != &(** std::end(lhs.kk_grad )); ++lit, ++rit)
-        *lit += *rit;
 
     return lhs;
 }
 
-// kpp_grad, kkp_grad, kk_grad の値を低次元の要素に与える。
+// kpp_grad, kkp_grad の値を低次元の要素に与える。
 inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>>& base, const TriangularEvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)                                     \
