@@ -72,6 +72,29 @@ enum EvalIndex {
 };
 OverloadEnumOperators(EvalIndex);
 
+enum EvalIndexOnlyF {
+    of_hand_pawn   = 0, // 0
+    of_hand_lance  = of_hand_pawn   + 19,
+    of_hand_knight = of_hand_lance  +  5,
+    of_hand_silver = of_hand_knight +  5,
+    of_hand_gold   = of_hand_silver +  5,
+    of_hand_bishop = of_hand_gold   +  5,
+    of_hand_rook   = of_hand_bishop +  3,
+    of_hand_end    = of_hand_rook   +  3,
+
+    of_pawn        = of_hand_end,
+    of_lance       = of_pawn        + 81,
+    of_knight      = of_lance       + 81,
+    of_silver      = of_knight      + 81,
+    of_gold        = of_silver      + 81,
+    of_bishop      = of_gold        + 81,
+    of_horse       = of_bishop      + 81,
+    of_rook        = of_horse       + 81,
+    of_dragon      = of_rook        + 81,
+    of_end         = of_dragon      + 81
+};
+OverloadEnumOperators(EvalIndexOnlyF);
+
 const int FVScale = 32;
 
 const EvalIndex KPPIndexArray[] = {
@@ -133,6 +156,37 @@ inline EvalIndex kppWhiteIndexToBlackIndex(const EvalIndex index) {
     const EvalIndex blackBegin = kppWhiteIndexToBlackBegin(index);
     return blackBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
 }
+inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index) {
+    const EvalIndex indexBegin = kppIndexBegin(index);
+    const EvalIndex opponentBegin = kppIndexToOpponentBegin(index);
+    return opponentBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
+}
+
+inline EvalIndexOnlyF evalIndexToEvalIndexOnlyF(const EvalIndex i) {
+    assert(kppIndexIsBlack(i));
+    const EvalIndex iBegin = kppIndexBegin(i);
+    EvalIndexOnlyF ofBegin;
+    switch (iBegin) {
+    case f_hand_pawn  : ofBegin = of_hand_pawn  ; break;
+    case f_hand_lance : ofBegin = of_hand_lance ; break;
+    case f_hand_knight: ofBegin = of_hand_knight; break;
+    case f_hand_silver: ofBegin = of_hand_silver; break;
+    case f_hand_gold  : ofBegin = of_hand_gold  ; break;
+    case f_hand_bishop: ofBegin = of_hand_bishop; break;
+    case f_hand_rook  : ofBegin = of_hand_rook  ; break;
+    case f_pawn       : ofBegin = of_pawn       ; break;
+    case f_lance      : ofBegin = of_lance      ; break;
+    case f_knight     : ofBegin = of_knight     ; break;
+    case f_silver     : ofBegin = of_silver     ; break;
+    case f_gold       : ofBegin = of_gold       ; break;
+    case f_bishop     : ofBegin = of_bishop     ; break;
+    case f_horse      : ofBegin = of_horse      ; break;
+    case f_rook       : ofBegin = of_rook       ; break;
+    case f_dragon     : ofBegin = of_dragon     ; break;
+    default: UNREACHABLE;
+    }
+    return ofBegin + (i - iBegin);
+}
 
 struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
     KPPBoardIndexStartToPiece() {
@@ -179,6 +233,7 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
 
 const int KPPIndicesMax = 2;
 const int KKPIndicesMax = 2;
+const int PPPIndicesMax = 2;
 
 template <typename EvalElementType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
@@ -188,28 +243,33 @@ template <typename EvalElementType> struct EvaluatorBase {
     // 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
     // ただし、kkp に関する項目 (kkp, r_kkp_b, r_kkp_h) のみ、p は味方の駒として扱うので、k0 < k1 となるとは限らない。
     struct KPPElements {
-        EvalElementType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
         EvalElementType kpp[SquareNoLeftNum][fe_end][fe_end];
     };
     KPPElements kpps;
 
     struct KKPElements {
-        EvalElementType dummy; // 一次元配列に変換したとき、符号で +- を表すようにしているが、index = 0 の時は符号を付けられないので、ダミーを置く。
         EvalElementType kkp[SquareNoLeftNum][SquareNum][fe_end];
     };
     KKPElements kkps;
+
+    struct PPPElements {
+        EvalElementType ppp[of_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
+    };
+    PPPElements ppps;
 
     // これらは↑のメンバ変数に一次元配列としてアクセスする為のもの。
     // 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
     // 先頭さえ分かれば良いので要素数1で良い。
     EvalElementType* oneArrayKPP(const u64 i) { return reinterpret_cast<EvalElementType*>(&kpps) + i; }
     EvalElementType* oneArrayKKP(const u64 i) { return reinterpret_cast<EvalElementType*>(&kkps) + i; }
+    EvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<EvalElementType*>(&ppps) + i; }
 
     // todo: これらややこしいし汚いので使わないようにする。
     //       型によっては kkps_begin_index などの値が異なる。
     //       ただ、end - begin のサイズは型によらず一定。
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(EvalElementType); }
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
+    constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(EvalElementType); }
 
     // KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
@@ -282,6 +342,40 @@ template <typename EvalElementType> struct EvaluatorBase {
         ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
         assert(retIdx <= KKPIndicesMax);
     }
+    void pppIndices(ptrdiff_t ret[PPPIndicesMax], EvalIndex i, EvalIndex j, EvalIndex k) {
+        int retIdx = 0;
+        auto pushLastIndex = [&] {
+            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
+            assert(retIdx <= PPPIndicesMax);
+        };
+
+        if (i == j || i == k || j == k) {
+            pushLastIndex();
+            return;
+        }
+        std::array<EvalIndex, 3> array = {{i, j, k}};
+        // insertionSort 使うべきか？
+        std::sort(std::begin(array), std::end(array)); // array[0] を最小の要素にする。i の駒の種類と、i が味方の駒か敵の駒かが決まる。
+        int sign = 1;
+        if (!kppIndexIsBlack(array[0])) {
+            // array[0] は必ず味方の駒にする。
+            array[0] = kppWhiteIndexToBlackIndex(array[0]);
+            array[1] = kppIndexToOpponentIndex(array[1]);
+            array[2] = kppIndexToOpponentIndex(array[2]);
+            sign = -1;
+        }
+        std::array<EvalIndex, 3> invArray = {{inverseFileIndexIfOnBoard(array[0]),
+                                              inverseFileIndexIfOnBoard(array[1]),
+                                              inverseFileIndexIfOnBoard(array[2])}};
+        std::sort(std::begin(array   ), std::end(array   ));
+        std::sort(std::begin(invArray), std::end(invArray));
+        const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
+        assert(kppIndexIsBlack(result[0]));
+        // result[0] を EvalIndexOnlyF になおす。
+        const EvalIndexOnlyF of = evalIndexToEvalIndexOnlyF(result[0]);
+        ret[retIdx++] = sign*(&ppps.ppp[of][result[1]][result[2]] - oneArrayPPP(0));
+        pushLastIndex();
+    }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
@@ -304,6 +398,7 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
 #if !defined LEARN
         SYNCCOUT << "info string start setting eval table" << SYNCENDL;
 #endif
+        // index が負の時、反対側の駒として扱うので、-index で要素にアクセスし、通常の位置関係には値を -1 倍する。(手番評価は常に加算)
 #define FOO(indices, oneArray, sum)                                     \
         for (auto index : indices) {                                    \
             if (index == std::numeric_limits<ptrdiff_t>::max()) break;  \
