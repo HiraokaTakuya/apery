@@ -93,7 +93,7 @@ TriangularEvaluatorGradient& operator += (TriangularEvaluatorGradient& lhs, Tria
 }
 
 // kpp_grad, kkp_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>>& base, const TriangularEvaluatorGradient& grad)
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>, double>& base, const TriangularEvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)                                     \
     for (auto index : indices) {                                        \

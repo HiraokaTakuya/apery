@@ -235,7 +235,7 @@ const int KPPIndicesMax = 2;
 const int KKPIndicesMax = 2;
 const int PPPIndicesMax = 2;
 
-template <typename EvalElementType> struct EvaluatorBase {
+template <typename EvalElementType, typename PPPEvalElementType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
     constexpr int MaxWeight() const { return 1; }
     constexpr int TurnWeight() const { return 8; }
@@ -253,23 +253,23 @@ template <typename EvalElementType> struct EvaluatorBase {
     KKPElements kkps;
 
     struct PPPElements {
-        EvalElementType ppp[of_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
+        PPPEvalElementType ppp[of_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
     };
     PPPElements ppps;
 
     // これらは↑のメンバ変数に一次元配列としてアクセスする為のもの。
     // 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
     // 先頭さえ分かれば良いので要素数1で良い。
-    EvalElementType* oneArrayKPP(const u64 i) { return reinterpret_cast<EvalElementType*>(&kpps) + i; }
-    EvalElementType* oneArrayKKP(const u64 i) { return reinterpret_cast<EvalElementType*>(&kkps) + i; }
-    EvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<EvalElementType*>(&ppps) + i; }
+    EvalElementType*    oneArrayKPP(const u64 i) { return reinterpret_cast<EvalElementType*   >(&kpps) + i; }
+    EvalElementType*    oneArrayKKP(const u64 i) { return reinterpret_cast<EvalElementType*   >(&kkps) + i; }
+    PPPEvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<PPPEvalElementType*>(&ppps) + i; }
 
     // todo: これらややこしいし汚いので使わないようにする。
     //       型によっては kkps_begin_index などの値が異なる。
     //       ただ、end - begin のサイズは型によらず一定。
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(EvalElementType); }
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
-    constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(EvalElementType); }
+    constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(PPPEvalElementType); }
 
     // KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
@@ -380,8 +380,9 @@ template <typename EvalElementType> struct EvaluatorBase {
 };
 
 using EvalElementType = std::array<s16, 2>;
-struct Evaluator : public EvaluatorBase<EvalElementType> {
-    using Base = EvaluatorBase<EvalElementType>;
+using PPPEvalElementType = s16;
+struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
+    using Base = EvaluatorBase<EvalElementType, PPPEvalElementType>;
     static EvalElementType KPP[SquareNum][fe_end][fe_end];
     static EvalElementType KKP[SquareNum][SquareNum][fe_end];
 
@@ -427,7 +428,7 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
                 ptrdiff_t indices[KPPIndicesMax];
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                        EvaluatorBase<EvalElementType>::kppIndices(indices, static_cast<Square>(ksq), i, j);
+                        Base::kppIndices(indices, static_cast<Square>(ksq), i, j);
                         std::array<s64, 2> sum = {{}};
                         FOO(indices, Base::oneArrayKPP, sum);
                         KPP[ksq][i][j] += sum;
@@ -444,7 +445,7 @@ struct Evaluator : public EvaluatorBase<EvalElementType> {
                 ptrdiff_t indices[KKPIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                     for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                        EvaluatorBase<EvalElementType>::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
+                        Base::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
                         std::array<s64, 2> sum = {{}};
                         FOO(indices, Base::oneArrayKKP, sum);
                         KKP[ksq0][ksq1][i] += sum;
