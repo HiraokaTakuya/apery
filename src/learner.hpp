@@ -79,7 +79,7 @@ struct TriangularEvaluatorGradient {
 };
 
 // kpp_grad, kkp_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>, float>& base, const TriangularEvaluatorGradient& grad)
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>, std::atomic<float>>& base, const TriangularEvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)                                     \
     for (auto index : indices) {                                        \
