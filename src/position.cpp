@@ -370,8 +370,8 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
         st_->cl.clistpair[0].oldlist[0] = evalList_.list0[listIndex];
         st_->cl.clistpair[0].oldlist[1] = evalList_.list1[listIndex];
 
-        evalList_.list0[listIndex] = kppArray[pcTo         ] + to;
-        evalList_.list1[listIndex] = kppArray[inverse(pcTo)] + inverse(to);
+        evalList_.list0[listIndex] = kppArray[pcTo         ] + (EvalIndex)to;
+        evalList_.list1[listIndex] = kppArray[inverse(pcTo)] + (EvalIndex)inverse(to);
         evalList_.listToSquareHand[listIndex] = to;
         evalList_.squareHandToList[to] = listIndex;
 
@@ -450,8 +450,8 @@ void Position::doMove(const Move move, StateInfo& newSt, const CheckInfo& ci, co
             st_->cl.clistpair[0].oldlist[0] = evalList_.list0[fromListIndex];
             st_->cl.clistpair[0].oldlist[1] = evalList_.list1[fromListIndex];
 
-            evalList_.list0[fromListIndex] = kppArray[pcTo         ] + to;
-            evalList_.list1[fromListIndex] = kppArray[inverse(pcTo)] + inverse(to);
+            evalList_.list0[fromListIndex] = kppArray[pcTo         ] + (EvalIndex)to;
+            evalList_.list1[fromListIndex] = kppArray[inverse(pcTo)] + (EvalIndex)inverse(to);
             evalList_.listToSquareHand[fromListIndex] = to;
             evalList_.squareHandToList[to] = fromListIndex;
 
@@ -540,8 +540,8 @@ void Position::undoMove(const Move move) {
         else {
             const Piece pcFrom = colorAndPieceTypeToPiece(us, ptFrom);
             const int toListIndex = evalList_.squareHandToList[to];
-            evalList_.list0[toListIndex] = kppArray[pcFrom         ] + from;
-            evalList_.list1[toListIndex] = kppArray[inverse(pcFrom)] + inverse(from);
+            evalList_.list0[toListIndex] = kppArray[pcFrom         ] + (EvalIndex)from;
+            evalList_.list1[toListIndex] = kppArray[inverse(pcFrom)] + (EvalIndex)inverse(from);
             evalList_.listToSquareHand[toListIndex] = from;
             evalList_.squareHandToList[from] = toListIndex;
         }
@@ -556,8 +556,8 @@ void Position::undoMove(const Move move) {
 
             const int handnum = hand(us).numOf(hpCaptured);
             const int toListIndex = evalList_.squareHandToList[HandPieceToSquareHand[us][hpCaptured] + handnum];
-            evalList_.list0[toListIndex] = kppArray[pcCaptured         ] + to;
-            evalList_.list1[toListIndex] = kppArray[inverse(pcCaptured)] + inverse(to);
+            evalList_.list0[toListIndex] = kppArray[pcCaptured         ] + (EvalIndex)to;
+            evalList_.list1[toListIndex] = kppArray[inverse(pcCaptured)] + (EvalIndex)inverse(to);
             evalList_.listToSquareHand[toListIndex] = to;
             evalList_.squareHandToList[to] = toListIndex;
 

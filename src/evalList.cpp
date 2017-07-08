@@ -33,10 +33,10 @@ void EvalList::set(const Position& pos) {
     const Hand handW = pos.hand(White);
 
     int nlist = 0;
-    auto func = [&nlist, this](const Hand hand, const HandPiece hp, const int list0_index, const int list1_index, const Color c) {
+    auto func = [&nlist, this](const Hand hand, const HandPiece hp, const EvalIndex list0_index, const EvalIndex list1_index, const Color c) {
         for (u32 i = 1; i <= hand.numOf(hp); ++i) {
-            list0[nlist] = list0_index + i;
-            list1[nlist] = list1_index + i;
+            list0[nlist] = list0_index + (EvalIndex)i;
+            list1[nlist] = list1_index + (EvalIndex)i;
             const Square squarehand = HandPieceToSquareHand[c][hp] + static_cast<Square>(i);
             listToSquareHand[nlist] = squarehand;
             squareHandToList[squarehand] = nlist;
@@ -64,7 +64,7 @@ void EvalList::set(const Position& pos) {
         const Piece pc = pos.piece(sq);
         listToSquareHand[nlist] = sq;
         squareHandToList[sq] = nlist;
-        list0[nlist  ] = kppArray[pc         ] + sq;
-        list1[nlist++] = kppArray[inverse(pc)] + inverse(sq);
+        list0[nlist  ] = kppArray[pc         ] + (EvalIndex)sq;
+        list1[nlist++] = kppArray[inverse(pc)] + (EvalIndex)inverse(sq);
     }
 }

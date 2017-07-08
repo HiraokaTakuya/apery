@@ -30,19 +30,19 @@ EvalElementType Evaluator::KPP[SquareNum][fe_end][fe_end];
 EvalElementType Evaluator::KKP[SquareNum][SquareNum][fe_end];
 EvaluateHashTable g_evalTable;
 
-const int kppArray[31] = {
-    0,        f_pawn,   f_lance,  f_knight,
-    f_silver, f_bishop, f_rook,   f_gold,
-    0,        f_gold,   f_gold,   f_gold,
-    f_gold,   f_horse,  f_dragon,
-    0,
-    0,        e_pawn,   e_lance,  e_knight,
-    e_silver, e_bishop, e_rook,   e_gold,
-    0,        e_gold,   e_gold,   e_gold,
-    e_gold,   e_horse,  e_dragon
+const EvalIndex kppArray[31] = {
+    (EvalIndex)0, f_pawn,   f_lance,  f_knight,
+    f_silver    , f_bishop, f_rook,   f_gold,
+    (EvalIndex)0, f_gold,   f_gold,   f_gold,
+    f_gold      , f_horse,  f_dragon,
+    (EvalIndex)0,
+    (EvalIndex)0, e_pawn,   e_lance,  e_knight,
+    e_silver    , e_bishop, e_rook,   e_gold,
+    (EvalIndex)0, e_gold,   e_gold,   e_gold,
+    e_gold      , e_horse,  e_dragon
 };
 
-const int kppHandArray[ColorNum][HandPieceNum] = {
+const EvalIndex kppHandArray[ColorNum][HandPieceNum] = {
     {f_hand_pawn, f_hand_lance, f_hand_knight, f_hand_silver,
      f_hand_gold, f_hand_bishop, f_hand_rook},
     {e_hand_pawn, e_hand_lance, e_hand_knight, e_hand_silver,
@@ -50,11 +50,11 @@ const int kppHandArray[ColorNum][HandPieceNum] = {
 };
 
 namespace {
-    EvalSum doapc(const Position& pos, const int index[2]) {
+    EvalSum doapc(const Position& pos, const EvalIndex index[2]) {
         const Square sq_bk = pos.kingSquare(Black);
         const Square sq_wk = pos.kingSquare(White);
-        const int* list0 = pos.cplist0();
-        const int* list1 = pos.cplist1();
+        const EvalIndex* list0 = pos.cplist0();
+        const EvalIndex* list1 = pos.cplist1();
 
         EvalSum sum;
         sum.p[2][0] = Evaluator::KKP[sq_bk][sq_wk][index[0]][0];
@@ -83,9 +83,9 @@ namespace {
 
         return sum;
     }
-    std::array<s32, 2> doablack(const Position& pos, const int index[2]) {
+    std::array<s32, 2> doablack(const Position& pos, const EvalIndex index[2]) {
         const Square sq_bk = pos.kingSquare(Black);
-        const int* list0 = pos.cplist0();
+        const EvalIndex* list0 = pos.cplist0();
 
         const auto* pkppb = Evaluator::KPP[sq_bk         ][index[0]];
         std::array<s32, 2> sum = {{pkppb[list0[0]][0], pkppb[list0[0]][1]}};
@@ -95,9 +95,9 @@ namespace {
         }
         return sum;
     }
-    std::array<s32, 2> doawhite(const Position& pos, const int index[2]) {
+    std::array<s32, 2> doawhite(const Position& pos, const EvalIndex index[2]) {
         const Square sq_wk = pos.kingSquare(White);
-        const int* list1 = pos.cplist1();
+        const EvalIndex* list1 = pos.cplist1();
 
         const auto* pkppw = Evaluator::KPP[inverse(sq_wk)][index[1]];
         std::array<s32, 2> sum = {{pkppw[list1[0]][0], pkppw[list1[0]][1]}};
@@ -177,7 +177,7 @@ namespace {
             diff.p[2][0] += pos.material() * FVScale;
             if (pos.turn() == Black) {
                 const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];
-                const int* list1 = pos.plist1();
+                const EvalIndex* list1 = pos.plist1();
                 diff.p[1][0] = 0;
                 diff.p[1][1] = 0;
                 for (int i = 0; i < pos.nlist(); ++i) {
@@ -201,7 +201,7 @@ namespace {
             }
             else {
                 const auto* ppkppb = Evaluator::KPP[sq_bk         ];
-                const int* list0 = pos.plist0();
+                const EvalIndex* list0 = pos.plist0();
                 diff.p[0][0] = 0;
                 diff.p[0][1] = 0;
                 for (int i = 0; i < pos.nlist(); ++i) {
@@ -304,8 +304,8 @@ namespace {
 
         const Square sq_bk = pos.kingSquare(Black);
         const Square sq_wk = pos.kingSquare(White);
-        const int* list0 = pos.plist0();
-        const int* list1 = pos.plist1();
+        const EvalIndex* list0 = pos.plist0();
+        const EvalIndex* list1 = pos.plist1();
 
         const auto* ppkppb = Evaluator::KPP[sq_bk         ];
         const auto* ppkppw = Evaluator::KPP[inverse(sq_wk)];

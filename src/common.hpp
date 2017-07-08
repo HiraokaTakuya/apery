@@ -335,7 +335,7 @@ using ConditionVariable = std::condition_variable;
 template <typename ElementType, typename KeyType, size_t Size_i, size_t Size_j>
 struct TriangularArray {
     static constexpr KeyType index(const KeyType i, const KeyType j) { return i * (i + 1)/2 + j; }
-    static constexpr size_t Size = index(Size_i - 1, Size_j - 1) + 1;
+    static constexpr size_t Size = index((KeyType)(Size_i - 1), (KeyType)(Size_j - 1)) + 1;
     const ElementType& at(const KeyType i, const KeyType j) const { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
     ElementType& at(const KeyType i, const KeyType j) { return (i < j ? data_[index(i, j)] : data_[index(j, i)]); }
     const ElementType* begin() const { return data_; }

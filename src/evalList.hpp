@@ -26,12 +26,13 @@
 #include "piece.hpp"
 
 class Position;
+enum EvalIndex : int32_t;
 
 struct EvalList {
     static const int ListSize = 38;
 
-    int list0[ListSize];
-    int list1[ListSize];
+    EvalIndex list0[ListSize];
+    EvalIndex list1[ListSize];
     Square listToSquareHand[ListSize];
     int squareHandToList[SquareHandNum];
 

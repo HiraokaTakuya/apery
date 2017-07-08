@@ -646,12 +646,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         exit(EXIT_FAILURE);
     std::vector<Searcher> searchers(threadNum);
     std::vector<Position> positions;
-    // std::vector<TriangularEvaluatorGradient> だと、非常に大きな要素が要素数分メモリ上に連続する必要があり、
-    // 例えメモリ量が余っていても、連続で確保出来ない場合は bad_alloc してしまうので、unordered_map にする。
-    std::unordered_map<int, std::unique_ptr<TriangularEvaluatorGradient> > evaluatorGradients;
-    // evaluatorGradients(threadNum) みたいにコンストラクタで確保するとスタックを使い切って落ちたので emplace_back する。
-    for (int i = 0; i < threadNum; ++i)
-        evaluatorGradients.emplace(i, std::move(std::unique_ptr<TriangularEvaluatorGradient>(new TriangularEvaluatorGradient)));
+    auto evaluatorGradient = std::unique_ptr<TriangularEvaluatorGradient>(new TriangularEvaluatorGradient);
     for (auto& s : searchers) {
         s.init();
         const std::string options[] = {"name Threads value 1",
@@ -693,7 +688,6 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     auto func = [&teacherBuffers](Position& pos, TriangularEvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes, const s64 iteration, const s64 MaxNodes) {
         SearchStack ss[2];
         HuffmanCodedPosAndEval hcpe;
-        evaluatorGradient.clear();
         pos.searcher()->tt.clear();
         while (true) {
             {
@@ -785,18 +779,17 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         while (teacherBuffers.currentBuffer().state != TeacherBuffer::WaitUsing)
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+        evaluatorGradient->clear();
         for (int i = 0; i < threadNum; ++i)
-            threads[i] = std::thread([&positions, i, &func, &evaluatorGradients, &losses, &nodes, &iteration, &MaxNodes] { func(positions[i], *(evaluatorGradients[i]), losses[i], nodes, iteration, MaxNodes); });
+            threads[i] = std::thread([&positions, i, &func, &evaluatorGradient, &losses, &nodes, &iteration, &MaxNodes] { func(positions[i], *evaluatorGradient, losses[i], nodes, iteration, MaxNodes); });
         for (int i = 0; i < threadNum; ++i)
             threads[i].join();
         teacherBuffers.currentBuffer().state = TeacherBuffer::WaitFilling;
         if (nodes < NodesPerIteration)
             break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
-        for (size_t size = 1; size < (size_t)threadNum; ++size)
-            *(evaluatorGradients[0]) += *(evaluatorGradients[size]); // 複数スレッドで個別に保持していた gradients を [0] の要素に集約する。
         lowerDimensionedEvaluatorGradient->clear();
-        lowerDimension(*lowerDimensionedEvaluatorGradient, *(evaluatorGradients[0]));
+        lowerDimension(*lowerDimensionedEvaluatorGradient, *evaluatorGradient);
 
         updateEval(*evalBase, *lowerDimensionedEvaluatorGradient, *meanSquareOfLowerDimensionedEvaluatorGradient);
         averageEval(*averagedEvalBase, *evalBase); // 平均化する。

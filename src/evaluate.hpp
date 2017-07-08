@@ -33,7 +33,7 @@
 // f_xxx が味方の駒、e_xxx が敵の駒
 // Bonanza の影響で持ち駒 0 の場合のインデックスが存在するが、参照する事は無い。
 // todo: 持ち駒 0 の位置を詰めてテーブルを少しでも小さくする。(キャッシュに少しは乗りやすい?)
-enum EvalIndex {
+enum EvalIndex : int32_t { // TriangularArray で計算する為に 32bit にしている。
     f_hand_pawn   = 0, // 0
     e_hand_pawn   = f_hand_pawn   + 19,
     f_hand_lance  = e_hand_pawn   + 19,
@@ -546,9 +546,8 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
 #undef WRITE_BASE_EVAL
 };
 
-extern const int kppArray[31];
-extern const int kkpArray[15];
-extern const int kppHandArray[ColorNum][HandPieceNum];
+extern const EvalIndex kppArray[31];
+extern const EvalIndex kppHandArray[ColorNum][HandPieceNum];
 
 struct EvalSum {
 #if defined USE_AVX2_EVAL

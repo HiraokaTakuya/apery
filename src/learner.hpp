@@ -34,63 +34,49 @@
 #define PRINT_PV(x)
 #endif
 
-// EvaluatorGradient のメモリ使用量を三角配列を用いて抑えた代わりに、double にして精度を高めたもの。
-struct TriangularEvaluatorGradient {
-    TriangularArray<std::array<double, 2>, int, fe_end, fe_end> kpp_grad[SquareNum];
-    std::array<double, 2> kkp_grad[SquareNum][SquareNum][fe_end];
-
-    void incParam(const Position& pos, const std::array<double, 2>& dinc) {
-        const Square sq_bk = pos.kingSquare(Black);
-        const Square sq_wk = pos.kingSquare(White);
-        const int* list0 = pos.cplist0();
-        const int* list1 = pos.cplist1();
-        const std::array<double, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
-
-        for (int i = 0; i < pos.nlist(); ++i) {
-            const int k0 = list0[i];
-            const int k1 = list1[i];
-            for (int j = 0; j < i; ++j) {
-                const int l0 = list0[j];
-                const int l1 = list1[j];
-                kpp_grad[sq_bk         ].at(k0, l0) += f;
-                kpp_grad[inverse(sq_wk)].at(k1, l1)[0] -= f[0];
-                kpp_grad[inverse(sq_wk)].at(k1, l1)[1] += f[1];
-            }
-            kkp_grad[sq_bk][sq_wk][k0] += f;
-        }
-    }
-
-    void clear() { memset(this, 0, sizeof(*this)); } // double 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
-};
-
 // float, double 型の atomic 加算。T は float, double を想定。
-template <typename T>
-inline T atomicAdd(std::atomic<T> &x, const T diff) {
-    T old = x.load(std::memory_order_consume);
-    T desired = old + diff;
+template <typename T0, typename T1>
+inline T0 atomicAdd(std::atomic<T0> &x, const T1& diff) {
+    T0 old = x.load(std::memory_order_consume);
+    T0 desired = old + diff;
     while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
         desired = old + diff;
     return desired;
 }
 // float, double 型の atomic 減算
-template <typename T>
-inline T atomicSub(std::atomic<T> &x, const T diff) { return atomicAdd(x, -diff); }
+template <typename T0, typename T1>
+inline T0 atomicSub(std::atomic<T0> &x, const T1& diff) { return atomicAdd(x, -diff); }
 
-TriangularEvaluatorGradient& operator += (TriangularEvaluatorGradient& lhs, TriangularEvaluatorGradient& rhs) {
-#if defined _OPENMP
-#pragma omp parallel
-#endif
-#ifdef _OPENMP
-#pragma omp for
-#endif
-    for (int sq = SQ11; sq < SquareNum; ++sq)
-        for (auto lit = std::begin(lhs.kpp_grad[sq]), rit = std::begin(rhs.kpp_grad[sq]); lit != std::end(lhs.kpp_grad[sq]); ++lit, ++rit)
-            *lit += *rit;
-    for (auto lit = &(***std::begin(lhs.kkp_grad)), rit = &(***std::begin(rhs.kkp_grad)); lit != &(***std::end(lhs.kkp_grad)); ++lit, ++rit)
-        *lit += *rit;
+// EvaluatorGradient のメモリ使用量を三角配列を用いて抑えた代わりに、double にして精度を高めたもの。
+struct TriangularEvaluatorGradient {
+    TriangularArray<std::array<std::atomic<double>, 2>, EvalIndex, fe_end, fe_end> kpp_grad[SquareNum];
+    std::array<std::atomic<double>, 2> kkp_grad[SquareNum][SquareNum][fe_end];
 
-    return lhs;
-}
+    void incParam(const Position& pos, const std::array<double, 2>& dinc) {
+        const Square sq_bk = pos.kingSquare(Black);
+        const Square sq_wk = pos.kingSquare(White);
+        const EvalIndex* list0 = pos.cplist0();
+        const EvalIndex* list1 = pos.cplist1();
+        const std::array<double, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
+
+        for (int i = 0; i < pos.nlist(); ++i) {
+            const EvalIndex k0 = list0[i];
+            const EvalIndex k1 = list1[i];
+            for (int j = 0; j < i; ++j) {
+                const EvalIndex l0 = list0[j];
+                const EvalIndex l1 = list1[j];
+                atomicAdd(kpp_grad[sq_bk         ].at(k0, l0)[0], f[0]);
+                atomicAdd(kpp_grad[sq_bk         ].at(k0, l0)[1], f[1]);
+                atomicSub(kpp_grad[inverse(sq_wk)].at(k1, l1)[0], f[0]);
+                atomicSub(kpp_grad[inverse(sq_wk)].at(k1, l1)[1], f[1]);
+            }
+            atomicAdd(kkp_grad[sq_bk][sq_wk][k0][0], f[0]);
+            atomicAdd(kkp_grad[sq_bk][sq_wk][k0][1], f[1]);
+        }
+    }
+
+    void clear() { memset(this, 0, sizeof(*this)); } // double 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
+};
 
 // kpp_grad, kkp_grad の値を低次元の要素に与える。
 inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>, double>& base, const TriangularEvaluatorGradient& grad)
