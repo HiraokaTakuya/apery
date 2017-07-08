@@ -47,17 +47,17 @@ inline T0 atomicAdd(std::atomic<T0> &x, const T1& diff) {
 template <typename T0, typename T1>
 inline T0 atomicSub(std::atomic<T0> &x, const T1& diff) { return atomicAdd(x, -diff); }
 
-// EvaluatorGradient のメモリ使用量を三角配列を用いて抑えた代わりに、double にして精度を高めたもの。
+// EvaluatorGradient のメモリ使用量を三角配列を用いて抑えている。
 struct TriangularEvaluatorGradient {
-    TriangularArray<std::array<std::atomic<double>, 2>, EvalIndex, fe_end, fe_end> kpp_grad[SquareNum];
-    std::array<std::atomic<double>, 2> kkp_grad[SquareNum][SquareNum][fe_end];
+    TriangularArray<std::array<std::atomic<float>, 2>, EvalIndex, fe_end, fe_end> kpp_grad[SquareNum];
+    std::array<std::atomic<float>, 2> kkp_grad[SquareNum][SquareNum][fe_end];
 
-    void incParam(const Position& pos, const std::array<double, 2>& dinc) {
+    void incParam(const Position& pos, const std::array<float, 2>& dinc) {
         const Square sq_bk = pos.kingSquare(Black);
         const Square sq_wk = pos.kingSquare(White);
         const EvalIndex* list0 = pos.cplist0();
         const EvalIndex* list1 = pos.cplist1();
-        const std::array<double, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
+        const std::array<float, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
 
         for (int i = 0; i < pos.nlist(); ++i) {
             const EvalIndex k0 = list0[i];
@@ -75,11 +75,11 @@ struct TriangularEvaluatorGradient {
         }
     }
 
-    void clear() { memset(this, 0, sizeof(*this)); } // double 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
+    void clear() { memset(this, 0, sizeof(*this)); } // float, double 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
 // kpp_grad, kkp_grad の値を低次元の要素に与える。
-inline void lowerDimension(EvaluatorBase<std::array<std::atomic<double>, 2>, double>& base, const TriangularEvaluatorGradient& grad)
+inline void lowerDimension(EvaluatorBase<std::array<std::atomic<float>, 2>, float>& base, const TriangularEvaluatorGradient& grad)
 {
 #define FOO(indices, oneArray, sum)                                     \
     for (auto index : indices) {                                        \

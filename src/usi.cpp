@@ -499,8 +499,8 @@ void make_teacher(std::istringstream& ssCmd) {
 namespace {
     // Learner とほぼ同じもの。todo: Learner と共通化する。
 
-    using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<double>, 2>, double>;
-    using EvalBaseType = EvaluatorBase<std::array<double, 2>, double>;
+    using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<float>, 2>, float>;
+    using EvalBaseType = EvaluatorBase<std::array<float, 2>, float>;
 
     // 小数の評価値を round して整数に直す。
     void copyEval(Evaluator& eval, EvalBaseType& evalBase) {
@@ -559,7 +559,7 @@ namespace {
     constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
     // RMSProp(実質、改造してAdaGradになっている) でパラメータを更新する。
     template <typename T>
-    void updateFV(std::array<T, 2>& v, const std::array<std::atomic<double>, 2>& grad, std::array<std::atomic<double>, 2>& msGrad, std::atomic<double>& max) {
+    void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& grad, std::array<std::atomic<float>, 2>& msGrad, std::atomic<float>& max) {
         //constexpr double AttenuationRate = 0.99999;
         constexpr double UpdateParam = 30.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
         constexpr double epsilon = 0.000001; // 0除算防止の定数
@@ -569,7 +569,7 @@ namespace {
             msGrad[i] = /*AttenuationRate * */msGrad[i] + /*(1.0 - AttenuationRate) * */grad[i] * grad[i];
             const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon);
             v[i] += updateStep;
-            const double fabsmax = fabs(updateStep);
+            const float fabsmax = fabs(updateStep);
             if (max < fabsmax)
                 max = fabsmax;
         }
@@ -578,7 +578,7 @@ namespace {
                     LowerDimensionedEvaluatorGradient& lowerDimentionedEvaluatorGradient,
                     LowerDimensionedEvaluatorGradient& meanSquareOfLowerDimensionedEvaluatorGradient)
     {
-        std::atomic<double> max;
+        std::atomic<float> max;
         max = 0.0;
 #if defined _OPENMP
 #pragma omp parallel
@@ -732,14 +732,14 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
             //                         hcpe.gameResult == WhiteWin ? (rootColor == White ? log(evalWinRate) : log(1.0 - evalWinRate)) :
             //                         log(fabs(0.5 - evalWinRate))) + L * (-teacherEvalWinRate*log(evalWinRate) - (1 - teacherEvalWinRate) * log(1 - evalWinRate));
             //loss += tmp;
-            std::array<double, 2> dT = {{(rootColor == Black ? -dsig : dsig), (rootColor == leafColor ? -dsig : dsig)}};
+            std::array<float, 2> dT = {{(float)(rootColor == Black ? -dsig : dsig), (float)(rootColor == leafColor ? -dsig : dsig)}};
             evaluatorGradient.incParam(pos, dT);
         }
     };
 
     auto lowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient);
     auto meanSquareOfLowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient); // 過去の gradient の mean square (二乗総和)
-    auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // double で保持した評価関数の要素。相対位置などに分解して保持する。
+    auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // float で保持した評価関数の要素。
     auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
     auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
     eval->init(pos.searcher()->options["Eval_Dir"], false);
