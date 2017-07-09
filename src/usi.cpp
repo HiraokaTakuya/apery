@@ -575,8 +575,8 @@ namespace {
         }
     }
     void updateEval(EvalBaseType& evalBase,
-                    LowerDimensionedEvaluatorGradient& lowerDimentionedEvaluatorGradient,
-                    LowerDimensionedEvaluatorGradient& meanSquareOfLowerDimensionedEvaluatorGradient)
+                    EvaluatorGradient& evaluatorGradient,
+                    EvaluatorGradient& meanSquareOfEvaluatorGradient)
     {
         std::atomic<float> max;
         max = 0.0;
@@ -587,12 +587,12 @@ namespace {
 #pragma omp for
 #endif
         for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
-            updateFV(*evalBase.oneArrayKPP(i), *lowerDimentionedEvaluatorGradient.oneArrayKPP(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKPP(i), max);
+            updateFV(*evalBase.oneArrayKPP(i), *evaluatorGradient.oneArrayKPP(i), *meanSquareOfEvaluatorGradient.oneArrayKPP(i), max);
 #ifdef _OPENMP
 #pragma omp for
 #endif
         for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
-            updateFV(*evalBase.oneArrayKKP(i), *lowerDimentionedEvaluatorGradient.oneArrayKKP(i), *meanSquareOfLowerDimensionedEvaluatorGradient.oneArrayKKP(i), max);
+            updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i), max);
 
         std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
     }
@@ -646,7 +646,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         exit(EXIT_FAILURE);
     std::vector<Searcher> searchers(threadNum);
     std::vector<Position> positions;
-    auto evaluatorGradient = std::unique_ptr<TriangularEvaluatorGradient>(new TriangularEvaluatorGradient);
+    auto evaluatorGradient = std::unique_ptr<EvaluatorGradient>(new EvaluatorGradient);
     for (auto& s : searchers) {
         s.init();
         const std::string options[] = {"name Threads value 1",
@@ -685,7 +685,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         }
     };
 
-    auto func = [&teacherBuffers](Position& pos, TriangularEvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes, const s64 iteration, const s64 MaxNodes) {
+    auto func = [&teacherBuffers](Position& pos, EvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes, const s64 iteration, const s64 MaxNodes) {
         SearchStack ss[2];
         HuffmanCodedPosAndEval hcpe;
         pos.searcher()->tt.clear();
@@ -737,8 +737,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         }
     };
 
-    auto lowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient);
-    auto meanSquareOfLowerDimensionedEvaluatorGradient = std::unique_ptr<LowerDimensionedEvaluatorGradient>(new LowerDimensionedEvaluatorGradient); // 過去の gradient の mean square (二乗総和)
+    auto meanSquareOfEvaluatorGradient = std::unique_ptr<EvaluatorGradient>(new EvaluatorGradient); // 過去の gradient の mean square (二乗総和)
     auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // float で保持した評価関数の要素。
     auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
     auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
@@ -788,10 +787,8 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         if (nodes < NodesPerIteration)
             break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
-        lowerDimensionedEvaluatorGradient->clear();
-        lowerDimension(*lowerDimensionedEvaluatorGradient, *evaluatorGradient);
-
-        updateEval(*evalBase, *lowerDimensionedEvaluatorGradient, *meanSquareOfLowerDimensionedEvaluatorGradient);
+        evaluatorGradient->sumMirror();
+        updateEval(*evalBase, *evaluatorGradient, *meanSquareOfEvaluatorGradient);
         averageEval(*averagedEvalBase, *evalBase); // 平均化する。
         if (iteration < 10) // 最初は値の変動が大きいので適当に変動させないでおく。
             memset(&(*evalBase), 0, sizeof(EvalBaseType));
