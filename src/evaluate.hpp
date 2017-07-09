@@ -72,29 +72,6 @@ enum EvalIndex : int32_t { // TriangularArray で計算する為に 32bit にし
 };
 OverloadEnumOperators(EvalIndex);
 
-enum EvalIndexOnlyF {
-    of_hand_pawn   = 0, // 0
-    of_hand_lance  = of_hand_pawn   + 19,
-    of_hand_knight = of_hand_lance  +  5,
-    of_hand_silver = of_hand_knight +  5,
-    of_hand_gold   = of_hand_silver +  5,
-    of_hand_bishop = of_hand_gold   +  5,
-    of_hand_rook   = of_hand_bishop +  3,
-    of_hand_end    = of_hand_rook   +  3,
-
-    of_pawn        = of_hand_end,
-    of_lance       = of_pawn        + 81,
-    of_knight      = of_lance       + 81,
-    of_silver      = of_knight      + 81,
-    of_gold        = of_silver      + 81,
-    of_bishop      = of_gold        + 81,
-    of_horse       = of_bishop      + 81,
-    of_rook        = of_horse       + 81,
-    of_dragon      = of_rook        + 81,
-    of_end         = of_dragon      + 81
-};
-OverloadEnumOperators(EvalIndexOnlyF);
-
 const int FVScale = 32;
 
 const EvalIndex KPPIndexArray[] = {
@@ -162,32 +139,6 @@ inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index) {
     return opponentBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
 }
 
-inline EvalIndexOnlyF evalIndexToEvalIndexOnlyF(const EvalIndex i) {
-    assert(kppIndexIsBlack(i));
-    const EvalIndex iBegin = kppIndexBegin(i);
-    EvalIndexOnlyF ofBegin;
-    switch (iBegin) {
-    case f_hand_pawn  : ofBegin = of_hand_pawn  ; break;
-    case f_hand_lance : ofBegin = of_hand_lance ; break;
-    case f_hand_knight: ofBegin = of_hand_knight; break;
-    case f_hand_silver: ofBegin = of_hand_silver; break;
-    case f_hand_gold  : ofBegin = of_hand_gold  ; break;
-    case f_hand_bishop: ofBegin = of_hand_bishop; break;
-    case f_hand_rook  : ofBegin = of_hand_rook  ; break;
-    case f_pawn       : ofBegin = of_pawn       ; break;
-    case f_lance      : ofBegin = of_lance      ; break;
-    case f_knight     : ofBegin = of_knight     ; break;
-    case f_silver     : ofBegin = of_silver     ; break;
-    case f_gold       : ofBegin = of_gold       ; break;
-    case f_bishop     : ofBegin = of_bishop     ; break;
-    case f_horse      : ofBegin = of_horse      ; break;
-    case f_rook       : ofBegin = of_rook       ; break;
-    case f_dragon     : ofBegin = of_dragon     ; break;
-    default: UNREACHABLE;
-    }
-    return ofBegin + (i - iBegin);
-}
-
 struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
     KPPBoardIndexStartToPiece() {
         (*this)[f_pawn  ] = BPawn;
@@ -239,21 +190,18 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
     static const int R_Mid = 8; // 相対位置の中心のindex
     constexpr int MaxWeight() const { return 1; }
     constexpr int TurnWeight() const { return 8; }
-    // 冗長に配列を確保しているが、対称な関係にある時は常に若いindexの方にアクセスすることにする。
-    // 例えば kpp だったら、k が優先的に小さくなるようする。左右の対称も含めてアクセス位置を決める。
-    // ただし、kkp に関する項目 (kkp, r_kkp_b, r_kkp_h) のみ、p は味方の駒として扱うので、k0 < k1 となるとは限らない。
     struct KPPElements {
-        EvalElementType kpp[SquareNoLeftNum][fe_end][fe_end];
+        EvalElementType kpp[SquareNum][fe_end][fe_end];
     };
     KPPElements kpps;
 
     struct KKPElements {
-        EvalElementType kkp[SquareNoLeftNum][SquareNum][fe_end];
+        EvalElementType kkp[SquareNum][SquareNum][fe_end];
     };
     KKPElements kkps;
 
     struct PPPElements {
-        PPPEvalElementType ppp[of_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
+        PPPEvalElementType ppp[fe_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
     };
     PPPElements ppps;
 
@@ -271,7 +219,7 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
     constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(PPPEvalElementType); }
 
-    // KPP に関する相対位置などの次元を落とした位置などのインデックスを全て返す。
+    // KPP に関する対称な位置を若いインデックスに直したインデックスを返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
     // 0 の時だけは正負が不明だが、0 は歩の持ち駒 0 枚を意味していて無効な値なので問題なし。
     // ptrdiff_t はインデックス、int は寄与の大きさ。MaxWeight分のいくつかで表記することにする。
@@ -371,12 +319,101 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
         std::sort(std::begin(invArray), std::end(invArray));
         const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
         assert(kppIndexIsBlack(result[0]));
-        // result[0] を EvalIndexOnlyF になおす。
-        const EvalIndexOnlyF of = evalIndexToEvalIndexOnlyF(result[0]);
-        ret[retIdx++] = sign*(&ppps.ppp[of][result[1]][result[2]] - oneArrayPPP(0));
+        ret[retIdx++] = sign*(&ppps.ppp[result[0]][result[1]][result[2]] - oneArrayPPP(0));
         pushLastIndex();
     }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
+};
+
+// float, double 型の atomic 加算。T は float, double を想定。
+template <typename T0, typename T1>
+inline T0 atomicAdd(std::atomic<T0> &x, const T1& diff) {
+    T0 old = x.load(std::memory_order_consume);
+    T0 desired = old + diff;
+    while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
+        desired = old + diff;
+    return desired;
+}
+// float, double 型の atomic 減算
+template <typename T0, typename T1>
+inline T0 atomicSub(std::atomic<T0> &x, const T1& diff) { return atomicAdd(x, -diff); }
+
+struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2>, std::atomic<float>> {
+    void incParam(const Position& pos, const std::array<float, 2>& dinc) {
+        const Square sq_bk = pos.kingSquare(Black);
+        const Square sq_wk = pos.kingSquare(White);
+        const EvalIndex* list0 = pos.cplist0();
+        const EvalIndex* list1 = pos.cplist1();
+        const std::array<float, 2> f = {{dinc[0] / FVScale, dinc[1] / FVScale}};
+
+        for (int i = 0; i < pos.nlist(); ++i) {
+            const EvalIndex k0 = list0[i];
+            const EvalIndex k1 = list1[i];
+            atomicAdd(kkps.kkp[sq_bk][sq_wk][k0][0], f[0]);
+            atomicAdd(kkps.kkp[sq_bk][sq_wk][k0][1], f[1]);
+            for (int j = 0; j < i; ++j) {
+                const EvalIndex l0 = list0[j];
+                const EvalIndex l1 = list1[j];
+                atomicAdd(kpps.kpp[sq_bk         ][k0][l0][0], f[0]);
+                atomicAdd(kpps.kpp[sq_bk         ][k0][l0][1], f[1]);
+                atomicSub(kpps.kpp[inverse(sq_wk)][k1][l1][0], f[0]);
+                atomicSub(kpps.kpp[inverse(sq_wk)][k1][l1][1], f[1]);
+            }
+        }
+    }
+
+    // 点対称や線対称や、駒を入れ替えたような本質的に同じ価値の位置関係の値を、
+    // その中で最も若いインデックスの位置関係の部分に全て足し込む。
+    void sumMirror() {
+#if defined _OPENMP
+#pragma omp parallel
+#endif
+
+        {
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+                ptrdiff_t indices[KPPIndicesMax];
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                        kppIndices(indices, (Square)ksq, i, j);
+                        if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            atomicSub((*oneArrayKPP(-indices[0]))[0], kpps.kpp[ksq][i][j][0]);
+                            atomicAdd((*oneArrayKPP(-indices[0]))[1], kpps.kpp[ksq][i][j][1]);
+                        }
+                        else if (&kpps.kpp[ksq][i][j] != oneArrayKPP(indices[0])) {
+                            atomicAdd((*oneArrayKPP( indices[0]))[0], kpps.kpp[ksq][i][j][0]);
+                            atomicAdd((*oneArrayKPP( indices[0]))[1], kpps.kpp[ksq][i][j][1]);
+                        }
+                    }
+                }
+            }
+        }
+        {
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+                ptrdiff_t indices[KKPIndicesMax];
+                for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+                    for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                        kkpIndices(indices, (Square)ksq0, ksq1, i);
+                        if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            atomicSub((*oneArrayKKP(-indices[0]))[0], kkps.kkp[ksq0][ksq1][i][0]);
+                            atomicAdd((*oneArrayKKP(-indices[0]))[1], kkps.kkp[ksq0][ksq1][i][1]);
+                        }
+                        else if (&kkps.kkp[ksq0][ksq1][i] != oneArrayKKP(indices[0])) {
+                            atomicAdd((*oneArrayKKP( indices[0]))[0], kkps.kkp[ksq0][ksq1][i][0]);
+                            atomicAdd((*oneArrayKKP( indices[0]))[1], kkps.kkp[ksq0][ksq1][i][1]);
+                        }
+                    }
+                }
+            }
+        }
+    }
 };
 
 using EvalElementType = std::array<s16, 2>;

@@ -34,19 +34,6 @@
 #define PRINT_PV(x)
 #endif
 
-// float, double 型の atomic 加算。T は float, double を想定。
-template <typename T0, typename T1>
-inline T0 atomicAdd(std::atomic<T0> &x, const T1& diff) {
-    T0 old = x.load(std::memory_order_consume);
-    T0 desired = old + diff;
-    while (!x.compare_exchange_weak(old, desired, std::memory_order_release, std::memory_order_consume))
-        desired = old + diff;
-    return desired;
-}
-// float, double 型の atomic 減算
-template <typename T0, typename T1>
-inline T0 atomicSub(std::atomic<T0> &x, const T1& diff) { return atomicAdd(x, -diff); }
-
 // EvaluatorGradient のメモリ使用量を三角配列を用いて抑えている。
 struct TriangularEvaluatorGradient {
     TriangularArray<std::array<std::atomic<float>, 2>, EvalIndex, fe_end, fe_end> kpp_grad[SquareNum];
