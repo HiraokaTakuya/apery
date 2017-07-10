@@ -586,11 +586,22 @@ namespace {
 #ifdef _OPENMP
 #pragma omp for
 #endif
+#if 1 // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
+        for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
+            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                for (EvalIndex j = (EvalIndex)0; j < i; ++j) { // i > j の位置関係は使わない。
+                    updateFV(evalBase.kpps.kpp[ksq][i][j], evaluatorGradient.kpps.kpp[ksq][i][j], meanSquareOfEvaluatorGradient.kpps.kpp[ksq][i][j], max);
+                }
+            }
+        }
+#else
         for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
             updateFV(*evalBase.oneArrayKPP(i), *evaluatorGradient.oneArrayKPP(i), *meanSquareOfEvaluatorGradient.oneArrayKPP(i), max);
+#endif
 #ifdef _OPENMP
 #pragma omp for
 #endif
+        // KKP は KPP よりサイズが小さいので、全て update しておく。
         for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
             updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i), max);
 
@@ -739,24 +750,24 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 
     auto meanSquareOfEvaluatorGradient = std::unique_ptr<EvaluatorGradient>(new EvaluatorGradient); // 過去の gradient の mean square (二乗総和)
     auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // float で保持した評価関数の要素。
-    auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
+    //auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
     auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
     eval->init(pos.searcher()->options["Eval_Dir"], false);
     copyEval(*evalBase, *eval); // 小数に直してコピー。
-    memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
+    //memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
     const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
     ifs.clear(); // 読み込み完了をクリアする。
     ifs.seekg(0, std::ios::beg); // ストリームポインタを先頭に戻す。
     const s64 MaxNodes = fileSize / sizeof(HuffmanCodedPosAndEval);
     std::atomic<s64> nodes(0); // 今回のイテレーションで読み込んだ学習局面数。
-    auto writeEval = [&] {
-        // ファイル保存
-        copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
-        //copyEval(*eval, *evalBase); // 平均化せずに整数の評価値にコピー
-        std::cout << "write eval ... " << std::flush;
-        eval->write(pos.searcher()->options["Eval_Dir"]);
-        std::cout << "done" << std::endl;
-    };
+    //auto writeEval = [&] {
+    //    // ファイル保存
+    //    //copyEval(*eval, *averagedEvalBase); // 平均化した物を整数の評価値にコピー
+    //    copyEval(*eval, *evalBase); // 平均化せずに整数の評価値にコピー
+    //    std::cout << "write eval ... " << std::flush;
+    //    eval->write(pos.searcher()->options["Eval_Dir"]);
+    //    std::cout << "done" << std::endl;
+    //};
     // 平均化していない合成後の評価関数バイナリも出力しておく。
     auto writeSyn = [&] {
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
@@ -789,11 +800,11 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
 
         evaluatorGradient->sumMirror();
         updateEval(*evalBase, *evaluatorGradient, *meanSquareOfEvaluatorGradient);
-        averageEval(*averagedEvalBase, *evalBase); // 平均化する。
+        //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
         if (iteration < 10) // 最初は値の変動が大きいので適当に変動させないでおく。
             memset(&(*evalBase), 0, sizeof(EvalBaseType));
         if (iteration % 100 == 0) {
-            writeEval();
+            //writeEval();
             writeSyn();
         }
         copyEval(*eval, *evalBase); // 整数の評価値にコピー
@@ -804,7 +815,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
     }
     readThread.join();
-    writeEval();
+    //writeEval();
     writeSyn();
 }
 
