@@ -200,24 +200,24 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
     };
     KKPElements kkps;
 
-    struct PPPElements {
-        PPPEvalElementType ppp[fe_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
-    };
-    PPPElements ppps;
+    //struct PPPElements {
+    //    PPPEvalElementType ppp[fe_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
+    //};
+    //PPPElements ppps;
 
     // これらは↑のメンバ変数に一次元配列としてアクセスする為のもの。
     // 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
     // 先頭さえ分かれば良いので要素数1で良い。
     EvalElementType*    oneArrayKPP(const u64 i) { return reinterpret_cast<EvalElementType*   >(&kpps) + i; }
     EvalElementType*    oneArrayKKP(const u64 i) { return reinterpret_cast<EvalElementType*   >(&kkps) + i; }
-    PPPEvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<PPPEvalElementType*>(&ppps) + i; }
+    //PPPEvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<PPPEvalElementType*>(&ppps) + i; }
 
     // todo: これらややこしいし汚いので使わないようにする。
     //       型によっては kkps_begin_index などの値が異なる。
     //       ただ、end - begin のサイズは型によらず一定。
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(EvalElementType); }
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
-    constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(PPPEvalElementType); }
+    //constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(PPPEvalElementType); }
 
     // KPP に関する対称な位置を若いインデックスに直したインデックスを返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
@@ -290,38 +290,38 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
         ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
         assert(retIdx <= KKPIndicesMax);
     }
-    void pppIndices(ptrdiff_t ret[PPPIndicesMax], EvalIndex i, EvalIndex j, EvalIndex k) {
-        int retIdx = 0;
-        auto pushLastIndex = [&] {
-            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-            assert(retIdx <= PPPIndicesMax);
-        };
-
-        if (i == j || i == k || j == k) {
-            pushLastIndex();
-            return;
-        }
-        std::array<EvalIndex, 3> array = {{i, j, k}};
-        // insertionSort 使うべきか？
-        std::sort(std::begin(array), std::end(array)); // array[0] を最小の要素にする。i の駒の種類と、i が味方の駒か敵の駒かが決まる。
-        int sign = 1;
-        if (!kppIndexIsBlack(array[0])) {
-            // array[0] は必ず味方の駒にする。
-            array[0] = kppWhiteIndexToBlackIndex(array[0]);
-            array[1] = kppIndexToOpponentIndex(array[1]);
-            array[2] = kppIndexToOpponentIndex(array[2]);
-            sign = -1;
-        }
-        std::array<EvalIndex, 3> invArray = {{inverseFileIndexIfOnBoard(array[0]),
-                                              inverseFileIndexIfOnBoard(array[1]),
-                                              inverseFileIndexIfOnBoard(array[2])}};
-        std::sort(std::begin(array   ), std::end(array   ));
-        std::sort(std::begin(invArray), std::end(invArray));
-        const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
-        assert(kppIndexIsBlack(result[0]));
-        ret[retIdx++] = sign*(&ppps.ppp[result[0]][result[1]][result[2]] - oneArrayPPP(0));
-        pushLastIndex();
-    }
+    //void pppIndices(ptrdiff_t ret[PPPIndicesMax], EvalIndex i, EvalIndex j, EvalIndex k) {
+    //    int retIdx = 0;
+    //    auto pushLastIndex = [&] {
+    //        ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
+    //        assert(retIdx <= PPPIndicesMax);
+    //    };
+   //
+    //    if (i == j || i == k || j == k) {
+    //        pushLastIndex();
+    //        return;
+    //    }
+    //    std::array<EvalIndex, 3> array = {{i, j, k}};
+    //    // insertionSort 使うべきか？
+    //    std::sort(std::begin(array), std::end(array)); // array[0] を最小の要素にする。i の駒の種類と、i が味方の駒か敵の駒かが決まる。
+    //    int sign = 1;
+    //    if (!kppIndexIsBlack(array[0])) {
+    //        // array[0] は必ず味方の駒にする。
+    //        array[0] = kppWhiteIndexToBlackIndex(array[0]);
+    //        array[1] = kppIndexToOpponentIndex(array[1]);
+    //        array[2] = kppIndexToOpponentIndex(array[2]);
+    //        sign = -1;
+    //    }
+    //    std::array<EvalIndex, 3> invArray = {{inverseFileIndexIfOnBoard(array[0]),
+    //                                          inverseFileIndexIfOnBoard(array[1]),
+    //                                          inverseFileIndexIfOnBoard(array[2])}};
+    //    std::sort(std::begin(array   ), std::end(array   ));
+    //    std::sort(std::begin(invArray), std::end(invArray));
+    //    const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
+    //    assert(kppIndexIsBlack(result[0]));
+    //    ret[retIdx++] = sign*(&ppps.ppp[result[0]][result[1]][result[2]] - oneArrayPPP(0));
+    //    pushLastIndex();
+    //}
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
