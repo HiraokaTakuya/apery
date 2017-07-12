@@ -515,7 +515,9 @@ namespace {
             for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                 for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                     evalBase.kppIndices(indices, (Square)ksq, i, j);
-                    if (indices[0] < 0) {
+                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        continue;
+                    else if (indices[0] < 0) {
                         // 内容を負として扱う。
                         Evaluator::KPP[ksq][i][j][0] = round(-(*evalBase.oneArrayKPP(-indices[0]))[0]);
                         Evaluator::KPP[ksq][i][j][1] = round( (*evalBase.oneArrayKPP(-indices[0]))[1]);
@@ -535,7 +537,9 @@ namespace {
             for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
-                    if (indices[0] < 0) {
+                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        continue;
+                    else if (indices[0] < 0) {
                         // 内容を負として扱う。
                         Evaluator::KKP[ksq0][ksq1][i][0] = round(-(*evalBase.oneArrayKKP(-indices[0]))[0]);
                         Evaluator::KKP[ksq0][ksq1][i][1] = round( (*evalBase.oneArrayKKP(-indices[0]))[1]);
@@ -561,7 +565,9 @@ namespace {
             for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                 for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                     evalBase.kppIndices(indices, (Square)ksq, i, j);
-                    if (indices[0] < 0) {
+                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        continue;
+                    else if (indices[0] < 0) {
                         // 内容を負として扱う。
                         (*evalBase.oneArrayKPP(-indices[0]))[0] = -Evaluator::KPP[ksq][i][j][0];
                         (*evalBase.oneArrayKPP(-indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
@@ -581,7 +587,9 @@ namespace {
             for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
-                    if (indices[0] < 0) {
+                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        continue;
+                    else if (indices[0] < 0) {
                         // 内容を負として扱う。
                         (*evalBase.oneArrayKKP(-indices[0]))[0] = -Evaluator::KKP[ksq0][ksq1][i][0];
                         (*evalBase.oneArrayKKP(-indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];

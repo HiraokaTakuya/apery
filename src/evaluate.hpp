@@ -378,7 +378,9 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                         kppIndices(indices, (Square)ksq, i, j);
-                        if (indices[0] < 0) {
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
                             // 内容を負として扱う。
                             atomicSub((*oneArrayKPP(-indices[0]))[0], kpps.kpp[ksq][i][j][0]);
                             atomicAdd((*oneArrayKPP(-indices[0]))[1], kpps.kpp[ksq][i][j][1]);
@@ -400,7 +402,9 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                     for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                         kkpIndices(indices, (Square)ksq0, ksq1, i);
-                        if (indices[0] < 0) {
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
                             // 内容を負として扱う。
                             atomicSub((*oneArrayKKP(-indices[0]))[0], kkps.kkp[ksq0][ksq1][i][0]);
                             atomicAdd((*oneArrayKKP(-indices[0]))[1], kkps.kkp[ksq0][ksq1][i][1]);
