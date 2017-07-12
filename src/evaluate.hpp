@@ -432,86 +432,8 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
         return ret;
     }
 
-    void setEvaluate() {
-#if !defined LEARN
-        SYNCCOUT << "info string start setting eval table" << SYNCENDL;
-#endif
-        // index が負の時、反対側の駒として扱うので、-index で要素にアクセスし、通常の位置関係には値を -1 倍する。(手番評価は常に加算)
-#define FOO(indices, oneArray, sum)                                     \
-        for (auto index : indices) {                                    \
-            if (index == std::numeric_limits<ptrdiff_t>::max()) break;  \
-            if (0 <= index) {                                           \
-                sum[0] += static_cast<s64>((*oneArray( index))[0]);     \
-                sum[1] += static_cast<s64>((*oneArray( index))[1]);     \
-            }                                                           \
-            else {                                                      \
-                sum[0] -= static_cast<s64>((*oneArray(-index))[0]);     \
-                sum[1] += static_cast<s64>((*oneArray(-index))[1]);     \
-            }                                                           \
-        }                                                               \
-        sum[1] /= Base::TurnWeight();
-
-#if defined _OPENMP
-#pragma omp parallel
-#endif
-        // KPP
-        {
-#ifdef _OPENMP
-#pragma omp for
-#endif
-            // OpenMP対応したら何故か ksq を Square 型にすると ++ksq が定義されていなくてコンパイルエラーになる。
-            for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-                // indices は更に for ループの外側に置きたいが、OpenMP 使っているとアクセス競合しそうなのでループの中に置く。
-                ptrdiff_t indices[KPPIndicesMax];
-                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                    for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                        Base::kppIndices(indices, static_cast<Square>(ksq), i, j);
-                        std::array<s64, 2> sum = {{}};
-                        FOO(indices, Base::oneArrayKPP, sum);
-                        KPP[ksq][i][j] += sum;
-                    }
-                }
-            }
-        }
-        // KKP
-        {
-#ifdef _OPENMP
-#pragma omp for
-#endif
-            for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-                ptrdiff_t indices[KKPIndicesMax];
-                for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                    for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                        Base::kkpIndices(indices, static_cast<Square>(ksq0), ksq1, i);
-                        std::array<s64, 2> sum = {{}};
-                        FOO(indices, Base::oneArrayKKP, sum);
-                        KKP[ksq0][ksq1][i] += sum;
-                    }
-                }
-            }
-        }
-#undef FOO
-
-#if !defined LEARN
-        SYNCCOUT << "info string end setting eval table" << SYNCENDL;
-#endif
-    }
-
     void init(const std::string& dirName) {
         readSynthesized(dirName);
-
-
-//        // 合成された評価関数バイナリがあればそちらを使う。
-//        if (Synthesized) {
-//            if (readSynthesized(dirName))
-//                return;
-//        }
-//        if (readBase)
-//            clear();
-//        readSomeSynthesized(dirName);
-//        if (readBase)
-//            read(dirName);
-//        setEvaluate();
     }
 
 #define ALL_SYNTHESIZED_EVAL {                  \
@@ -536,54 +458,6 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
         ALL_SYNTHESIZED_EVAL;
 #undef FOO
     }
-    static void readSomeSynthesized(const std::string& dirName) {
-#define FOO(x) {                                                        \
-            std::ifstream ifs((addSlashIfNone(dirName) + #x "_some_synthesized.bin").c_str(), std::ios::binary); \
-            if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));   \
-            else     memset(x, 0, sizeof(x));                           \
-        }
-        ALL_SYNTHESIZED_EVAL;
-#undef FOO
-    }
-    static void writeSomeSynthesized(const std::string& dirName) {
-#define FOO(x) {                                                        \
-            std::ofstream ofs((addSlashIfNone(dirName) + #x "_some_synthesized.bin").c_str(), std::ios::binary); \
-            ofs.write(reinterpret_cast<char*>(x), sizeof(x));           \
-        }
-        ALL_SYNTHESIZED_EVAL;
-#undef FOO
-    }
-#undef ALL_SYNTHESIZED_EVAL
-
-#define BASE_ONLINE {                           \
-        FOO(kpps.kpp);                          \
-        FOO(kkps.kkp);                          \
-    }
-
-#define READ_BASE_EVAL {                        \
-        BASE_ONLINE;                            \
-    }
-#define WRITE_BASE_EVAL {                       \
-        BASE_ONLINE;                            \
-    }
-    void read(const std::string& dirName) {
-#define FOO(x) {                                                        \
-            std::ifstream ifs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
-            ifs.read(reinterpret_cast<char*>(x), sizeof(x));            \
-        }
-        READ_BASE_EVAL;
-#undef FOO
-    }
-    void write(const std::string& dirName) {
-#define FOO(x) {                                                        \
-            std::ofstream ofs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
-            ofs.write(reinterpret_cast<char*>(x), sizeof(x));           \
-        }
-        WRITE_BASE_EVAL;
-#undef FOO
-    }
-#undef READ_BASE_EVAL
-#undef WRITE_BASE_EVAL
 };
 
 extern const EvalIndex kppArray[31];
