@@ -503,59 +503,115 @@ namespace {
     using EvalBaseType = EvaluatorBase<std::array<float, 2>, float>;
 
     // 小数の評価値を round して整数に直す。
-    void copyEval(Evaluator& eval, EvalBaseType& evalBase) {
+    void copyEvalToInteger(EvalBaseType& evalBase) {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (size_t i = 0; i < eval.kpps_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*eval.oneArrayKPP(i))[boardTurn] = round((*evalBase.oneArrayKPP(i))[boardTurn]);
+        for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+            ptrdiff_t indices[KPPIndicesMax];
+            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                    evalBase.kppIndices(indices, (Square)ksq, i, j);
+                    if (indices[0] < 0) {
+                        // 内容を負として扱う。
+                        Evaluator::KPP[ksq][i][j][0] = round(-(*evalBase.oneArrayKPP(-indices[0]))[0]);
+                        Evaluator::KPP[ksq][i][j][1] = round( (*evalBase.oneArrayKPP(-indices[0]))[1]);
+                    }
+                    else {
+                        Evaluator::KPP[ksq][i][j][0] = round( (*evalBase.oneArrayKPP( indices[0]))[0]);
+                        Evaluator::KPP[ksq][i][j][1] = round( (*evalBase.oneArrayKPP( indices[0]))[1]);
+                    }
+                }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (size_t i = 0; i < eval.kkps_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*eval.oneArrayKKP(i))[boardTurn] = round((*evalBase.oneArrayKKP(i))[boardTurn]);
+        for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+            ptrdiff_t indices[KKPIndicesMax];
+            for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
+                    if (indices[0] < 0) {
+                        // 内容を負として扱う。
+                        Evaluator::KKP[ksq0][ksq1][i][0] = round(-(*evalBase.oneArrayKKP(-indices[0]))[0]);
+                        Evaluator::KKP[ksq0][ksq1][i][1] = round( (*evalBase.oneArrayKKP(-indices[0]))[1]);
+                    }
+                    else {
+                        Evaluator::KKP[ksq0][ksq1][i][0] = round( (*evalBase.oneArrayKKP( indices[0]))[0]);
+                        Evaluator::KKP[ksq0][ksq1][i][1] = round( (*evalBase.oneArrayKKP( indices[0]))[1]);
+                    }
+                }
+            }
+        }
     }
     // 整数の評価値を小数に直す。
-    void copyEval(EvalBaseType& evalBase, Evaluator& eval) {
+    void copyEvalToDecimal(EvalBaseType& evalBase) {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*evalBase.oneArrayKPP(i))[boardTurn] = (*eval.oneArrayKPP(i))[boardTurn];
+        for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+            ptrdiff_t indices[KPPIndicesMax];
+            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                    evalBase.kppIndices(indices, (Square)ksq, i, j);
+                    if (indices[0] < 0) {
+                        // 内容を負として扱う。
+                        (*evalBase.oneArrayKPP(-indices[0]))[0] = -Evaluator::KPP[ksq][i][j][0];
+                        (*evalBase.oneArrayKPP(-indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+                    }
+                    else {
+                        (*evalBase.oneArrayKPP( indices[0]))[0] =  Evaluator::KPP[ksq][i][j][0];
+                        (*evalBase.oneArrayKPP( indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+                    }
+                }
+            }
+        }
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*evalBase.oneArrayKKP(i))[boardTurn] = (*eval.oneArrayKKP(i))[boardTurn];
+        for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+            ptrdiff_t indices[KKPIndicesMax];
+            for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
+                    if (indices[0] < 0) {
+                        // 内容を負として扱う。
+                        (*evalBase.oneArrayKKP(-indices[0]))[0] = -Evaluator::KKP[ksq0][ksq1][i][0];
+                        (*evalBase.oneArrayKKP(-indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                    }
+                    else {
+                        (*evalBase.oneArrayKKP( indices[0]))[0] =  Evaluator::KKP[ksq0][ksq1][i][0];
+                        (*evalBase.oneArrayKKP( indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                    }
+                }
+            }
+        }
     }
-    void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
-        constexpr double AverageDecay = 0.8; // todo: 過去のデータの重みが強すぎる可能性あり。
-#if defined _OPENMP
-#pragma omp parallel
-#endif
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (size_t i = 0; i < averagedEvalBase.kpps_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*averagedEvalBase.oneArrayKPP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKPP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKPP(i))[boardTurn];
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (size_t i = 0; i < averagedEvalBase.kkps_end_index(); ++i)
-            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
-                (*averagedEvalBase.oneArrayKKP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKKP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKKP(i))[boardTurn];
-    }
+//    void averageEval(EvalBaseType& averagedEvalBase, EvalBaseType& evalBase) {
+//        constexpr double AverageDecay = 0.8; // todo: 過去のデータの重みが強すぎる可能性あり。
+//#if defined _OPENMP
+//#pragma omp parallel
+//#endif
+//#ifdef _OPENMP
+//#pragma omp for
+//#endif
+//        for (size_t i = 0; i < averagedEvalBase.kpps_end_index(); ++i)
+//            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+//                (*averagedEvalBase.oneArrayKPP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKPP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKPP(i))[boardTurn];
+//#ifdef _OPENMP
+//#pragma omp for
+//#endif
+//        for (size_t i = 0; i < averagedEvalBase.kkps_end_index(); ++i)
+//            for (int boardTurn = 0; boardTurn < 2; ++boardTurn)
+//                (*averagedEvalBase.oneArrayKKP(i))[boardTurn] = AverageDecay * (*averagedEvalBase.oneArrayKKP(i))[boardTurn] + (1.0 - AverageDecay) * (*evalBase.oneArrayKKP(i))[boardTurn];
+//    }
     constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
     // RMSProp(実質、改造してAdaGradになっている) でパラメータを更新する。
     template <typename T>
@@ -752,8 +808,9 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // float で保持した評価関数の要素。
     //auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
     auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
-    eval->init(pos.searcher()->options["Eval_Dir"], false);
-    copyEval(*evalBase, *eval); // 小数に直してコピー。
+    memset(&(*evalBase), 0, sizeof(EvalBaseType));
+    eval->init(pos.searcher()->options["Eval_Dir"]);
+    copyEvalToDecimal(*evalBase); // 小数に直してコピー。
     //memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
     const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
     ifs.clear(); // 読み込み完了をクリアする。
@@ -770,8 +827,10 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     //};
     // 平均化していない合成後の評価関数バイナリも出力しておく。
     auto writeSyn = [&] {
+        std::cout << "write eval ... " << std::flush;
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
+        std::cout << "done" << std::endl;
     };
     auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
     Timer t;
@@ -799,17 +858,16 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
             break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
         evaluatorGradient->sumMirror();
-        updateEval(*evalBase, *evaluatorGradient, *meanSquareOfEvaluatorGradient);
-        //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
-        if (iteration < 10) // 最初は値の変動が大きいので適当に変動させないでおく。
-            memset(&(*evalBase), 0, sizeof(EvalBaseType));
-        if (iteration % 100 == 0) {
+        if (iteration > 10) { // 最初は値の変動が大きいので適当に変動させないでおく。
+            updateEval(*evalBase, *evaluatorGradient, *meanSquareOfEvaluatorGradient);
+            //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
+            copyEvalToInteger(*evalBase); // 整数の評価値にコピー
+            g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
+        }
+        if (iteration != 0 && iteration % 100 == 0) {
             //writeEval();
             writeSyn();
         }
-        copyEval(*eval, *evalBase); // 整数の評価値にコピー
-        eval->init(pos.searcher()->options["Eval_Dir"], false, false); // 探索で使う評価関数の更新
-        g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
         std::cout << "iteration elapsed: " << t.elapsed() / 1000 << "[sec]" << std::endl;
         std::cout << "loss: " << std::accumulate(std::begin(losses), std::end(losses), 0.0) << std::endl;
         printEvalTable(SQ88, f_gold + SQ78, f_gold, false);
@@ -1110,7 +1168,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
             if (!evalTableIsRead) {
                 // 一時オブジェクトを生成して Evaluator::init() を呼んだ直後にオブジェクトを破棄する。
                 // 評価関数の次元下げをしたデータを格納する分のメモリが無駄な為、
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             SYNCCOUT << "readyok" << SYNCENDL;
@@ -1118,20 +1176,20 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         else if (token == "setoption") setOption(ssCmd);
         else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
             if (!evalTableIsRead)
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
             Evaluator::writeSynthesized(options["Eval_Dir"]);
         }
 #if defined LEARN
         else if (token == "make_teacher") {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             make_teacher(ssCmd);
         }
         else if (token == "use_teacher") {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             use_teacher(pos, ssCmd);
@@ -1145,7 +1203,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         // 以下、デバッグ用
         else if (token == "bench"    ) {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"], true);
+                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             benchmark(pos);

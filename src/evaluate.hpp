@@ -497,18 +497,21 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
 #endif
     }
 
-    void init(const std::string& dirName, const bool Synthesized, const bool readBase = true) {
-        // 合成された評価関数バイナリがあればそちらを使う。
-        if (Synthesized) {
-            if (readSynthesized(dirName))
-                return;
-        }
-        if (readBase)
-            clear();
-        readSomeSynthesized(dirName);
-        if (readBase)
-            read(dirName);
-        setEvaluate();
+    void init(const std::string& dirName) {
+        readSynthesized(dirName);
+
+
+//        // 合成された評価関数バイナリがあればそちらを使う。
+//        if (Synthesized) {
+//            if (readSynthesized(dirName))
+//                return;
+//        }
+//        if (readBase)
+//            clear();
+//        readSomeSynthesized(dirName);
+//        if (readBase)
+//            read(dirName);
+//        setEvaluate();
     }
 
 #define ALL_SYNTHESIZED_EVAL {                  \
