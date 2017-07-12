@@ -809,7 +809,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     //auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
     auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
     memset(&(*evalBase), 0, sizeof(EvalBaseType));
-    eval->init(pos.searcher()->options["Eval_Dir"]);
+    Evaluator::init(pos.searcher()->options["Eval_Dir"]);
     copyEvalToDecimal(*evalBase); // 小数に直してコピー。
     //memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
     const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
@@ -1168,7 +1168,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
             if (!evalTableIsRead) {
                 // 一時オブジェクトを生成して Evaluator::init() を呼んだ直後にオブジェクトを破棄する。
                 // 評価関数の次元下げをしたデータを格納する分のメモリが無駄な為、
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
+                Evaluator::init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             SYNCCOUT << "readyok" << SYNCENDL;
@@ -1176,20 +1176,20 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         else if (token == "setoption") setOption(ssCmd);
         else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
             if (!evalTableIsRead)
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
+                Evaluator::init(options["Eval_Dir"]);
             Evaluator::writeSynthesized(options["Eval_Dir"]);
         }
 #if defined LEARN
         else if (token == "make_teacher") {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
+                Evaluator::init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             make_teacher(ssCmd);
         }
         else if (token == "use_teacher") {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
+                Evaluator::init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             use_teacher(pos, ssCmd);
@@ -1203,7 +1203,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         // 以下、デバッグ用
         else if (token == "bench"    ) {
             if (!evalTableIsRead) {
-                std::unique_ptr<Evaluator>(new Evaluator)->init(options["Eval_Dir"]);
+                Evaluator::init(options["Eval_Dir"]);
                 evalTableIsRead = true;
             }
             benchmark(pos);

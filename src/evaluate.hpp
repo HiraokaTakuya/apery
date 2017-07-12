@@ -432,7 +432,7 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
         return ret;
     }
 
-    void init(const std::string& dirName) {
+    static void init(const std::string& dirName) {
         readSynthesized(dirName);
     }
 
