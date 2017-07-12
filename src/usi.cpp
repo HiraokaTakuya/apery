@@ -858,12 +858,10 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
             break; // パラメータ更新するにはデータが足りなかったので、パラメータ更新せずに終了する。
 
         evaluatorGradient->sumMirror();
-        if (iteration > 10) { // 最初は値の変動が大きいので適当に変動させないでおく。
-            updateEval(*evalBase, *evaluatorGradient, *meanSquareOfEvaluatorGradient);
-            //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
-            copyEvalToInteger(*evalBase); // 整数の評価値にコピー
-            g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
-        }
+        updateEval(*evalBase, *evaluatorGradient, *meanSquareOfEvaluatorGradient);
+        //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
+        copyEvalToInteger(*evalBase); // 整数の評価値にコピー
+        g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
         if (iteration != 0 && iteration % 100 == 0) {
             //writeEval();
             writeSyn();
