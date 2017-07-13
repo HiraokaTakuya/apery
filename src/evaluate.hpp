@@ -188,8 +188,8 @@ const int PPPIndicesMax = 2;
 
 template <typename EvalElementType, typename PPPEvalElementType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
-    constexpr int MaxWeight() const { return 1; }
-    constexpr int TurnWeight() const { return 8; }
+    static constexpr int MaxWeight() { return 1; }
+    static constexpr int TurnWeight() { return 8; }
     struct KPPElements {
         EvalElementType kpp[SquareNum][fe_end][fe_end];
     };

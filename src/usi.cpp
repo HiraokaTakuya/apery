@@ -627,11 +627,12 @@ namespace {
         //constexpr double AttenuationRate = 0.99999;
         constexpr double UpdateParam = 30.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
         constexpr double epsilon = 0.000001; // 0除算防止の定数
+        static constexpr int weight[2] = {Evaluator::MaxWeight(), Evaluator::TurnWeight()};
 
         for (int i = 0; i < 2; ++i) {
             // ほぼAdaGrad
             msGrad[i] = /*AttenuationRate * */msGrad[i] + /*(1.0 - AttenuationRate) * */grad[i] * grad[i];
-            const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon);
+            const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon) / weight[i];
             v[i] += updateStep;
             const float fabsmax = fabs(updateStep);
             if (max < fabsmax)
@@ -816,7 +817,8 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // float で保持した評価関数の要素。
     //auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
     //auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
-    memset(&(*evalBase), 0, sizeof(EvalBaseType));
+    meanSquareOfEvaluatorGradient->clear();
+    evalBase->clear();
     Evaluator::init(pos.searcher()->options["Eval_Dir"]);
     copyEvalToDecimal(*evalBase); // 小数に直してコピー。
     //memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
