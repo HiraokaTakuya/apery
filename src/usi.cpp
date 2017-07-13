@@ -627,12 +627,12 @@ namespace {
         //constexpr double AttenuationRate = 0.99999;
         constexpr double UpdateParam = 30.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
         constexpr double epsilon = 0.000001; // 0除算防止の定数
-        static constexpr int weight[2] = {Evaluator::MaxWeight(), Evaluator::TurnWeight()};
+        constexpr double params[2] = {UpdateParam, UpdateParam / 8.0}; // 手番評価は重みを少し減らす。
 
         for (int i = 0; i < 2; ++i) {
             // ほぼAdaGrad
             msGrad[i] = /*AttenuationRate * */msGrad[i] + /*(1.0 - AttenuationRate) * */grad[i] * grad[i];
-            const double updateStep = UpdateParam * grad[i] / sqrt(msGrad[i] + epsilon) / weight[i];
+            const double updateStep = params[i] * grad[i] / sqrt(msGrad[i] + epsilon);
             v[i] += updateStep;
             const float fabsmax = fabs(updateStep);
             if (max < fabsmax)
