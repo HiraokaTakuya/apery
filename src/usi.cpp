@@ -653,7 +653,7 @@ namespace {
 #if 1 // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
         for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
             for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                for (EvalIndex j = (EvalIndex)0; j < i; ++j) { // i > j の位置関係は使わない。
+                for (EvalIndex j = i + 1; j < fe_end; ++j) { // i >= j の位置関係は使わない。
                     updateFV(evalBase.kpps.kpp[ksq][i][j], evaluatorGradient.kpps.kpp[ksq][i][j], meanSquareOfEvaluatorGradient.kpps.kpp[ksq][i][j], max);
                 }
             }
