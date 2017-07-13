@@ -355,7 +355,7 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
                 atomicAdd(kpps.kpp[sq_bk         ][k0][l0][0], f[0]);
                 atomicAdd(kpps.kpp[sq_bk         ][k0][l0][1], f[1]);
                 atomicSub(kpps.kpp[inverse(sq_wk)][k1][l1][0], f[0]);
-                atomicSub(kpps.kpp[inverse(sq_wk)][k1][l1][1], f[1]);
+                atomicAdd(kpps.kpp[inverse(sq_wk)][k1][l1][1], f[1]);
             }
         }
     }
