@@ -815,7 +815,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     auto meanSquareOfEvaluatorGradient = std::unique_ptr<EvaluatorGradient>(new EvaluatorGradient); // 過去の gradient の mean square (二乗総和)
     auto evalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // float で保持した評価関数の要素。
     //auto averagedEvalBase = std::unique_ptr<EvalBaseType>(new EvalBaseType); // ファイル保存する際に評価ベクトルを平均化したもの。
-    auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
+    //auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
     memset(&(*evalBase), 0, sizeof(EvalBaseType));
     Evaluator::init(pos.searcher()->options["Eval_Dir"]);
     copyEvalToDecimal(*evalBase); // 小数に直してコピー。
