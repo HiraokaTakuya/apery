@@ -198,24 +198,24 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
     };
     KKPElements kkps;
 
-    //struct PPPElements {
-    //    PPPEvalElementType ppp[fe_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
-    //};
-    //PPPElements ppps;
+    struct PPPElements {
+        PPPEvalElementType ppp[fe_end][fe_end][fe_end]; // 最初のP要素は、味方の駒である事を前提にする。
+    };
+    PPPElements ppps;
 
     // これらは↑のメンバ変数に一次元配列としてアクセスする為のもの。
     // 配列の要素数は上のstructのサイズから分かるはずだが無名structなのでsizeof()使いにくいから使わない。
     // 先頭さえ分かれば良いので要素数1で良い。
     EvalElementType*    oneArrayKPP(const u64 i) { return reinterpret_cast<EvalElementType*   >(&kpps) + i; }
     EvalElementType*    oneArrayKKP(const u64 i) { return reinterpret_cast<EvalElementType*   >(&kkps) + i; }
-    //PPPEvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<PPPEvalElementType*>(&ppps) + i; }
+    PPPEvalElementType* oneArrayPPP(const u64 i) { return reinterpret_cast<PPPEvalElementType*>(&ppps) + i; }
 
     // todo: これらややこしいし汚いので使わないようにする。
     //       型によっては kkps_begin_index などの値が異なる。
     //       ただ、end - begin のサイズは型によらず一定。
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(EvalElementType); }
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
-    //constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(PPPEvalElementType); }
+    constexpr size_t ppps_end_index() const { return sizeof(ppps)/sizeof(PPPEvalElementType); }
 
     // KPP に関する対称な位置を若いインデックスに直したインデックスを返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
@@ -288,38 +288,38 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
         ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
         assert(retIdx <= KKPIndicesMax);
     }
-    //void pppIndices(ptrdiff_t ret[PPPIndicesMax], EvalIndex i, EvalIndex j, EvalIndex k) {
-    //    int retIdx = 0;
-    //    auto pushLastIndex = [&] {
-    //        ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-    //        assert(retIdx <= PPPIndicesMax);
-    //    };
-   //
-    //    if (i == j || i == k || j == k) {
-    //        pushLastIndex();
-    //        return;
-    //    }
-    //    std::array<EvalIndex, 3> array = {{i, j, k}};
-    //    // insertionSort 使うべきか？
-    //    std::sort(std::begin(array), std::end(array)); // array[0] を最小の要素にする。i の駒の種類と、i が味方の駒か敵の駒かが決まる。
-    //    int sign = 1;
-    //    if (!kppIndexIsBlack(array[0])) {
-    //        // array[0] は必ず味方の駒にする。
-    //        array[0] = kppWhiteIndexToBlackIndex(array[0]);
-    //        array[1] = kppIndexToOpponentIndex(array[1]);
-    //        array[2] = kppIndexToOpponentIndex(array[2]);
-    //        sign = -1;
-    //    }
-    //    std::array<EvalIndex, 3> invArray = {{inverseFileIndexIfOnBoard(array[0]),
-    //                                          inverseFileIndexIfOnBoard(array[1]),
-    //                                          inverseFileIndexIfOnBoard(array[2])}};
-    //    std::sort(std::begin(array   ), std::end(array   ));
-    //    std::sort(std::begin(invArray), std::end(invArray));
-    //    const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
-    //    assert(kppIndexIsBlack(result[0]));
-    //    ret[retIdx++] = sign*(&ppps.ppp[result[0]][result[1]][result[2]] - oneArrayPPP(0));
-    //    pushLastIndex();
-    //}
+    void pppIndices(ptrdiff_t ret[PPPIndicesMax], EvalIndex i, EvalIndex j, EvalIndex k) {
+        int retIdx = 0;
+        auto pushLastIndex = [&] {
+            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
+            assert(retIdx <= PPPIndicesMax);
+        };
+
+        if (i == j || i == k || j == k) {
+            pushLastIndex();
+            return;
+        }
+        std::array<EvalIndex, 3> array = {{i, j, k}};
+        // insertionSort 使うべきか？
+        std::sort(std::begin(array), std::end(array)); // array[0] を最小の要素にする。i の駒の種類と、i が味方の駒か敵の駒かが決まる。
+        int sign = 1;
+        if (!kppIndexIsBlack(array[0])) {
+            // array[0] は必ず味方の駒にする。
+            array[0] = kppWhiteIndexToBlackIndex(array[0]);
+            array[1] = kppIndexToOpponentIndex(array[1]);
+            array[2] = kppIndexToOpponentIndex(array[2]);
+            sign = -1;
+        }
+        std::array<EvalIndex, 3> invArray = {{inverseFileIndexIfOnBoard(array[0]),
+                                              inverseFileIndexIfOnBoard(array[1]),
+                                              inverseFileIndexIfOnBoard(array[2])}};
+        std::sort(std::begin(array   ), std::end(array   ));
+        std::sort(std::begin(invArray), std::end(invArray));
+        const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
+        assert(kppIndexIsBlack(result[0]));
+        ret[retIdx++] = sign*(&ppps.ppp[result[0]][result[1]][result[2]] - oneArrayPPP(0));
+        pushLastIndex();
+    }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
 
@@ -352,6 +352,11 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
             for (int j = 0; j < i; ++j) {
                 const EvalIndex l0 = list0[j];
                 const EvalIndex l1 = list1[j];
+                for (int k = 0; k < j; ++k) {
+                    const int n0 = list0[k];
+                    const int n1 = list1[k];
+                    atomicAdd(ppps.ppp[k0][l0][n0], f[0]);
+                }
                 atomicAdd(kpps.kpp[sq_bk         ][k0][l0][0], f[0]);
                 atomicAdd(kpps.kpp[sq_bk         ][k0][l0][1], f[1]);
                 atomicSub(kpps.kpp[inverse(sq_wk)][k1][l1][0], f[0]);
@@ -415,15 +420,48 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
                 }
             }
         }
+        {
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (int i = 0; i < fe_end; ++i) {
+                ptrdiff_t indices[PPPIndicesMax];
+                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                    for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
+                        pppIndices(indices, (EvalIndex)i, j, k);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            atomicSub(*oneArrayPPP(-indices[0]), ppps.ppp[i][j][k]);
+                        }
+                        else if (&ppps.ppp[i][j][k] != oneArrayPPP(indices[0])) {
+                            atomicAdd(*oneArrayPPP( indices[0]), ppps.ppp[i][j][k]);
+                        }
+                    }
+                }
+            }
+        }
     }
 };
 
 using EvalElementType = std::array<s16, 2>;
 using PPPEvalElementType = s16;
-struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
+using KPPEvalElementType0 = EvalElementType[fe_end];
+using KPPEvalElementType1 = KPPEvalElementType0[fe_end];
+using KPPEvalElementType2 = KPPEvalElementType1[SquareNum];
+using KKPEvalElementType0 = EvalElementType[fe_end];
+using KKPEvalElementType1 = KKPEvalElementType0[SquareNum];
+using KKPEvalElementType2 = KKPEvalElementType1[SquareNum];
+using PPPEvalElementType0 = PPPEvalElementType[fe_end];
+using PPPEvalElementType1 = PPPEvalElementType0[fe_end];
+using PPPEvalElementType2 = PPPEvalElementType1[fe_end];
+struct Evaluator /*: public EvaluatorBase<EvalElementType, PPPEvalElementType>*/ {
     using Base = EvaluatorBase<EvalElementType, PPPEvalElementType>;
-    static EvalElementType KPP[SquareNum][fe_end][fe_end];
-    static EvalElementType KKP[SquareNum][SquareNum][fe_end];
+    static bool allocated;
+    static KPPEvalElementType1* KPP;
+    static KKPEvalElementType1* KKP;
+    static PPPEvalElementType1* PPP;
 
     static std::string addSlashIfNone(const std::string& str) {
         std::string ret = str;
@@ -435,17 +473,27 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
     }
 
     static void init(const std::string& dirName) {
+        if (!allocated) {
+            allocated = true;
+            KPP = new KPPEvalElementType1[SquareNum];
+            KKP = new KKPEvalElementType1[SquareNum];
+            PPP = new PPPEvalElementType1[fe_end];
+            memset(KPP, 0, sizeof(KPPEvalElementType1) * (size_t)SquareNum);
+            memset(KKP, 0, sizeof(KKPEvalElementType1) * (size_t)SquareNum);
+            memset(PPP, 0, sizeof(PPPEvalElementType1) * (size_t)fe_end);
+        }
         readSynthesized(dirName);
     }
 
 #define ALL_SYNTHESIZED_EVAL {                  \
         FOO(KPP);                               \
         FOO(KKP);                               \
+        FOO(PPP);                               \
     }
     static bool readSynthesized(const std::string& dirName) {
 #define FOO(x) {                                                        \
             std::ifstream ifs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
-            if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x));   \
+            if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x ## EvalElementType2));   \
             else     return false;                                      \
         }
         ALL_SYNTHESIZED_EVAL;
@@ -455,7 +503,7 @@ struct Evaluator : public EvaluatorBase<EvalElementType, PPPEvalElementType> {
     static void writeSynthesized(const std::string& dirName) {
 #define FOO(x) {                                                        \
             std::ofstream ofs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
-            ofs.write(reinterpret_cast<char*>(x), sizeof(x));           \
+            ofs.write(reinterpret_cast<char*>(x), sizeof(x ## EvalElementType2));           \
         }
         ALL_SYNTHESIZED_EVAL;
 #undef FOO

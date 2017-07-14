@@ -26,8 +26,10 @@
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
-EvalElementType Evaluator::KPP[SquareNum][fe_end][fe_end];
-EvalElementType Evaluator::KKP[SquareNum][SquareNum][fe_end];
+bool Evaluator::allocated = false;
+KPPEvalElementType1 *Evaluator::KPP;
+KKPEvalElementType1 *Evaluator::KKP;
+PPPEvalElementType1 *Evaluator::PPP;
 EvaluateHashTable g_evalTable;
 
 const EvalIndex kppArray[31] = {
@@ -294,13 +296,13 @@ namespace {
     }
 
     void evaluateBody(Position& pos, SearchStack* ss) {
-        if (calcDifference(pos, ss)) {
-            assert([&] {
-                    const auto score = ss->staticEvalRaw.sum(pos.turn());
-                    return (evaluateUnUseDiff(pos) == score);
-                }());
-            return;
-        }
+        //if (calcDifference(pos, ss)) {
+        //    assert([&] {
+        //            const auto score = ss->staticEvalRaw.sum(pos.turn());
+        //            return (evaluateUnUseDiff(pos) == score);
+        //        }());
+        //    return;
+        //}
 
         const Square sq_bk = pos.kingSquare(Black);
         const Square sq_wk = pos.kingSquare(White);
@@ -323,6 +325,11 @@ namespace {
             for (int j = 0; j < i; ++j) {
                 const int l0 = list0[j];
                 const int l1 = list1[j];
+                for (int k = 0; k < j; ++k) {
+                    const int n0 = list0[k];
+                    const int n1 = list1[k];
+                    sum.p[2][0] += Evaluator::PPP[k0][l0][n0];
+                }
                 __m128i tmp;
                 tmp = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[l1][0]), *reinterpret_cast<const s32*>(&pkppb[l0][0]));
                 tmp = _mm_cvtepi16_epi32(tmp);
@@ -331,13 +338,11 @@ namespace {
             sum.p[2] += Evaluator::KKP[sq_bk][sq_wk][k0];
         }
 #else
-        // loop 開始を i = 1 からにして、i = 0 の分のKKPを先に足す。
-        sum.p[2] += Evaluator::KKP[sq_bk][sq_wk][list0[0]];
         sum.p[0][0] = 0;
         sum.p[0][1] = 0;
         sum.p[1][0] = 0;
         sum.p[1][1] = 0;
-        for (int i = 1; i < pos.nlist(); ++i) {
+        for (int i = 0; i < pos.nlist(); ++i) {
             const int k0 = list0[i];
             const int k1 = list1[i];
             const auto* pkppb = ppkppb[k0];
@@ -345,6 +350,11 @@ namespace {
             for (int j = 0; j < i; ++j) {
                 const int l0 = list0[j];
                 const int l1 = list1[j];
+                for (int k = 0; k < j; ++k) {
+                    const int n0 = list0[k];
+                    const int n1 = list1[k];
+                    sum.p[2][0] += Evaluator::PPP[k0][l0][n0];
+                }
                 sum.p[0] += pkppb[l0];
                 sum.p[1] += pkppw[l1];
             }
@@ -381,7 +391,7 @@ Score evaluateUnUseDiff(const Position& pos) {
             ++nlist;
         }
     };
-func(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
+    func(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
     func(handW, HPawn  , e_hand_pawn  , f_hand_pawn  );
     func(handB, HLance , f_hand_lance , e_hand_lance );
     func(handW, HLance , e_hand_lance , f_hand_lance );
@@ -416,6 +426,11 @@ func(handB, HPawn  , f_hand_pawn  , e_hand_pawn  );
         for (int j = 0; j < i; ++j) {
             const int l0 = list0[j];
             const int l1 = list1[j];
+            for (int k = 0; k < j; ++k) {
+                const int n0 = list0[k];
+                const int n1 = list1[k];
+                score.p[2][0] += Evaluator::PPP[k0][l0][n0];
+            }
             score.p[0] += pkppb[l0];
             score.p[1] += pkppw[l1];
         }

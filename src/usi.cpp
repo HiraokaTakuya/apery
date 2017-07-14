@@ -507,46 +507,68 @@ namespace {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
+        {
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-            ptrdiff_t indices[KPPIndicesMax];
-            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                    evalBase.kppIndices(indices, (Square)ksq, i, j);
-                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
-                        continue;
-                    else if (indices[0] < 0) {
-                        // 内容を負として扱う。
-                        Evaluator::KPP[ksq][i][j][0] = round(-(*evalBase.oneArrayKPP(-indices[0]))[0]);
-                        Evaluator::KPP[ksq][i][j][1] = round( (*evalBase.oneArrayKPP(-indices[0]))[1]);
-                    }
-                    else {
-                        Evaluator::KPP[ksq][i][j][0] = round( (*evalBase.oneArrayKPP( indices[0]))[0]);
-                        Evaluator::KPP[ksq][i][j][1] = round( (*evalBase.oneArrayKPP( indices[0]))[1]);
+            for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+                ptrdiff_t indices[KPPIndicesMax];
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                        evalBase.kppIndices(indices, (Square)ksq, i, j);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            Evaluator::KPP[ksq][i][j][0] = -round((*evalBase.oneArrayKPP(-indices[0]))[0]);
+                            Evaluator::KPP[ksq][i][j][1] =  round((*evalBase.oneArrayKPP(-indices[0]))[1]);
+                        }
+                        else {
+                            Evaluator::KPP[ksq][i][j][0] =  round((*evalBase.oneArrayKPP( indices[0]))[0]);
+                            Evaluator::KPP[ksq][i][j][1] =  round((*evalBase.oneArrayKPP( indices[0]))[1]);
+                        }
                     }
                 }
             }
-        }
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-            ptrdiff_t indices[KKPIndicesMax];
-            for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                    evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
-                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
-                        continue;
-                    else if (indices[0] < 0) {
-                        // 内容を負として扱う。
-                        Evaluator::KKP[ksq0][ksq1][i][0] = round(-(*evalBase.oneArrayKKP(-indices[0]))[0]);
-                        Evaluator::KKP[ksq0][ksq1][i][1] = round( (*evalBase.oneArrayKKP(-indices[0]))[1]);
+            for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+                ptrdiff_t indices[KKPIndicesMax];
+                for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+                    for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                        evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            Evaluator::KKP[ksq0][ksq1][i][0] = -round((*evalBase.oneArrayKKP(-indices[0]))[0]);
+                            Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP(-indices[0]))[1]);
+                        }
+                        else {
+                            Evaluator::KKP[ksq0][ksq1][i][0] =  round((*evalBase.oneArrayKKP( indices[0]))[0]);
+                            Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP( indices[0]))[1]);
+                        }
                     }
-                    else {
-                        Evaluator::KKP[ksq0][ksq1][i][0] = round( (*evalBase.oneArrayKKP( indices[0]))[0]);
-                        Evaluator::KKP[ksq0][ksq1][i][1] = round( (*evalBase.oneArrayKKP( indices[0]))[1]);
+                }
+            }
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (int i = 0; i < fe_end; ++i) {
+                ptrdiff_t indices[PPPIndicesMax];
+                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                    for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
+                        evalBase.pppIndices(indices, (EvalIndex)i, j, k);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            Evaluator::PPP[i][j][k] = -round(*evalBase.oneArrayPPP(-indices[0]));
+                        }
+                        else {
+                            Evaluator::PPP[i][j][k] =  round(*evalBase.oneArrayPPP( indices[0]));
+                        }
                     }
                 }
             }
@@ -557,46 +579,68 @@ namespace {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
+        {
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-            ptrdiff_t indices[KPPIndicesMax];
-            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                    evalBase.kppIndices(indices, (Square)ksq, i, j);
-                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
-                        continue;
-                    else if (indices[0] < 0) {
-                        // 内容を負として扱う。
-                        (*evalBase.oneArrayKPP(-indices[0]))[0] = -Evaluator::KPP[ksq][i][j][0];
-                        (*evalBase.oneArrayKPP(-indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
-                    }
-                    else {
-                        (*evalBase.oneArrayKPP( indices[0]))[0] =  Evaluator::KPP[ksq][i][j][0];
-                        (*evalBase.oneArrayKPP( indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+            for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
+                ptrdiff_t indices[KPPIndicesMax];
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                        evalBase.kppIndices(indices, (Square)ksq, i, j);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            (*evalBase.oneArrayKPP(-indices[0]))[0] = -Evaluator::KPP[ksq][i][j][0];
+                            (*evalBase.oneArrayKPP(-indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+                        }
+                        else {
+                            (*evalBase.oneArrayKPP( indices[0]))[0] =  Evaluator::KPP[ksq][i][j][0];
+                            (*evalBase.oneArrayKPP( indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+                        }
                     }
                 }
             }
-        }
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-            ptrdiff_t indices[KKPIndicesMax];
-            for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
-                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                    evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
-                    if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
-                        continue;
-                    else if (indices[0] < 0) {
-                        // 内容を負として扱う。
-                        (*evalBase.oneArrayKKP(-indices[0]))[0] = -Evaluator::KKP[ksq0][ksq1][i][0];
-                        (*evalBase.oneArrayKKP(-indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+            for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
+                ptrdiff_t indices[KKPIndicesMax];
+                for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
+                    for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                        evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            (*evalBase.oneArrayKKP(-indices[0]))[0] = -Evaluator::KKP[ksq0][ksq1][i][0];
+                            (*evalBase.oneArrayKKP(-indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                        }
+                        else {
+                            (*evalBase.oneArrayKKP( indices[0]))[0] =  Evaluator::KKP[ksq0][ksq1][i][0];
+                            (*evalBase.oneArrayKKP( indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                        }
                     }
-                    else {
-                        (*evalBase.oneArrayKKP( indices[0]))[0] =  Evaluator::KKP[ksq0][ksq1][i][0];
-                        (*evalBase.oneArrayKKP( indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                }
+            }
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (int i = 0; i < fe_end; ++i) {
+                ptrdiff_t indices[PPPIndicesMax];
+                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
+                    for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
+                        evalBase.pppIndices(indices, (EvalIndex)i, j, k);
+                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                            continue;
+                        else if (indices[0] < 0) {
+                            // 内容を負として扱う。
+                            *evalBase.oneArrayPPP(-indices[0]) = -Evaluator::PPP[i][j][k];
+                        }
+                        else {
+                            *evalBase.oneArrayPPP( indices[0]) =  Evaluator::PPP[i][j][k];
+                        }
                     }
                 }
             }
@@ -639,6 +683,21 @@ namespace {
                 max = fabsmax;
         }
     }
+    template <typename T>
+    void updateFV(T& v, const std::atomic<float>& grad, std::atomic<float>& msGrad, std::atomic<float>& max) {
+        //constexpr double AttenuationRate = 0.99999;
+        constexpr double UpdateParam = 30.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
+        constexpr double epsilon = 0.000001; // 0除算防止の定数
+        constexpr double param = UpdateParam;
+
+        // ほぼAdaGrad
+        msGrad = /*AttenuationRate * */msGrad + /*(1.0 - AttenuationRate) * */grad * grad;
+        const double updateStep = param * grad / sqrt(msGrad + epsilon);
+        v += updateStep;
+        const float fabsmax = fabs(updateStep);
+        if (max < fabsmax)
+            max = fabsmax;
+    }
     void updateEval(EvalBaseType& evalBase,
                     EvaluatorGradient& evaluatorGradient,
                     EvaluatorGradient& meanSquareOfEvaluatorGradient)
@@ -648,27 +707,35 @@ namespace {
 #if defined _OPENMP
 #pragma omp parallel
 #endif
+        {
 #ifdef _OPENMP
 #pragma omp for
 #endif
-#if 1 // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
-        for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
-            for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                for (EvalIndex j = i + 1; j < fe_end; ++j) { // i >= j の位置関係は使わない。
-                    updateFV(evalBase.kpps.kpp[ksq][i][j], evaluatorGradient.kpps.kpp[ksq][i][j], meanSquareOfEvaluatorGradient.kpps.kpp[ksq][i][j], max);
+#if 0 // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
+            for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
+                for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+                    for (EvalIndex j = i + 1; j < fe_end; ++j) { // i >= j の位置関係は使わない。
+                        updateFV(evalBase.kpps.kpp[ksq][i][j], evaluatorGradient.kpps.kpp[ksq][i][j], meanSquareOfEvaluatorGradient.kpps.kpp[ksq][i][j], max);
+                    }
                 }
             }
-        }
 #else
-        for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
-            updateFV(*evalBase.oneArrayKPP(i), *evaluatorGradient.oneArrayKPP(i), *meanSquareOfEvaluatorGradient.oneArrayKPP(i), max);
+            for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
+                updateFV(*evalBase.oneArrayKPP(i), *evaluatorGradient.oneArrayKPP(i), *meanSquareOfEvaluatorGradient.oneArrayKPP(i), max);
 #endif
 #ifdef _OPENMP
 #pragma omp for
 #endif
-        // KKP は KPP よりサイズが小さいので、全て update しておく。
-        for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
-            updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i), max);
+            // KKP は KPP よりサイズが小さいので、全て update しておく。
+            for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
+                updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i), max);
+
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for (size_t i = 0; i < evalBase.ppps_end_index(); ++i)
+                updateFV(*evalBase.oneArrayPPP(i), *evaluatorGradient.oneArrayPPP(i), *meanSquareOfEvaluatorGradient.oneArrayPPP(i), max);
+        }
 
         std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
     }
@@ -819,7 +886,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     //auto eval = std::unique_ptr<Evaluator>(new Evaluator); // 整数化した評価関数。相対位置などに分解して保持する。
     meanSquareOfEvaluatorGradient->clear();
     evalBase->clear();
-    Evaluator::init(pos.searcher()->options["Eval_Dir"]);
+    //Evaluator::init(pos.searcher()->options["Eval_Dir"]);
     copyEvalToDecimal(*evalBase); // 小数に直してコピー。
     //memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
     const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
@@ -838,8 +905,9 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     // 平均化していない合成後の評価関数バイナリも出力しておく。
     auto writeSyn = [&] {
         std::cout << "write eval ... " << std::flush;
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(Evaluator::KPP));
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(Evaluator::KKP));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(KPPEvalElementType2));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(KKPEvalElementType2));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "PPP_synthesized.bin").c_str()).write((char*)Evaluator::PPP, sizeof(PPPEvalElementType2));
         std::cout << "done" << std::endl;
     };
     auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
@@ -872,7 +940,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
         copyEvalToInteger(*evalBase); // 整数の評価値にコピー
         g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
-        if (iteration != 0 && iteration % 100 == 0) {
+        if (iteration != 0 && iteration % 10 == 0) {
             //writeEval();
             writeSyn();
         }
