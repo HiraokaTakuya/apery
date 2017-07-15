@@ -711,7 +711,8 @@ namespace {
 #ifdef _OPENMP
 #pragma omp for
 #endif
-#if 0 // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
+#if 1
+            // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
             for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = i + 1; j < fe_end; ++j) { // i >= j の位置関係は使わない。
@@ -730,11 +731,36 @@ namespace {
             for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
                 updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i), max);
 
+            static const std::pair<EvalIndex, EvalIndex> beginEnds[] = {
+                {f_hand_pawn  , e_hand_pawn                          },
+                {f_hand_lance , e_hand_lance                         },
+                {f_hand_knight, e_hand_knight                        },
+                {f_hand_silver, e_hand_silver                        },
+                {f_hand_gold  , e_hand_gold                          },
+                {f_hand_bishop, e_hand_bishop                        },
+                {f_hand_rook  , e_hand_rook                          },
+                {f_pawn       , f_pawn   + (EvalIndex)SquareNoLeftNum},
+                {f_lance      , f_lance  + (EvalIndex)SquareNoLeftNum},
+                {f_knight     , f_knight + (EvalIndex)SquareNoLeftNum},
+                {f_silver     , f_silver + (EvalIndex)SquareNoLeftNum},
+                {f_gold       , f_gold   + (EvalIndex)SquareNoLeftNum},
+                {f_bishop     , f_bishop + (EvalIndex)SquareNoLeftNum},
+                {f_horse      , f_horse  + (EvalIndex)SquareNoLeftNum},
+                {f_rook       , f_rook   + (EvalIndex)SquareNoLeftNum},
+                {f_dragon     , f_dragon + (EvalIndex)SquareNoLeftNum},
+            };
+            for (auto& beginEnd : beginEnds) {
 #ifdef _OPENMP
 #pragma omp for
 #endif
-            for (size_t i = 0; i < evalBase.ppps_end_index(); ++i)
-                updateFV(*evalBase.oneArrayPPP(i), *evaluatorGradient.oneArrayPPP(i), *meanSquareOfEvaluatorGradient.oneArrayPPP(i), max);
+                for (int i = beginEnd.first; i < beginEnd.second; ++i) {
+                    for (EvalIndex j = (EvalIndex)i + 1; j < fe_end; ++j) {
+                        for (EvalIndex k = j + 1; k < fe_end; ++k) {
+                            updateFV(evalBase.ppps.ppp[i][j][k], evaluatorGradient.ppps.ppp[i][j][k], meanSquareOfEvaluatorGradient.ppps.ppp[i][j][k], max);
+                        }
+                    }
+                }
+            }
         }
 
         std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
