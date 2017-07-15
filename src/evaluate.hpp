@@ -299,8 +299,7 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
             pushLastIndex();
             return;
         }
-        using EvalIndexArrayAndSign = std::pair<std::array<EvalIndex, 3>, int>;
-        EvalIndexArrayAndSign array[] = {
+        std::pair<std::array<EvalIndex, 3>, int> array[] = {
             {{{i, j, k}}, 1},
             {{{inverseFileIndexIfOnBoard(i), inverseFileIndexIfOnBoard(j), inverseFileIndexIfOnBoard(k)}}, 1},
             {{{kppIndexToOpponentIndex(i), kppIndexToOpponentIndex(j), kppIndexToOpponentIndex(k)}}, -1},
