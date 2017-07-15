@@ -512,20 +512,19 @@ namespace {
 #pragma omp for
 #endif
             for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-                ptrdiff_t indices[KPPIndicesMax];
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                        evalBase.kppIndices(indices, (Square)ksq, i, j);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = evalBase.minKPPIndex((Square)ksq, i, j);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            Evaluator::KPP[ksq][i][j][0] = -round((*evalBase.oneArrayKPP(-indices[0]))[0]);
-                            Evaluator::KPP[ksq][i][j][1] =  round((*evalBase.oneArrayKPP(-indices[0]))[1]);
+                            Evaluator::KPP[ksq][i][j][0] = -round((*evalBase.oneArrayKPP(-index))[0]);
+                            Evaluator::KPP[ksq][i][j][1] =  round((*evalBase.oneArrayKPP(-index))[1]);
                         }
                         else {
-                            Evaluator::KPP[ksq][i][j][0] =  round((*evalBase.oneArrayKPP( indices[0]))[0]);
-                            Evaluator::KPP[ksq][i][j][1] =  round((*evalBase.oneArrayKPP( indices[0]))[1]);
+                            Evaluator::KPP[ksq][i][j][0] =  round((*evalBase.oneArrayKPP( index))[0]);
+                            Evaluator::KPP[ksq][i][j][1] =  round((*evalBase.oneArrayKPP( index))[1]);
                         }
                     }
                 }
@@ -534,20 +533,19 @@ namespace {
 #pragma omp for
 #endif
             for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-                ptrdiff_t indices[KKPIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                     for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                        evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = evalBase.minKKPIndex((Square)ksq0, ksq1, i);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            Evaluator::KKP[ksq0][ksq1][i][0] = -round((*evalBase.oneArrayKKP(-indices[0]))[0]);
-                            Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP(-indices[0]))[1]);
+                            Evaluator::KKP[ksq0][ksq1][i][0] = -round((*evalBase.oneArrayKKP(-index))[0]);
+                            Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP(-index))[1]);
                         }
                         else {
-                            Evaluator::KKP[ksq0][ksq1][i][0] =  round((*evalBase.oneArrayKKP( indices[0]))[0]);
-                            Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP( indices[0]))[1]);
+                            Evaluator::KKP[ksq0][ksq1][i][0] =  round((*evalBase.oneArrayKKP( index))[0]);
+                            Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP( index))[1]);
                         }
                     }
                 }
@@ -556,18 +554,17 @@ namespace {
 #pragma omp for
 #endif
             for (int i = 0; i < fe_end; ++i) {
-                ptrdiff_t indices[PPPIndicesMax];
                 for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                     for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
-                        evalBase.pppIndices(indices, (EvalIndex)i, j, k);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = evalBase.minPPPIndex((EvalIndex)i, j, k);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            Evaluator::PPP[i][j][k] = -round(*evalBase.oneArrayPPP(-indices[0]));
+                            Evaluator::PPP[i][j][k] = -round(*evalBase.oneArrayPPP(-index));
                         }
                         else {
-                            Evaluator::PPP[i][j][k] =  round(*evalBase.oneArrayPPP( indices[0]));
+                            Evaluator::PPP[i][j][k] =  round(*evalBase.oneArrayPPP( index));
                         }
                     }
                 }
@@ -584,20 +581,19 @@ namespace {
 #pragma omp for
 #endif
             for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-                ptrdiff_t indices[KPPIndicesMax];
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                        evalBase.kppIndices(indices, (Square)ksq, i, j);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = evalBase.minKPPIndex((Square)ksq, i, j);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            (*evalBase.oneArrayKPP(-indices[0]))[0] = -Evaluator::KPP[ksq][i][j][0];
-                            (*evalBase.oneArrayKPP(-indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+                            (*evalBase.oneArrayKPP(-index))[0] = -Evaluator::KPP[ksq][i][j][0];
+                            (*evalBase.oneArrayKPP(-index))[1] =  Evaluator::KPP[ksq][i][j][1];
                         }
                         else {
-                            (*evalBase.oneArrayKPP( indices[0]))[0] =  Evaluator::KPP[ksq][i][j][0];
-                            (*evalBase.oneArrayKPP( indices[0]))[1] =  Evaluator::KPP[ksq][i][j][1];
+                            (*evalBase.oneArrayKPP( index))[0] =  Evaluator::KPP[ksq][i][j][0];
+                            (*evalBase.oneArrayKPP( index))[1] =  Evaluator::KPP[ksq][i][j][1];
                         }
                     }
                 }
@@ -606,20 +602,19 @@ namespace {
 #pragma omp for
 #endif
             for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-                ptrdiff_t indices[KKPIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                     for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                        evalBase.kkpIndices(indices, (Square)ksq0, ksq1, i);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = evalBase.minKKPIndex((Square)ksq0, ksq1, i);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            (*evalBase.oneArrayKKP(-indices[0]))[0] = -Evaluator::KKP[ksq0][ksq1][i][0];
-                            (*evalBase.oneArrayKKP(-indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                            (*evalBase.oneArrayKKP(-index))[0] = -Evaluator::KKP[ksq0][ksq1][i][0];
+                            (*evalBase.oneArrayKKP(-index))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
                         }
                         else {
-                            (*evalBase.oneArrayKKP( indices[0]))[0] =  Evaluator::KKP[ksq0][ksq1][i][0];
-                            (*evalBase.oneArrayKKP( indices[0]))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
+                            (*evalBase.oneArrayKKP( index))[0] =  Evaluator::KKP[ksq0][ksq1][i][0];
+                            (*evalBase.oneArrayKKP( index))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
                         }
                     }
                 }
@@ -628,18 +623,17 @@ namespace {
 #pragma omp for
 #endif
             for (int i = 0; i < fe_end; ++i) {
-                ptrdiff_t indices[PPPIndicesMax];
                 for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                     for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
-                        evalBase.pppIndices(indices, (EvalIndex)i, j, k);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = evalBase.minPPPIndex((EvalIndex)i, j, k);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            *evalBase.oneArrayPPP(-indices[0]) = -Evaluator::PPP[i][j][k];
+                            *evalBase.oneArrayPPP(-index) = -Evaluator::PPP[i][j][k];
                         }
                         else {
-                            *evalBase.oneArrayPPP( indices[0]) =  Evaluator::PPP[i][j][k];
+                            *evalBase.oneArrayPPP( index) =  Evaluator::PPP[i][j][k];
                         }
                     }
                 }

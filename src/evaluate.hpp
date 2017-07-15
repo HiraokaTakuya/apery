@@ -182,10 +182,6 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
     return lhs;
 }
 
-const int KPPIndicesMax = 2;
-const int KKPIndicesMax = 2;
-const int PPPIndicesMax = 2;
-
 template <typename EvalElementType, typename PPPEvalElementType> struct EvaluatorBase {
     static const int R_Mid = 8; // 相対位置の中心のindex
     struct KPPElements {
@@ -219,51 +215,31 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
 
     // KPP に関する対称な位置を若いインデックスに直したインデックスを返す。
     // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
-    // 0 の時だけは正負が不明だが、0 は歩の持ち駒 0 枚を意味していて無効な値なので問題なし。
-    // ptrdiff_t はインデックス、int は寄与の大きさ。MaxWeight分のいくつかで表記することにする。
-    void kppIndices(ptrdiff_t ret[KPPIndicesMax], Square ksq, EvalIndex i, EvalIndex j) {
-        int retIdx = 0;
-        auto pushLastIndex = [&] {
-            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-            assert(retIdx <= KPPIndicesMax);
-        };
+    int64_t minKPPIndex(Square ksq, EvalIndex i, EvalIndex j) {
         // i == j のKP要素はKKPの方で行うので、こちらでは何も有効なindexを返さない。
-        if (i == j) {
-            pushLastIndex();
-            return;
-        }
+        if (i == j)
+            return std::numeric_limits<int64_t>::max();
 
         // 左右対称や、玉以外の2駒の入れ替えにより本質的に同じ位置関係のものは、常に同じアドレスを参照するようにする。
         const auto invk = inverseFile(ksq);
         const auto invi = inverseFileIndexIfOnBoard(i);
         const auto invj = inverseFileIndexIfOnBoard(j);
         auto p = std::min({&kpps.kpp[ksq][i][j], &kpps.kpp[ksq][j][i], &kpps.kpp[invk][invi][invj], &kpps.kpp[invk][invj][invi]});
-        ret[retIdx++] = p - oneArrayKPP(0);
-        pushLastIndex();
+        return p - oneArrayKPP(0);
     }
-    void kkpIndices(ptrdiff_t ret[KKPIndicesMax], Square ksq0, Square ksq1, EvalIndex i) {
-        int retIdx = 0;
-        auto pushLastIndex = [&] {
-            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-            assert(retIdx <= KKPIndicesMax);
-        };
-        if (ksq0 == ksq1) {
-            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-            assert(retIdx <= KKPIndicesMax);
-            return;
-        }
+    // KKP で対称な位置の中で最小のものを選ぶ。ただし、KKP の P は必ず味方の駒として扱うようにする。
+    int64_t minKKPIndex(Square ksq0, Square ksq1, EvalIndex i) {
+        if (ksq0 == ksq1)
+            return std::numeric_limits<int64_t>::max();
+
         if (i < fe_hand_end) { // i 持ち駒
-            if (i == kppIndexBegin(i)) {
-                pushLastIndex();
-                return;
-            }
+            if (i == kppIndexBegin(i))
+                return std::numeric_limits<int64_t>::max();
         }
         else { // i 盤上
             const Square isq = static_cast<Square>(i - kppIndexBegin(i));
-            if (ksq0 == isq || ksq1 == isq) {
-                pushLastIndex();
-                return;
-            }
+            if (ksq0 == isq || ksq1 == isq)
+                return std::numeric_limits<int64_t>::max();
         }
         int sign = 1;
         if (!kppIndexIsBlack(i)) {
@@ -284,21 +260,12 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
         }
         else if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5)
             i = inverseFileIndexIfLefterThanMiddle(i);
-        ret[retIdx++] = sign*(&kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0));
-        ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-        assert(retIdx <= KKPIndicesMax);
+        return sign*(&kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0));
     }
-    void pppIndices(ptrdiff_t ret[PPPIndicesMax], EvalIndex i, EvalIndex j, EvalIndex k) {
-        int retIdx = 0;
-        auto pushLastIndex = [&] {
-            ret[retIdx++] = std::numeric_limits<ptrdiff_t>::max();
-            assert(retIdx <= PPPIndicesMax);
-        };
+    int64_t minPPPIndex(EvalIndex i, EvalIndex j, EvalIndex k) {
+        if (i == j || i == k || j == k)
+            return std::numeric_limits<int64_t>::max();
 
-        if (i == j || i == k || j == k) {
-            pushLastIndex();
-            return;
-        }
         std::pair<std::array<EvalIndex, 3>, int> array[] = {
             {{{i, j, k}}, 1},
             {{{inverseFileIndexIfOnBoard(i), inverseFileIndexIfOnBoard(j), inverseFileIndexIfOnBoard(k)}}, 1},
@@ -309,8 +276,7 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
             std::sort(std::begin(elem.first), std::end(elem.first));
         auto& result = *std::min_element(std::begin(array), std::end(array)); // pair の first の配列を辞書的に比較して最小のものを使う。
         assert(kppIndexIsBlack(result.first[0]));
-        ret[retIdx++] = result.second*(&ppps.ppp[result.first[0]][result.first[1]][result.first[2]] - oneArrayPPP(0));
-        pushLastIndex();
+        return result.second*(&ppps.ppp[result.first[0]][result.first[1]][result.first[2]] - oneArrayPPP(0));
     }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
@@ -368,20 +334,19 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
 #pragma omp for
 #endif
             for (int ksq = SQ11; ksq < SquareNum; ++ksq) {
-                ptrdiff_t indices[KPPIndicesMax];
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                        kppIndices(indices, (Square)ksq, i, j);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = minKPPIndex((Square)ksq, i, j);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            atomicSub((*oneArrayKPP(-indices[0]))[0], kpps.kpp[ksq][i][j][0]);
-                            atomicAdd((*oneArrayKPP(-indices[0]))[1], kpps.kpp[ksq][i][j][1]);
+                            atomicSub((*oneArrayKPP(-index))[0], kpps.kpp[ksq][i][j][0]);
+                            atomicAdd((*oneArrayKPP(-index))[1], kpps.kpp[ksq][i][j][1]);
                         }
-                        else if (&kpps.kpp[ksq][i][j] != oneArrayKPP(indices[0])) {
-                            atomicAdd((*oneArrayKPP( indices[0]))[0], kpps.kpp[ksq][i][j][0]);
-                            atomicAdd((*oneArrayKPP( indices[0]))[1], kpps.kpp[ksq][i][j][1]);
+                        else if (&kpps.kpp[ksq][i][j] != oneArrayKPP(index)) {
+                            atomicAdd((*oneArrayKPP( index))[0], kpps.kpp[ksq][i][j][0]);
+                            atomicAdd((*oneArrayKPP( index))[1], kpps.kpp[ksq][i][j][1]);
                         }
                     }
                 }
@@ -390,20 +355,19 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
 #pragma omp for
 #endif
             for (int ksq0 = SQ11; ksq0 < SquareNum; ++ksq0) {
-                ptrdiff_t indices[KKPIndicesMax];
                 for (Square ksq1 = SQ11; ksq1 < SquareNum; ++ksq1) {
                     for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
-                        kkpIndices(indices, (Square)ksq0, ksq1, i);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = minKKPIndex((Square)ksq0, ksq1, i);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            atomicSub((*oneArrayKKP(-indices[0]))[0], kkps.kkp[ksq0][ksq1][i][0]);
-                            atomicAdd((*oneArrayKKP(-indices[0]))[1], kkps.kkp[ksq0][ksq1][i][1]);
+                            atomicSub((*oneArrayKKP(-index))[0], kkps.kkp[ksq0][ksq1][i][0]);
+                            atomicAdd((*oneArrayKKP(-index))[1], kkps.kkp[ksq0][ksq1][i][1]);
                         }
-                        else if (&kkps.kkp[ksq0][ksq1][i] != oneArrayKKP(indices[0])) {
-                            atomicAdd((*oneArrayKKP( indices[0]))[0], kkps.kkp[ksq0][ksq1][i][0]);
-                            atomicAdd((*oneArrayKKP( indices[0]))[1], kkps.kkp[ksq0][ksq1][i][1]);
+                        else if (&kkps.kkp[ksq0][ksq1][i] != oneArrayKKP(index)) {
+                            atomicAdd((*oneArrayKKP( index))[0], kkps.kkp[ksq0][ksq1][i][0]);
+                            atomicAdd((*oneArrayKKP( index))[1], kkps.kkp[ksq0][ksq1][i][1]);
                         }
                     }
                 }
@@ -412,18 +376,17 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
 #pragma omp for
 #endif
             for (int i = 0; i < fe_end; ++i) {
-                ptrdiff_t indices[PPPIndicesMax];
                 for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
                     for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
-                        pppIndices(indices, (EvalIndex)i, j, k);
-                        if (indices[0] == std::numeric_limits<ptrdiff_t>::max())
+                        const int64_t index = minPPPIndex((EvalIndex)i, j, k);
+                        if (index == std::numeric_limits<int64_t>::max())
                             continue;
-                        else if (indices[0] < 0) {
+                        else if (index < 0) {
                             // 内容を負として扱う。
-                            atomicSub(*oneArrayPPP(-indices[0]), ppps.ppp[i][j][k]);
+                            atomicSub(*oneArrayPPP(-index), ppps.ppp[i][j][k]);
                         }
-                        else if (&ppps.ppp[i][j][k] != oneArrayPPP(indices[0])) {
-                            atomicAdd(*oneArrayPPP( indices[0]), ppps.ppp[i][j][k]);
+                        else if (&ppps.ppp[i][j][k] != oneArrayPPP(index)) {
+                            atomicAdd(*oneArrayPPP( index), ppps.ppp[i][j][k]);
                         }
                     }
                 }
