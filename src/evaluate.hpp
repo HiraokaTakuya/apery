@@ -299,25 +299,18 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
             pushLastIndex();
             return;
         }
-        std::array<EvalIndex, 3> array = {{i, j, k}};
-        // insertionSort 使うべきか？
-        std::sort(std::begin(array), std::end(array)); // array[0] を最小の要素にする。i の駒の種類と、i が味方の駒か敵の駒かが決まる。
-        int sign = 1;
-        if (!kppIndexIsBlack(array[0])) {
-            // array[0] は必ず味方の駒にする。
-            array[0] = kppWhiteIndexToBlackIndex(array[0]);
-            array[1] = kppIndexToOpponentIndex(array[1]);
-            array[2] = kppIndexToOpponentIndex(array[2]);
-            sign = -1;
-        }
-        std::array<EvalIndex, 3> invArray = {{inverseFileIndexIfOnBoard(array[0]),
-                                              inverseFileIndexIfOnBoard(array[1]),
-                                              inverseFileIndexIfOnBoard(array[2])}};
-        std::sort(std::begin(array   ), std::end(array   ));
-        std::sort(std::begin(invArray), std::end(invArray));
-        const std::array<EvalIndex, 3> result = std::min(array, invArray); // 配列を辞書的に比較して最小のものを使う。
-        assert(kppIndexIsBlack(result[0]));
-        ret[retIdx++] = sign*(&ppps.ppp[result[0]][result[1]][result[2]] - oneArrayPPP(0));
+        using EvalIndexArrayAndSign = std::pair<std::array<EvalIndex, 3>, int>;
+        EvalIndexArrayAndSign array[] = {
+            {{{i, j, k}}, 1},
+            {{{inverseFileIndexIfOnBoard(i), inverseFileIndexIfOnBoard(j), inverseFileIndexIfOnBoard(k)}}, 1},
+            {{{kppIndexToOpponentIndex(i), kppIndexToOpponentIndex(j), kppIndexToOpponentIndex(k)}}, -1},
+            {{{inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(i)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(j)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(k))}}, -1},
+        };
+        for (auto& elem : array)
+            std::sort(std::begin(elem.first), std::end(elem.first));
+        auto& result = *std::min_element(std::begin(array), std::end(array)); // pair の first の配列を辞書的に比較して最小のものを使う。
+        assert(kppIndexIsBlack(result.first[0]));
+        ret[retIdx++] = result.second*(&ppps.ppp[result.first[0]][result.first[1]][result.first[2]] - oneArrayPPP(0));
         pushLastIndex();
     }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
