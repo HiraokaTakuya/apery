@@ -667,7 +667,7 @@ namespace {
     constexpr double FVPenalty() { return (0.001/static_cast<double>(FVScale)); }
     // RMSProp(実質、改造してAdaGradになっている) でパラメータを更新する。
     template <typename T>
-    void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& grad, std::array<std::atomic<float>, 2>& msGrad, std::atomic<float>& max) {
+    void updateFV(std::array<T, 2>& v, const std::array<std::atomic<float>, 2>& grad, std::array<std::atomic<float>, 2>& msGrad) {
         //constexpr double AttenuationRate = 0.99999;
         constexpr double UpdateParam = 30.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
         constexpr double epsilon = 0.000001; // 0除算防止の定数
@@ -678,13 +678,10 @@ namespace {
             msGrad[i] = /*AttenuationRate * */msGrad[i] + /*(1.0 - AttenuationRate) * */grad[i] * grad[i];
             const double updateStep = params[i] * grad[i] / sqrt(msGrad[i] + epsilon);
             v[i] += updateStep;
-            const float fabsmax = fabs(updateStep);
-            if (max < fabsmax)
-                max = fabsmax;
         }
     }
     template <typename T>
-    void updateFV(T& v, const std::atomic<float>& grad, std::atomic<float>& msGrad, std::atomic<float>& max) {
+    void updateFV(T& v, const std::atomic<float>& grad, std::atomic<float>& msGrad) {
         //constexpr double AttenuationRate = 0.99999;
         constexpr double UpdateParam = 30.0; // 更新用のハイパーパラメータ。大きいと不安定になり、小さいと学習が遅くなる。
         constexpr double epsilon = 0.000001; // 0除算防止の定数
@@ -694,16 +691,11 @@ namespace {
         msGrad = /*AttenuationRate * */msGrad + /*(1.0 - AttenuationRate) * */grad * grad;
         const double updateStep = param * grad / sqrt(msGrad + epsilon);
         v += updateStep;
-        const float fabsmax = fabs(updateStep);
-        if (max < fabsmax)
-            max = fabsmax;
     }
     void updateEval(EvalBaseType& evalBase,
                     EvaluatorGradient& evaluatorGradient,
                     EvaluatorGradient& meanSquareOfEvaluatorGradient)
     {
-        std::atomic<float> max;
-        max = 0.0;
 #if defined _OPENMP
 #pragma omp parallel
 #endif
@@ -716,21 +708,22 @@ namespace {
             for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
                     for (EvalIndex j = i + 1; j < fe_end; ++j) { // i >= j の位置関係は使わない。
-                        updateFV(evalBase.kpps.kpp[ksq][i][j], evaluatorGradient.kpps.kpp[ksq][i][j], meanSquareOfEvaluatorGradient.kpps.kpp[ksq][i][j], max);
+                        updateFV(evalBase.kpps.kpp[ksq][i][j], evaluatorGradient.kpps.kpp[ksq][i][j], meanSquareOfEvaluatorGradient.kpps.kpp[ksq][i][j]);
                     }
                 }
             }
 #else
             for (size_t i = 0; i < evalBase.kpps_end_index(); ++i)
-                updateFV(*evalBase.oneArrayKPP(i), *evaluatorGradient.oneArrayKPP(i), *meanSquareOfEvaluatorGradient.oneArrayKPP(i), max);
+                updateFV(*evalBase.oneArrayKPP(i), *evaluatorGradient.oneArrayKPP(i), *meanSquareOfEvaluatorGradient.oneArrayKPP(i));
 #endif
 #ifdef _OPENMP
 #pragma omp for
 #endif
             // KKP は KPP よりサイズが小さいので、全て update しておく。
             for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
-                updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i), max);
+                updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i));
 
+            // PPP の最初の index の開始と終了地点。最初の index は常に先手側の駒として扱う。盤面の左側も使わない。
             static const std::pair<EvalIndex, EvalIndex> beginEnds[] = {
                 {f_hand_pawn  , e_hand_pawn                          },
                 {f_hand_lance , e_hand_lance                         },
@@ -756,14 +749,12 @@ namespace {
                 for (int i = beginEnd.first; i < beginEnd.second; ++i) {
                     for (EvalIndex j = (EvalIndex)i + 1; j < fe_end; ++j) {
                         for (EvalIndex k = j + 1; k < fe_end; ++k) {
-                            updateFV(evalBase.ppps.ppp[i][j][k], evaluatorGradient.ppps.ppp[i][j][k], meanSquareOfEvaluatorGradient.ppps.ppp[i][j][k], max);
+                            updateFV(evalBase.ppps.ppp[i][j][k], evaluatorGradient.ppps.ppp[i][j][k], meanSquareOfEvaluatorGradient.ppps.ppp[i][j][k]);
                         }
                     }
                 }
             }
         }
-
-        std::cout << "max update step : " << std::fixed << std::setprecision(2) << max << std::endl;
     }
 
     constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
