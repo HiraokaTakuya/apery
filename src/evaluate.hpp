@@ -363,7 +363,6 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
 #if defined _OPENMP
 #pragma omp parallel
 #endif
-
         {
 #ifdef _OPENMP
 #pragma omp for
@@ -387,8 +386,6 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
                     }
                 }
             }
-        }
-        {
 #ifdef _OPENMP
 #pragma omp for
 #endif
@@ -411,8 +408,6 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
                     }
                 }
             }
-        }
-        {
 #ifdef _OPENMP
 #pragma omp for
 #endif
