@@ -191,10 +191,11 @@ template <typename T, bool UseSentinel = false> inline void sortFor3Elements(T f
         assert(std::min_element(first - 1, first + 3) == first - 1); // 番兵が最小値となることを確認
     if (*first > *(first + 1))
         std::swap(*first, *(first + 1));
-    if (*first > *(first + 2))
-        std::swap(*first, *(first + 2));
-    if (*(first + 1) > *(first + 2))
+    if (*(first + 1) > *(first + 2)) {
         std::swap(*(first + 1), *(first + 2));
+        if (*first > *(first + 1))
+            std::swap(*first, *(first + 1));
+    }
 }
 
 template <typename EvalElementType, typename PPPEvalElementType> struct EvaluatorBase {
