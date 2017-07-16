@@ -122,11 +122,14 @@ inline EvalIndex inverseFileIndexIfOnBoard(const EvalIndex index) {
     const Square sq = static_cast<Square>(index - begin);
     return static_cast<EvalIndex>(begin + inverseFile(sq));
 };
-inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index) {
+inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index, const EvalIndex indexBegin) {
     assert(f_pawn <= index);
-    const auto begin = kppIndexBegin(index);
-    const Square sq = static_cast<Square>(index - begin);
-    return static_cast<EvalIndex>(begin + inverseFile(sq));
+    assert(kppIndexBegin(index) == indexBegin); // この前提で引数を取る。
+    const Square sq = static_cast<Square>(index - indexBegin);
+    return static_cast<EvalIndex>(indexBegin + inverseFile(sq));
+};
+inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index) {
+    return inverseFileIndexOnBoard(index, kppIndexBegin(index));
 };
 inline EvalIndex kppWhiteIndexToBlackIndex(const EvalIndex index) {
     const EvalIndex indexBegin = kppIndexBegin(index);
@@ -180,6 +183,24 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
     lhs[0] -= rhs[0];
     lhs[1] -= rhs[1];
     return lhs;
+}
+
+template <typename T, bool UseSentinel = false> inline void insertionSortLesser(T first, T last) {
+    if (UseSentinel)
+        assert(std::min_element(first - 1, last) == first - 1); // 番兵が最小値となることを確認
+    if (first != last) {
+        for (T curr = first + 1; curr != last; ++curr) {
+            if (*curr < *(curr - 1)) {
+                const auto tmp = std::move(*curr);
+                do {
+                    *curr = *(curr - 1);
+                    --curr;
+                } while ((UseSentinel || curr != first)
+                         && tmp < *(curr - 1));
+                *curr = std::move(tmp);
+            }
+        }
+    }
 }
 
 template <typename EvalElementType, typename PPPEvalElementType> struct EvaluatorBase {
@@ -273,7 +294,7 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
             {{{inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(i)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(j)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(k))}}, -1},
         };
         for (auto& elem : array)
-            std::sort(std::begin(elem.first), std::end(elem.first));
+            insertionSortLesser(std::begin(elem.first), std::end(elem.first));
         auto& result = *std::min_element(std::begin(array), std::end(array)); // pair の first の配列を辞書的に比較して最小のものを使う。
         assert(kppIndexIsBlack(result.first[0]));
         return result.second*(&ppps.ppp[result.first[0]][result.first[1]][result.first[2]] - oneArrayPPP(0));
