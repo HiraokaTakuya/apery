@@ -185,22 +185,16 @@ inline std::array<Tl, 2> operator -= (std::array<Tl, 2>& lhs, const std::array<T
     return lhs;
 }
 
-template <typename T, bool UseSentinel = false> inline void insertionSortLesser(T first, T last) {
+// 要素数が3つ限定のソート 高速。
+template <typename T, bool UseSentinel = false> inline void sortFor3Elements(T first) {
     if (UseSentinel)
-        assert(std::min_element(first - 1, last) == first - 1); // 番兵が最小値となることを確認
-    if (first != last) {
-        for (T curr = first + 1; curr != last; ++curr) {
-            if (*curr < *(curr - 1)) {
-                const auto tmp = std::move(*curr);
-                do {
-                    *curr = *(curr - 1);
-                    --curr;
-                } while ((UseSentinel || curr != first)
-                         && tmp < *(curr - 1));
-                *curr = std::move(tmp);
-            }
-        }
-    }
+        assert(std::min_element(first - 1, first + 3) == first - 1); // 番兵が最小値となることを確認
+    if (*first > *(first + 1))
+        std::swap(*first, *(first + 1));
+    if (*first > *(first + 2))
+        std::swap(*first, *(first + 2));
+    if (*(first + 1) > *(first + 2))
+        std::swap(*(first + 1), *(first + 2));
 }
 
 template <typename EvalElementType, typename PPPEvalElementType> struct EvaluatorBase {
@@ -294,7 +288,7 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
             {{{inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(i)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(j)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(k))}}, -1},
         };
         for (auto& elem : array)
-            insertionSortLesser(std::begin(elem.first), std::end(elem.first));
+            sortFor3Elements(std::begin(elem.first));
         auto& result = *std::min_element(std::begin(array), std::end(array)); // pair の first の配列を辞書的に比較して最小のものを使う。
         assert(kppIndexIsBlack(result.first[0]));
         return result.second*(&ppps.ppp[result.first[0]][result.first[1]][result.first[2]] - oneArrayPPP(0));
