@@ -101,12 +101,45 @@ inline EvalIndex kppBlackIndexToWhiteBegin(const EvalIndex i) {
 inline EvalIndex kppWhiteIndexToBlackBegin(const EvalIndex i) {
     return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 2);
 }
-inline EvalIndex kppIndexToOpponentBegin(const EvalIndex i, const bool isBlack) {
-    return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - static_cast<int>(!isBlack) * 2);
+inline EvalIndex kppIndexBeginToOpponentBegin(const EvalIndex indexBegin) {
+    switch (indexBegin) {
+    case f_hand_pawn  : return e_hand_pawn;
+    case e_hand_pawn  : return f_hand_pawn;
+    case f_hand_lance : return e_hand_lance;
+    case e_hand_lance : return f_hand_lance;
+    case f_hand_knight: return e_hand_knight;
+    case e_hand_knight: return f_hand_knight;
+    case f_hand_silver: return e_hand_silver;
+    case e_hand_silver: return f_hand_silver;
+    case f_hand_gold  : return e_hand_gold;
+    case e_hand_gold  : return f_hand_gold;
+    case f_hand_bishop: return e_hand_bishop;
+    case e_hand_bishop: return f_hand_bishop;
+    case f_hand_rook  : return e_hand_rook;
+    case e_hand_rook  : return f_hand_rook;
+    case f_pawn       : return e_pawn;
+    case e_pawn       : return f_pawn;
+    case f_lance      : return e_lance;
+    case e_lance      : return f_lance;
+    case f_knight     : return e_knight;
+    case e_knight     : return f_knight;
+    case f_silver     : return e_silver;
+    case e_silver     : return f_silver;
+    case f_gold       : return e_gold;
+    case e_gold       : return f_gold;
+    case f_bishop     : return e_bishop;
+    case e_bishop     : return f_bishop;
+    case f_horse      : return e_horse;
+    case e_horse      : return f_horse;
+    case f_rook       : return e_rook;
+    case e_rook       : return f_rook;
+    case f_dragon     : return e_dragon;
+    case e_dragon     : return f_dragon;
+    default: UNREACHABLE;
+    }
 }
 inline EvalIndex kppIndexToOpponentBegin(const EvalIndex i) {
-    // todo: 高速化
-    return kppIndexToOpponentBegin(i, kppIndexIsBlack(i));
+    return kppIndexBeginToOpponentBegin(kppIndexToOpponentBegin(i));
 }
 
 inline EvalIndex inverseFileIndexIfLefterThanMiddle(const EvalIndex index) {
@@ -114,12 +147,6 @@ inline EvalIndex inverseFileIndexIfLefterThanMiddle(const EvalIndex index) {
     const auto begin = kppIndexBegin(index);
     const Square sq = static_cast<Square>(index - begin);
     if (sq <= SQ59) return index;
-    return static_cast<EvalIndex>(begin + inverseFile(sq));
-};
-inline EvalIndex inverseFileIndexIfOnBoard(const EvalIndex index) {
-    if (index < fe_hand_end) return index;
-    const auto begin = kppIndexBegin(index);
-    const Square sq = static_cast<Square>(index - begin);
     return static_cast<EvalIndex>(begin + inverseFile(sq));
 };
 inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index, const EvalIndex indexBegin) {
@@ -131,15 +158,28 @@ inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index, const EvalIndex 
 inline EvalIndex inverseFileIndexOnBoard(const EvalIndex index) {
     return inverseFileIndexOnBoard(index, kppIndexBegin(index));
 };
+inline EvalIndex inverseFileIndexIfOnBoard(const EvalIndex index, const EvalIndex indexBegin) {
+    if (index < fe_hand_end) return index;
+    return inverseFileIndexOnBoard(index, indexBegin);
+};
+inline EvalIndex inverseFileIndexIfOnBoard(const EvalIndex index) {
+    if (index < fe_hand_end) return index;
+    return inverseFileIndexOnBoard(index, kppIndexBegin(index));
+};
 inline EvalIndex kppWhiteIndexToBlackIndex(const EvalIndex index) {
     const EvalIndex indexBegin = kppIndexBegin(index);
     const EvalIndex blackBegin = kppWhiteIndexToBlackBegin(index);
     return blackBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
 }
+inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index, const EvalIndex indexBegin, const EvalIndex opponentBegin) {
+    return opponentBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
+}
+inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index, const EvalIndex indexBegin) {
+    return kppIndexToOpponentIndex(index, indexBegin, kppIndexBeginToOpponentBegin(indexBegin));
+}
 inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index) {
     const EvalIndex indexBegin = kppIndexBegin(index);
-    const EvalIndex opponentBegin = kppIndexToOpponentBegin(index);
-    return opponentBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
+    return kppIndexToOpponentIndex(index, indexBegin);
 }
 
 struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
@@ -282,12 +322,17 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
         if (i == j || i == k || j == k)
             return std::numeric_limits<int64_t>::max();
 
+        std::array<EvalIndex, 3> beginArray = {{kppIndexBegin(i), kppIndexBegin(j), kppIndexBegin(k)}};
+        std::array<EvalIndex, 3> opponentBeginArray = {{kppIndexBeginToOpponentBegin(beginArray[0]), kppIndexBeginToOpponentBegin(beginArray[1]), kppIndexBeginToOpponentBegin(beginArray[2])}};
         std::pair<std::array<EvalIndex, 3>, int> array[] = {
             {{{i, j, k}}, 1},
-            {{{inverseFileIndexIfOnBoard(i), inverseFileIndexIfOnBoard(j), inverseFileIndexIfOnBoard(k)}}, 1},
-            {{{kppIndexToOpponentIndex(i), kppIndexToOpponentIndex(j), kppIndexToOpponentIndex(k)}}, -1},
-            {{{inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(i)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(j)), inverseFileIndexIfOnBoard(kppIndexToOpponentIndex(k))}}, -1},
+            {{{inverseFileIndexIfOnBoard(i, beginArray[0]), inverseFileIndexIfOnBoard(j, beginArray[1]), inverseFileIndexIfOnBoard(k, beginArray[2])}}, 1}, // inverseFile
+            {{{kppIndexToOpponentIndex(i, beginArray[0], opponentBeginArray[0]), kppIndexToOpponentIndex(j, beginArray[1], opponentBeginArray[1]), kppIndexToOpponentIndex(k, beginArray[2], opponentBeginArray[2])}}, -1}, // opponent (相手から見た状態。180度反転)
+            {{{}}, -1}, // inverseFile + opponent (相手から見た状態。180度反転)
         };
+        array[3].first[0] = inverseFileIndexIfOnBoard(array[2].first[0], opponentBeginArray[0]);
+        array[3].first[1] = inverseFileIndexIfOnBoard(array[2].first[1], opponentBeginArray[1]);
+        array[3].first[2] = inverseFileIndexIfOnBoard(array[2].first[2], opponentBeginArray[2]);
         for (auto& elem : array)
             sortFor3Elements(std::begin(elem.first));
         auto& result = *std::min_element(std::begin(array), std::end(array)); // pair の first の配列を辞書的に比較して最小のものを使う。
