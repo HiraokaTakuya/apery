@@ -25,6 +25,7 @@
 #include "thread.hpp"
 
 KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
+EvalIndex KPPIndexBeginArray[fe_end];
 
 bool Evaluator::allocated = false;
 KPPEvalElementType1 *Evaluator::KPP;

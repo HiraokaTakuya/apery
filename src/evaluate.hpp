@@ -83,12 +83,18 @@ const EvalIndex KPPIndexArray[] = {
     f_dragon, e_dragon, fe_end
 };
 
+extern EvalIndex KPPIndexBeginArray[fe_end];
+
 inline Square kppIndexToSquare(const EvalIndex i) {
     const auto it = std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i);
     return static_cast<Square>(i - *(it - 1));
 }
 inline EvalIndex kppIndexBegin(const EvalIndex i) {
+#if 0
     return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 1);
+#else
+    return KPPIndexBeginArray[i];
+#endif
 }
 inline bool kppIndexIsBlack(const EvalIndex i) {
     // f_xxx と e_xxx が交互に配列に格納されているので、インデックスが偶数の時は Black

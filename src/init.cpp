@@ -346,6 +346,43 @@ namespace {
             Neighbor5x5Table[sq].andEqualNot(setMaskBB(sq));
         }
     }
+
+    void initKPPIndexBegin() {
+        for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+            if      (i < e_hand_pawn  ) KPPIndexBeginArray[i] = f_hand_pawn;
+            else if (i < f_hand_lance ) KPPIndexBeginArray[i] = e_hand_pawn;
+            else if (i < e_hand_lance ) KPPIndexBeginArray[i] = f_hand_lance;
+            else if (i < f_hand_knight) KPPIndexBeginArray[i] = e_hand_lance;
+            else if (i < e_hand_knight) KPPIndexBeginArray[i] = f_hand_knight;
+            else if (i < f_hand_silver) KPPIndexBeginArray[i] = e_hand_knight;
+            else if (i < e_hand_silver) KPPIndexBeginArray[i] = f_hand_silver;
+            else if (i < f_hand_gold  ) KPPIndexBeginArray[i] = e_hand_silver;
+            else if (i < e_hand_gold  ) KPPIndexBeginArray[i] = f_hand_gold;
+            else if (i < f_hand_bishop) KPPIndexBeginArray[i] = e_hand_gold;
+            else if (i < e_hand_bishop) KPPIndexBeginArray[i] = f_hand_bishop;
+            else if (i < f_hand_rook  ) KPPIndexBeginArray[i] = e_hand_bishop;
+            else if (i < e_hand_rook  ) KPPIndexBeginArray[i] = f_hand_rook;
+            else if (i < f_pawn       ) KPPIndexBeginArray[i] = e_hand_rook;
+            else if (i < e_pawn       ) KPPIndexBeginArray[i] = f_pawn;
+            else if (i < f_lance      ) KPPIndexBeginArray[i] = e_pawn;
+            else if (i < e_lance      ) KPPIndexBeginArray[i] = f_lance;
+            else if (i < f_knight     ) KPPIndexBeginArray[i] = e_lance;
+            else if (i < e_knight     ) KPPIndexBeginArray[i] = f_knight;
+            else if (i < f_silver     ) KPPIndexBeginArray[i] = e_knight;
+            else if (i < e_silver     ) KPPIndexBeginArray[i] = f_silver;
+            else if (i < f_gold       ) KPPIndexBeginArray[i] = e_silver;
+            else if (i < e_gold       ) KPPIndexBeginArray[i] = f_gold;
+            else if (i < f_bishop     ) KPPIndexBeginArray[i] = e_gold;
+            else if (i < e_bishop     ) KPPIndexBeginArray[i] = f_bishop;
+            else if (i < f_horse      ) KPPIndexBeginArray[i] = e_bishop;
+            else if (i < e_horse      ) KPPIndexBeginArray[i] = f_horse;
+            else if (i < f_rook       ) KPPIndexBeginArray[i] = e_horse;
+            else if (i < e_rook       ) KPPIndexBeginArray[i] = f_rook;
+            else if (i < f_dragon     ) KPPIndexBeginArray[i] = e_rook;
+            else if (i < e_dragon     ) KPPIndexBeginArray[i] = f_dragon;
+            else                        KPPIndexBeginArray[i] = e_dragon;
+        }
+    }
 }
 
 void initTable() {
@@ -363,6 +400,7 @@ void initTable() {
     initCheckTable();
     initNeighbor5x5();
     initSquareDistance();
+    initKPPIndexBegin();
 
     Book::init();
     initSearchTable();
