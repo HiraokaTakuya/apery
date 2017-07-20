@@ -347,7 +347,7 @@ namespace {
         }
     }
 
-    void initKPPIndexBegin() {
+    void initEvalIndex() {
         for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
             if      (i < e_hand_pawn  ) KPPIndexBeginArray[i] = f_hand_pawn;
             else if (i < f_hand_lance ) KPPIndexBeginArray[i] = e_hand_pawn;
@@ -382,6 +382,20 @@ namespace {
             else if (i < e_dragon     ) KPPIndexBeginArray[i] = f_dragon;
             else                        KPPIndexBeginArray[i] = e_dragon;
         }
+        for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
+            switch (kppIndexBegin(i)) {
+            case f_hand_pawn: case f_hand_lance: case f_hand_knight: case f_hand_silver:
+            case f_hand_gold: case f_hand_bishop: case f_hand_rook:
+            case f_pawn: case f_lance: case f_knight: case f_silver: case f_gold:
+            case f_bishop: case f_horse: case f_rook: case f_dragon:
+                KPPIndexIsBlackArray[i] = true;
+                break;
+            default:
+                KPPIndexIsBlackArray[i] = false;
+                break;
+            }
+            assert(KPPIndexIsBlackArray[i] == kppIndexIsBlack(i));
+        }
     }
 }
 
@@ -400,7 +414,7 @@ void initTable() {
     initCheckTable();
     initNeighbor5x5();
     initSquareDistance();
-    initKPPIndexBegin();
+    initEvalIndex();
 
     Book::init();
     initSearchTable();

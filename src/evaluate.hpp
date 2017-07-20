@@ -74,38 +74,14 @@ OverloadEnumOperators(EvalIndex);
 
 const int FVScale = 32;
 
-const EvalIndex KPPIndexArray[] = {
-    f_hand_pawn, e_hand_pawn, f_hand_lance, e_hand_lance, f_hand_knight,
-    e_hand_knight, f_hand_silver, e_hand_silver, f_hand_gold, e_hand_gold,
-    f_hand_bishop, e_hand_bishop, f_hand_rook, e_hand_rook, /*fe_hand_end,*/
-    f_pawn, e_pawn, f_lance, e_lance, f_knight, e_knight, f_silver, e_silver,
-    f_gold, e_gold, f_bishop, e_bishop, f_horse, e_horse, f_rook, e_rook,
-    f_dragon, e_dragon, fe_end
-};
-
 extern EvalIndex KPPIndexBeginArray[fe_end];
+extern bool KPPIndexIsBlackArray[fe_end];
 
-inline Square kppIndexToSquare(const EvalIndex i) {
-    const auto it = std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i);
-    return static_cast<Square>(i - *(it - 1));
-}
 inline EvalIndex kppIndexBegin(const EvalIndex i) {
-#if 0
-    return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 1);
-#else
     return KPPIndexBeginArray[i];
-#endif
 }
 inline bool kppIndexIsBlack(const EvalIndex i) {
-    // f_xxx と e_xxx が交互に配列に格納されているので、インデックスが偶数の時は Black
-    return !((std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 1) - std::begin(KPPIndexArray) & 1);
-}
-inline EvalIndex kppBlackIndexToWhiteBegin(const EvalIndex i) {
-    assert(kppIndexIsBlack(i));
-    return *std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i);
-}
-inline EvalIndex kppWhiteIndexToBlackBegin(const EvalIndex i) {
-    return *(std::upper_bound(std::begin(KPPIndexArray), std::end(KPPIndexArray), i) - 2);
+    return KPPIndexIsBlackArray[i];
 }
 inline EvalIndex kppIndexBeginToOpponentBegin(const EvalIndex indexBegin) {
     switch (indexBegin) {
@@ -144,10 +120,6 @@ inline EvalIndex kppIndexBeginToOpponentBegin(const EvalIndex indexBegin) {
     default: UNREACHABLE;
     }
 }
-inline EvalIndex kppIndexToOpponentBegin(const EvalIndex i) {
-    return kppIndexBeginToOpponentBegin(kppIndexToOpponentBegin(i));
-}
-
 inline EvalIndex inverseFileIndexIfLefterThanMiddle(const EvalIndex index) {
     if (index < fe_hand_end) return index;
     const auto begin = kppIndexBegin(index);
@@ -172,11 +144,6 @@ inline EvalIndex inverseFileIndexIfOnBoard(const EvalIndex index) {
     if (index < fe_hand_end) return index;
     return inverseFileIndexOnBoard(index, kppIndexBegin(index));
 };
-inline EvalIndex kppWhiteIndexToBlackIndex(const EvalIndex index) {
-    const EvalIndex indexBegin = kppIndexBegin(index);
-    const EvalIndex blackBegin = kppWhiteIndexToBlackBegin(index);
-    return blackBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
-}
 inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index, const EvalIndex indexBegin, const EvalIndex opponentBegin) {
     return opponentBegin + (index < fe_hand_end ? index - indexBegin : (EvalIndex)inverse((Square)(index - indexBegin)));
 }
@@ -187,36 +154,6 @@ inline EvalIndex kppIndexToOpponentIndex(const EvalIndex index) {
     const EvalIndex indexBegin = kppIndexBegin(index);
     return kppIndexToOpponentIndex(index, indexBegin);
 }
-
-struct KPPBoardIndexStartToPiece : public std::unordered_map<int, Piece> {
-    KPPBoardIndexStartToPiece() {
-        (*this)[f_pawn  ] = BPawn;
-        (*this)[e_pawn  ] = WPawn;
-        (*this)[f_lance ] = BLance;
-        (*this)[e_lance ] = WLance;
-        (*this)[f_knight] = BKnight;
-        (*this)[e_knight] = WKnight;
-        (*this)[f_silver] = BSilver;
-        (*this)[e_silver] = WSilver;
-        (*this)[f_gold  ] = BGold;
-        (*this)[e_gold  ] = WGold;
-        (*this)[f_bishop] = BBishop;
-        (*this)[e_bishop] = WBishop;
-        (*this)[f_horse ] = BHorse;
-        (*this)[e_horse ] = WHorse;
-        (*this)[f_rook  ] = BRook;
-        (*this)[e_rook  ] = WRook;
-        (*this)[f_dragon] = BDragon;
-        (*this)[e_dragon] = WDragon;
-    }
-    Piece value(const int i) const {
-        const auto it = find(i);
-        if (it == std::end(*this))
-            return PieceNone;
-        return it->second;
-    }
-};
-extern KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 
 template <typename Tl, typename Tr>
 inline std::array<Tl, 2> operator += (std::array<Tl, 2>& lhs, const std::array<Tr, 2>& rhs) {
@@ -308,7 +245,7 @@ template <typename EvalElementType, typename PPPEvalElementType> struct Evaluato
             const Square tmp = ksq0;
             ksq0 = inverse(ksq1);
             ksq1 = inverse(tmp);
-            i = kppWhiteIndexToBlackIndex(i);
+            i = kppIndexToOpponentIndex(i);
             sign = -1;
         }
         if (SQ59 < ksq0) {

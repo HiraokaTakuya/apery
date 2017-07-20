@@ -24,8 +24,8 @@
 #include "search.hpp"
 #include "thread.hpp"
 
-KPPBoardIndexStartToPiece g_kppBoardIndexStartToPiece;
 EvalIndex KPPIndexBeginArray[fe_end];
+bool KPPIndexIsBlackArray[fe_end];
 
 bool Evaluator::allocated = false;
 KPPEvalElementType1 *Evaluator::KPP;
