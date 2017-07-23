@@ -53,6 +53,13 @@ const EvalIndex kppHandArray[ColorNum][HandPieceNum] = {
 };
 
 namespace {
+    s32 doapcPPP(const Position& pos, const EvalIndex index0, const EvalIndex index1) {
+        const EvalIndex* list0 = pos.cplist0();
+        s32 sum = 0;
+        for (int i = 0; i < pos.nlist(); ++i)
+            sum += Evaluator::PPP[index0][index1][list0[i]];
+        return sum;
+    }
     EvalSum doapc(const Position& pos, const EvalIndex index[2]) {
         const Square sq_bk = pos.kingSquare(Black);
         const Square sq_wk = pos.kingSquare(White);
@@ -67,23 +74,38 @@ namespace {
 #if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
         sum.m[0] = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[list1[0]][0]), *reinterpret_cast<const s32*>(&pkppb[list0[0]][0]));
         sum.m[0] = _mm_cvtepi16_epi32(sum.m[0]);
+        sum.p[3][0] = 0;
         for (int i = 1; i < pos.nlist(); ++i) {
             __m128i tmp;
             tmp = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[list1[i]][0]), *reinterpret_cast<const s32*>(&pkppb[list0[i]][0]));
             tmp = _mm_cvtepi16_epi32(tmp);
             sum.m[0] = _mm_add_epi32(sum.m[0], tmp);
+            for (int j = 0; j < i; ++j)
+                sum.p[3][0] += Evaluator::PPP[index[0]][list0[i]][list0[j]];
         }
 #else
         sum.p[0][0] = pkppb[list0[0]][0];
         sum.p[0][1] = pkppb[list0[0]][1];
         sum.p[1][0] = pkppw[list1[0]][0];
         sum.p[1][1] = pkppw[list1[0]][1];
+        sum.p[3][0] = 0;
         for (int i = 1; i < pos.nlist(); ++i) {
             sum.p[0] += pkppb[list0[i]];
             sum.p[1] += pkppw[list1[i]];
+            for (int j = 0; j < i; ++j)
+                sum.p[3][0] += Evaluator::PPP[index[0]][list0[i]][list0[j]];
         }
 #endif
 
+        return sum;
+    }
+    s32 doablackPPP(const Position& pos, const EvalIndex index[2]) {
+        const EvalIndex* list0 = pos.cplist0();
+        s32 sum = 0;
+        for (int j = 1; j < pos.nlist(); ++j) {
+            for (int k = 0; k < j; ++k)
+                sum += Evaluator::PPP[index[0]][list0[j]][list0[k]];
+        }
         return sum;
     }
     std::array<s32, 2> doablack(const Position& pos, const EvalIndex index[2]) {
@@ -95,6 +117,15 @@ namespace {
         for (int i = 1; i < pos.nlist(); ++i) {
             sum[0] += pkppb[list0[i]][0];
             sum[1] += pkppb[list0[i]][1];
+        }
+        return sum;
+    }
+    s32 doawhitePPP(const Position& pos, const EvalIndex index[2]) {
+        const EvalIndex* list1 = pos.cplist1();
+        s32 sum = 0;
+        for (int j = 1; j < pos.nlist(); ++j) {
+            for (int k = 0; k < j; ++k)
+                sum -= Evaluator::PPP[index[1]][list1[j]][list1[k]]; // list1 を使っているので、+- が逆になる。
         }
         return sum;
     }
@@ -197,8 +228,10 @@ namespace {
                 if (pos.cl().size == 2) {
                     const int listIndex_cap = pos.cl().listindex[1];
                     diff.p[0] += doablack(pos, pos.cl().clistpair[1].newlist);
+                    diff.p[3][0] += doablackPPP(pos, pos.cl().clistpair[1].newlist);
                     pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
                     diff.p[0] -= doablack(pos, pos.cl().clistpair[1].oldlist);
+                    diff.p[3][0] -= doablackPPP(pos, pos.cl().clistpair[1].oldlist);
                     pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
                 }
             }
@@ -220,8 +253,10 @@ namespace {
                 if (pos.cl().size == 2) {
                     const int listIndex_cap = pos.cl().listindex[1];
                     diff.p[1] += doawhite(pos, pos.cl().clistpair[1].newlist);
+                    diff.p[3][0] += doawhitePPP(pos, pos.cl().clistpair[1].newlist);
                     pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
                     diff.p[1] -= doawhite(pos, pos.cl().clistpair[1].oldlist);
+                    diff.p[3][0] -= doawhitePPP(pos, pos.cl().clistpair[1].oldlist);
                     pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
                 }
             }
@@ -240,6 +275,7 @@ namespace {
                 diff += doapc(pos, pos.cl().clistpair[1].newlist);
                 diff.p[0] -= Evaluator::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].newlist[0]][pos.cl().clistpair[1].newlist[0]];
                 diff.p[1] -= Evaluator::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].newlist[1]][pos.cl().clistpair[1].newlist[1]];
+                diff.p[3][0] -= doapcPPP(pos, pos.cl().clistpair[0].newlist[0], pos.cl().clistpair[1].newlist[0]);
                 const int listIndex_cap = pos.cl().listindex[1];
                 pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].oldlist[0];
                 pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].oldlist[1];
@@ -247,10 +283,10 @@ namespace {
                 pos.plist0()[listIndex] = pos.cl().clistpair[0].oldlist[0];
                 pos.plist1()[listIndex] = pos.cl().clistpair[0].oldlist[1];
                 diff -= doapc(pos, pos.cl().clistpair[0].oldlist);
-
                 diff -= doapc(pos, pos.cl().clistpair[1].oldlist);
                 diff.p[0] += Evaluator::KPP[pos.kingSquare(Black)         ][pos.cl().clistpair[0].oldlist[0]][pos.cl().clistpair[1].oldlist[0]];
                 diff.p[1] += Evaluator::KPP[inverse(pos.kingSquare(White))][pos.cl().clistpair[0].oldlist[1]][pos.cl().clistpair[1].oldlist[1]];
+                diff.p[3][0] += doapcPPP(pos, pos.cl().clistpair[0].oldlist[0], pos.cl().clistpair[1].oldlist[0]);
                 pos.plist0()[listIndex_cap] = pos.cl().clistpair[1].newlist[0];
                 pos.plist1()[listIndex_cap] = pos.cl().clistpair[1].newlist[1];
             }
@@ -297,13 +333,16 @@ namespace {
     }
 
     void evaluateBody(Position& pos, SearchStack* ss) {
-        //if (calcDifference(pos, ss)) {
-        //    assert([&] {
-        //            const auto score = ss->staticEvalRaw.sum(pos.turn());
-        //            return (evaluateUnUseDiff(pos) == score);
-        //        }());
-        //    return;
-        //}
+        if (calcDifference(pos, ss)) {
+            assert([&] {
+                    const auto score = ss->staticEvalRaw.sum(pos.turn());
+                    const auto scoreCalc = evaluateUnUseDiff(pos);
+                    if (score != scoreCalc)
+                        std::cout << score << ", " << scoreCalc << std::endl;
+                    return (evaluateUnUseDiff(pos) == score);
+                }());
+            return;
+        }
 
         const Square sq_bk = pos.kingSquare(Black);
         const Square sq_wk = pos.kingSquare(White);
