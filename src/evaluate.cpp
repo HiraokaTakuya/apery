@@ -316,6 +316,7 @@ namespace {
         EvalSum sum;
         sum.p[2][0] = 0;
         sum.p[2][1] = 0;
+        sum.p[3][0] = 0;
 #if defined USE_AVX2_EVAL || defined USE_SSE_EVAL
         sum.m[0] = _mm_setzero_si128();
         for (int i = 0; i < pos.nlist(); ++i) {
@@ -329,7 +330,7 @@ namespace {
                 for (int k = 0; k < j; ++k) {
                     const int n0 = list0[k];
                     const int n1 = list1[k];
-                    sum.p[2][0] += Evaluator::PPP[k0][l0][n0];
+                    sum.p[3][0] += Evaluator::PPP[k0][l0][n0];
                 }
                 __m128i tmp;
                 tmp = _mm_set_epi32(0, 0, *reinterpret_cast<const s32*>(&pkppw[l1][0]), *reinterpret_cast<const s32*>(&pkppb[l0][0]));
@@ -354,7 +355,7 @@ namespace {
                 for (int k = 0; k < j; ++k) {
                     const int n0 = list0[k];
                     const int n1 = list1[k];
-                    sum.p[2][0] += Evaluator::PPP[k0][l0][n0];
+                    sum.p[3][0] += Evaluator::PPP[k0][l0][n0];
                 }
                 sum.p[0] += pkppb[l0];
                 sum.p[1] += pkppw[l1];
@@ -419,6 +420,7 @@ Score evaluateUnUseDiff(const Position& pos) {
     score.p[1][1] = 0;
     score.p[2][0] = 0;
     score.p[2][1] = 0;
+    score.p[3][0] = 0;
     for (int i = 0; i < nlist; ++i) {
         const int k0 = list0[i];
         const int k1 = list1[i];
@@ -430,7 +432,7 @@ Score evaluateUnUseDiff(const Position& pos) {
             for (int k = 0; k < j; ++k) {
                 const int n0 = list0[k];
                 const int n1 = list1[k];
-                score.p[2][0] += Evaluator::PPP[k0][l0][n0];
+                score.p[3][0] += Evaluator::PPP[k0][l0][n0];
             }
             score.p[0] += pkppb[l0];
             score.p[1] += pkppw[l1];
@@ -455,9 +457,10 @@ Score evaluate(Position& pos, SearchStack* ss) {
     }
 
     const Key keyExcludeTurn = pos.getKeyExcludeTurn();
+    const uint32_t key32 = (uint32_t)(pos.getKey() >> 32);
     EvaluateHashEntry entry = *g_evalTable[keyExcludeTurn]; // atomic にデータを取得する必要がある。
     entry.decode();
-    if (entry.key == keyExcludeTurn) {
+    if (entry.key32 == key32) {
         ss->staticEvalRaw = entry;
         assert(static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) == evaluateUnUseDiff(pos));
         return static_cast<Score>(entry.sum(pos.turn())) / FVScale;
@@ -465,7 +468,7 @@ Score evaluate(Position& pos, SearchStack* ss) {
 
     evaluateBody(pos, ss);
 
-    ss->staticEvalRaw.key = keyExcludeTurn;
+    ss->staticEvalRaw.key32 = key32;
     ss->staticEvalRaw.encode();
     *g_evalTable[keyExcludeTurn] = ss->staticEvalRaw;
     return static_cast<Score>(ss->staticEvalRaw.sum(pos.turn())) / FVScale;

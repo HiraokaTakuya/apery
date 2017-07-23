@@ -501,7 +501,7 @@ struct EvalSum {
 #endif
     EvalSum() {}
     s32 sum(const Color c) const {
-        const s32 scoreBoard = p[0][0] - p[1][0] + p[2][0];
+        const s32 scoreBoard = p[0][0] - p[1][0] + p[2][0] + p[3][0];
         const s32 scoreTurn  = p[0][1] + p[1][1] + p[2][1];
         return (c == Black ? scoreBoard : -scoreBoard) + scoreTurn;
     }
@@ -518,6 +518,7 @@ struct EvalSum {
         p[1][1] += rhs.p[1][1];
         p[2][0] += rhs.p[2][0];
         p[2][1] += rhs.p[2][1];
+        p[3][0] += rhs.p[3][0];
 #endif
         return *this;
     }
@@ -534,6 +535,7 @@ struct EvalSum {
         p[1][1] -= rhs.p[1][1];
         p[2][0] -= rhs.p[2][0];
         p[2][1] -= rhs.p[2][1];
+        p[3][0] -= rhs.p[3][0];
 #endif
         return *this;
     }
@@ -543,18 +545,19 @@ struct EvalSum {
     // ehash 用。
     void encode() {
 #if defined USE_AVX2_EVAL
-        // EvalSum は atomic にコピーされるので key が合っていればデータも合っている。
+        // EvalSum は atomic にコピーされるので key32 が合っていればデータも合っている。
 #else
-        key ^= data[0] ^ data[1] ^ data[2];
+        key32 ^= data[0] ^ data[1] ^ data[2];
 #endif
     }
     void decode() { encode(); }
 
     union {
-        std::array<std::array<s32, 2>, 3> p;
+        std::array<std::array<s32, 2>, 4> p;
         struct {
             u64 data[3];
-            u64 key; // ehash用。
+            u32 dataPPP;
+            u32 key32; // ehash用。局面のkeyの上位32bit。
         };
 #if defined USE_AVX2_EVAL
         __m256i mm;
