@@ -47,6 +47,29 @@ bool CaseInsensitiveLess::operator () (const std::string& s1, const std::string&
     return s1.size() < s2.size();
 }
 
+inline void printEvalTable(const Square ksq, const int p0, const int p1_base, const bool isTurn) {
+    for (Rank r = Rank1; r < RankNum; ++r) {
+        for (File f = File9; File1 <= f; --f) {
+            const Square sq = makeSquare(f, r);
+            printf("%5d", Evaluator::KPP[ksq][p0][p1_base + sq][isTurn]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+    fflush(stdout);
+}
+inline void printEvalTable(const int i, const int j, const int k) {
+    for (Rank r = Rank1; r < RankNum; ++r) {
+        for (File f = File9; File1 <= f; --f) {
+            const Square sq = makeSquare(f, r);
+            printf("%5d", Evaluator::PPP[i][j][k + sq]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+    fflush(stdout);
+}
+
 namespace {
     // 論理的なコア数の取得
     inline int cpuCoreCount() {

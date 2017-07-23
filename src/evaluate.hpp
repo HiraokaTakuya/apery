@@ -439,28 +439,40 @@ struct Evaluator /*: public EvaluatorBase<EvalElementType, PPPEvalElementType>*/
         readSynthesized(dirName);
     }
 
-#define ALL_SYNTHESIZED_EVAL {                  \
-        FOO(KPP);                               \
-        FOO(KKP);                               \
-        FOO(PPP);                               \
-    }
+    // 2GB を超えるファイルは Msys2 環境では std::ifstream では一度に read 出来ず、分割して read する必要がある。
     static bool readSynthesized(const std::string& dirName) {
 #define FOO(x) {                                                        \
-            std::ifstream ifs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
-            if (ifs) ifs.read(reinterpret_cast<char*>(x), sizeof(x ## EvalElementType2));   \
-            else     return false;                                      \
+            std::ifstream fs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
+            if (!fs)                                                    \
+                return false;                                           \
+            auto end = (char*)x + sizeof(x ## EvalElementType2);        \
+            for (auto it = (char*)x; it < end; it += (1 << 30)) {       \
+                size_t size = (it + (1 << 30) < end ? (1 << 30) : end - it); \
+                fs.read(it, size);                                      \
+            }                                                           \
         }
-        ALL_SYNTHESIZED_EVAL;
+        FOO(KPP);
+        FOO(KKP);
+        FOO(PPP);
 #undef FOO
         return true;
     }
-    static void writeSynthesized(const std::string& dirName) {
+    static bool writeSynthesized(const std::string& dirName) {
 #define FOO(x) {                                                        \
-            std::ofstream ofs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
-            ofs.write(reinterpret_cast<char*>(x), sizeof(x ## EvalElementType2));           \
+            std::ofstream fs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
+            if (!fs)                                                    \
+                return false;                                           \
+            auto end = (char*)x + sizeof(x ## EvalElementType2);        \
+            for (auto it = (char*)x; it < end; it += (1 << 30)) {       \
+                size_t size = (it + (1 << 30) < end ? (1 << 30) : end - it); \
+                fs.write(it, size);                                     \
+            }                                                           \
         }
-        ALL_SYNTHESIZED_EVAL;
+        FOO(KPP);
+        FOO(KKP);
+        FOO(PPP);
 #undef FOO
+        return true;
     }
 };
 
