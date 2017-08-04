@@ -58,17 +58,6 @@ inline void printEvalTable(const Square ksq, const int p0, const int p1_base, co
     printf("\n");
     fflush(stdout);
 }
-inline void printEvalTable(const int i, const int j, const int k) {
-    for (Rank r = Rank1; r < RankNum; ++r) {
-        for (File f = File9; File1 <= f; --f) {
-            const Square sq = makeSquare(f, r);
-            printf("%5d", Evaluator::PPP[i][j][k + sq]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-    fflush(stdout);
-}
 
 namespace {
     // 論理的なコア数の取得
@@ -522,8 +511,8 @@ void make_teacher(std::istringstream& ssCmd) {
 namespace {
     // Learner とほぼ同じもの。todo: Learner と共通化する。
 
-    using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<float>, 2>, std::atomic<float>>;
-    using EvalBaseType = EvaluatorBase<std::array<float, 2>, float>;
+    using LowerDimensionedEvaluatorGradient = EvaluatorBase<std::array<std::atomic<float>, 2>>;
+    using EvalBaseType = EvaluatorBase<std::array<float, 2>>;
 
     // 小数の評価値を round して整数に直す。
     void copyEvalToInteger(EvalBaseType& evalBase) {
@@ -569,25 +558,6 @@ namespace {
                         else {
                             Evaluator::KKP[ksq0][ksq1][i][0] =  round((*evalBase.oneArrayKKP( index))[0]);
                             Evaluator::KKP[ksq0][ksq1][i][1] =  round((*evalBase.oneArrayKKP( index))[1]);
-                        }
-                    }
-                }
-            }
-#ifdef _OPENMP
-#pragma omp for
-#endif
-            for (int i = 0; i < fe_end; ++i) {
-                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                    for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
-                        const int64_t index = evalBase.minPPPIndex((EvalIndex)i, j, k);
-                        if (index == std::numeric_limits<int64_t>::max())
-                            continue;
-                        else if (index < 0) {
-                            // 内容を負として扱う。
-                            Evaluator::PPP[i][j][k] = -round(*evalBase.oneArrayPPP(-index));
-                        }
-                        else {
-                            Evaluator::PPP[i][j][k] =  round(*evalBase.oneArrayPPP( index));
                         }
                     }
                 }
@@ -638,25 +608,6 @@ namespace {
                         else {
                             (*evalBase.oneArrayKKP( index))[0] =  Evaluator::KKP[ksq0][ksq1][i][0];
                             (*evalBase.oneArrayKKP( index))[1] =  Evaluator::KKP[ksq0][ksq1][i][1];
-                        }
-                    }
-                }
-            }
-#ifdef _OPENMP
-#pragma omp for
-#endif
-            for (int i = 0; i < fe_end; ++i) {
-                for (EvalIndex j = (EvalIndex)0; j < fe_end; ++j) {
-                    for (EvalIndex k = (EvalIndex)0; k < fe_end; ++k) {
-                        const int64_t index = evalBase.minPPPIndex((EvalIndex)i, j, k);
-                        if (index == std::numeric_limits<int64_t>::max())
-                            continue;
-                        else if (index < 0) {
-                            // 内容を負として扱う。
-                            *evalBase.oneArrayPPP(-index) = -Evaluator::PPP[i][j][k];
-                        }
-                        else {
-                            *evalBase.oneArrayPPP( index) =  Evaluator::PPP[i][j][k];
                         }
                     }
                 }
@@ -739,38 +690,6 @@ namespace {
             // KKP は KPP よりサイズが小さいので、全て update しておく。
             for (size_t i = 0; i < evalBase.kkps_end_index(); ++i)
                 updateFV(*evalBase.oneArrayKKP(i), *evaluatorGradient.oneArrayKKP(i), *meanSquareOfEvaluatorGradient.oneArrayKKP(i));
-
-            // PPP の最初の index の開始と終了地点。最初の index は常に先手側の駒として扱う。盤面の左側も使わない。
-            static const std::pair<EvalIndex, EvalIndex> beginEnds[] = {
-                {f_hand_pawn  , e_hand_pawn                          },
-                {f_hand_lance , e_hand_lance                         },
-                {f_hand_knight, e_hand_knight                        },
-                {f_hand_silver, e_hand_silver                        },
-                {f_hand_gold  , e_hand_gold                          },
-                {f_hand_bishop, e_hand_bishop                        },
-                {f_hand_rook  , e_hand_rook                          },
-                {f_pawn       , f_pawn   + (EvalIndex)SquareNoLeftNum},
-                {f_lance      , f_lance  + (EvalIndex)SquareNoLeftNum},
-                {f_knight     , f_knight + (EvalIndex)SquareNoLeftNum},
-                {f_silver     , f_silver + (EvalIndex)SquareNoLeftNum},
-                {f_gold       , f_gold   + (EvalIndex)SquareNoLeftNum},
-                {f_bishop     , f_bishop + (EvalIndex)SquareNoLeftNum},
-                {f_horse      , f_horse  + (EvalIndex)SquareNoLeftNum},
-                {f_rook       , f_rook   + (EvalIndex)SquareNoLeftNum},
-                {f_dragon     , f_dragon + (EvalIndex)SquareNoLeftNum},
-            };
-            for (auto& beginEnd : beginEnds) {
-#ifdef _OPENMP
-#pragma omp for
-#endif
-                for (int i = beginEnd.first; i < beginEnd.second; ++i) {
-                    for (EvalIndex j = (EvalIndex)i + 1; j < fe_end; ++j) {
-                        for (EvalIndex k = j + 1; k < fe_end; ++k) {
-                            updateFV(evalBase.ppps.ppp[i][j][k], evaluatorGradient.ppps.ppp[i][j][k], meanSquareOfEvaluatorGradient.ppps.ppp[i][j][k]);
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -941,7 +860,6 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         std::cout << "write eval ... " << std::flush;
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(KPPEvalElementType2));
         std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(KKPEvalElementType2));
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "PPP_synthesized.bin").c_str()).write((char*)Evaluator::PPP, sizeof(PPPEvalElementType2));
         std::cout << "done" << std::endl;
     };
     auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
