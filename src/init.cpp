@@ -372,7 +372,15 @@ namespace {
             else if (i < e_silver     ) KPPIndexBeginArray[i] = f_silver;
             else if (i < f_gold       ) KPPIndexBeginArray[i] = e_silver;
             else if (i < e_gold       ) KPPIndexBeginArray[i] = f_gold;
-            else if (i < f_bishop     ) KPPIndexBeginArray[i] = e_gold;
+            else if (i < f_pro_pawn   ) KPPIndexBeginArray[i] = e_gold;
+            else if (i < e_pro_pawn   ) KPPIndexBeginArray[i] = f_pro_pawn;
+            else if (i < f_pro_lance  ) KPPIndexBeginArray[i] = e_pro_pawn;
+            else if (i < e_pro_lance  ) KPPIndexBeginArray[i] = f_pro_lance;
+            else if (i < f_pro_knight ) KPPIndexBeginArray[i] = e_pro_lance;
+            else if (i < e_pro_knight ) KPPIndexBeginArray[i] = f_pro_knight;
+            else if (i < f_pro_silver ) KPPIndexBeginArray[i] = e_pro_knight;
+            else if (i < e_pro_silver ) KPPIndexBeginArray[i] = f_pro_silver;
+            else if (i < f_bishop     ) KPPIndexBeginArray[i] = e_pro_silver;
             else if (i < e_bishop     ) KPPIndexBeginArray[i] = f_bishop;
             else if (i < f_horse      ) KPPIndexBeginArray[i] = e_bishop;
             else if (i < e_horse      ) KPPIndexBeginArray[i] = f_horse;
@@ -387,6 +395,7 @@ namespace {
             case f_hand_pawn: case f_hand_lance: case f_hand_knight: case f_hand_silver:
             case f_hand_gold: case f_hand_bishop: case f_hand_rook:
             case f_pawn: case f_lance: case f_knight: case f_silver: case f_gold:
+            case f_pro_pawn: case f_pro_lance: case f_pro_knight: case f_pro_silver:
             case f_bishop: case f_horse: case f_rook: case f_dragon:
                 KPPIndexIsBlackArray[i] = true;
                 break;

@@ -60,7 +60,15 @@ enum EvalIndex : int32_t { // TriangularArray で計算する為に 32bit にし
     e_silver      = f_silver      + 81,
     f_gold        = e_silver      + 81,
     e_gold        = f_gold        + 81,
-    f_bishop      = e_gold        + 81,
+    f_pro_pawn    = e_gold        + 81,
+    e_pro_pawn    = f_pro_pawn    + 81,
+    f_pro_lance   = e_pro_pawn    + 81,
+    e_pro_lance   = f_pro_lance   + 81,
+    f_pro_knight  = e_pro_lance   + 81,
+    e_pro_knight  = f_pro_knight  + 81,
+    f_pro_silver  = e_pro_knight  + 81,
+    e_pro_silver  = f_pro_silver  + 81,
+    f_bishop      = e_pro_silver  + 81,
     e_bishop      = f_bishop      + 81,
     f_horse       = e_bishop      + 81,
     e_horse       = f_horse       + 81,
@@ -109,6 +117,14 @@ inline EvalIndex kppIndexBeginToOpponentBegin(const EvalIndex indexBegin) {
     case e_silver     : return f_silver;
     case f_gold       : return e_gold;
     case e_gold       : return f_gold;
+    case f_pro_pawn   : return e_pro_pawn;
+    case e_pro_pawn   : return f_pro_pawn;
+    case f_pro_lance  : return e_pro_lance;
+    case e_pro_lance  : return f_pro_lance;
+    case f_pro_knight : return e_pro_knight;
+    case e_pro_knight : return f_pro_knight;
+    case f_pro_silver : return e_pro_silver;
+    case e_pro_silver : return f_pro_silver;
     case f_bishop     : return e_bishop;
     case e_bishop     : return f_bishop;
     case f_horse      : return e_horse;

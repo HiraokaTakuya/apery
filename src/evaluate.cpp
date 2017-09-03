@@ -33,15 +33,15 @@ KKPEvalElementType1 *Evaluator::KKP;
 EvaluateHashTable g_evalTable;
 
 const EvalIndex kppArray[31] = {
-    (EvalIndex)0, f_pawn,   f_lance,  f_knight,
-    f_silver    , f_bishop, f_rook,   f_gold,
-    (EvalIndex)0, f_gold,   f_gold,   f_gold,
-    f_gold      , f_horse,  f_dragon,
+    (EvalIndex)0, f_pawn    , f_lance    , f_knight    ,
+    f_silver    , f_bishop  , f_rook     , f_gold      ,
+    (EvalIndex)0, f_pro_pawn, f_pro_lance, f_pro_knight,
+    f_pro_silver, f_horse   , f_dragon   ,
     (EvalIndex)0,
-    (EvalIndex)0, e_pawn,   e_lance,  e_knight,
-    e_silver    , e_bishop, e_rook,   e_gold,
-    (EvalIndex)0, e_gold,   e_gold,   e_gold,
-    e_gold      , e_horse,  e_dragon
+    (EvalIndex)0, e_pawn    , e_lance    , e_knight    ,
+    e_silver    , e_bishop  , e_rook     , e_gold      ,
+    (EvalIndex)0, e_pro_pawn, e_pro_lance, e_pro_knight,
+    e_pro_silver, e_horse   , e_dragon
 };
 
 const EvalIndex kppHandArray[ColorNum][HandPieceNum] = {
@@ -280,16 +280,19 @@ namespace {
                     nlist    += 1;
                 });
         };
-        func(pos.bbOf(Pawn  ), f_pawn  , e_pawn  );
-        func(pos.bbOf(Lance ), f_lance , e_lance );
-        func(pos.bbOf(Knight), f_knight, e_knight);
-        func(pos.bbOf(Silver), f_silver, e_silver);
-        const Bitboard goldsBB = pos.goldsBB();
-        func(goldsBB         , f_gold  , e_gold  );
-        func(pos.bbOf(Bishop), f_bishop, e_bishop);
-        func(pos.bbOf(Horse ), f_horse , e_horse );
-        func(pos.bbOf(Rook  ), f_rook  , e_rook  );
-        func(pos.bbOf(Dragon), f_dragon, e_dragon);
+        func(pos.bbOf(Pawn     ), f_pawn      , e_pawn      );
+        func(pos.bbOf(Lance    ), f_lance     , e_lance     );
+        func(pos.bbOf(Knight   ), f_knight    , e_knight    );
+        func(pos.bbOf(Silver   ), f_silver    , e_silver    );
+        func(pos.bbOf(Gold     ), f_gold      , e_gold      );
+        func(pos.bbOf(ProPawn  ), f_pro_pawn  , e_pro_pawn  );
+        func(pos.bbOf(ProLance ), f_pro_lance , e_pro_lance );
+        func(pos.bbOf(ProKnight), f_pro_knight, e_pro_knight);
+        func(pos.bbOf(ProSilver), f_pro_silver, e_pro_silver);
+        func(pos.bbOf(Bishop   ), f_bishop    , e_bishop    );
+        func(pos.bbOf(Horse    ), f_horse     , e_horse     );
+        func(pos.bbOf(Rook     ), f_rook      , e_rook      );
+        func(pos.bbOf(Dragon   ), f_dragon    , e_dragon    );
 
         return nlist;
     }
