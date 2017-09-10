@@ -379,16 +379,10 @@ void make_teacher(std::istringstream& ssCmd) {
         }
         positions.emplace_back(DefaultStartPositionSFEN, s.threads.main(), s.thisptr);
     }
-    bool randomPositionMode = false;
-    std::ifstream ifs;
-    if (recordFileName == "-")
-        randomPositionMode = true;
-    else {
-        ifs.open(recordFileName.c_str(), std::ifstream::in | std::ifstream::binary | std::ios::ate);
-        if (!ifs) {
-            std::cerr << "Error: cannot open " << recordFileName << std::endl;
-            exit(EXIT_FAILURE);
-        }
+    std::ifstream ifs(recordFileName.c_str(), std::ifstream::in | std::ifstream::binary | std::ios::ate);
+    if (!ifs) {
+        std::cerr << "Error: cannot open " << recordFileName << std::endl;
+        exit(EXIT_FAILURE);
     }
     const size_t entryNum = ifs.tellg() / sizeof(HuffmanCodedPos);
     std::uniform_int_distribution<s64> inputFileDist(0, entryNum-1);
@@ -400,22 +394,18 @@ void make_teacher(std::istringstream& ssCmd) {
         std::cerr << "Error: cannot open " << outputFileName << std::endl;
         exit(EXIT_FAILURE);
     }
-    auto func = [&omutex, &ofs, &imutex, &ifs, &inputFileDist, &teacherNodes, randomPositionMode](Position& pos, std::atomic<s64>& idx, const int threadID) {
+    auto func = [&omutex, &ofs, &imutex, &ifs, &inputFileDist, &teacherNodes](Position& pos, std::atomic<s64>& idx, const int threadID) {
         std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count() + threadID);
         std::uniform_real_distribution<double> doRandomMoveDist(0.0, 1.0);
         HuffmanCodedPos hcp;
         while (idx < teacherNodes) {
-            if (randomPositionMode)
-                setPosition(pos, mt);
-            else {
-                {
-                    std::unique_lock<Mutex> lock(imutex);
-                    ifs.seekg(inputFileDist(mt) * sizeof(HuffmanCodedPos), std::ios_base::beg);
-                    ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
-                }
-                setPosition(pos, hcp);
-                randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
+            {
+                std::unique_lock<Mutex> lock(imutex);
+                ifs.seekg(inputFileDist(mt) * sizeof(HuffmanCodedPos), std::ios_base::beg);
+                ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
             }
+            setPosition(pos, hcp);
+            randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
             std::unordered_set<Key> keyHash;
             StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
             std::vector<HuffmanCodedPosAndEval> hcpevec;
@@ -1042,10 +1032,6 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
 
 bool setPosition(Position& pos, const HuffmanCodedPos& hcp) {
     return pos.set(hcp, pos.searcher()->threads.main());
-}
-
-void setPosition(Position& pos, std::mt19937& mt) {
-    pos.set(mt, pos.searcher()->threads.main());
 }
 
 void Searcher::setOption(std::istringstream& ssCmd) {
