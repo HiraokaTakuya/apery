@@ -153,7 +153,7 @@ class GameManager
       w, l, d = [@win[0], @win[1], @draw]
       win_r = win_rate(w, l, d)
       conf_interval = confidence_interval(w, l, d)
-      printf "(%5d/%5d) W: %5d L: %5d D: %5d  WR: %6.2f +-%6.2f\n", w + l + d, @game_num, w, l, d, (win_r*100).round(2), (conf_interval*100).round(2)
+      printf "(%5d/%5d) W: %5d L: %5d D: %5d  WR: %6.2f +-%6.2f Elo: %3d\n", w + l + d, @game_num, w, l, d, (win_r*100).round(2), (conf_interval*100).round(2), elo(win_r).to_i
       STDOUT.flush
     end
   end
@@ -172,7 +172,7 @@ class GameManager
 
   def elo wr
     return 0.0 if (wr <= 0.0)
-    rating = 400 * Math::log10(1/(wr) - 1)
+    rating = 400 * -Math::log10(1/(wr) - 1)
   end
 end
 
