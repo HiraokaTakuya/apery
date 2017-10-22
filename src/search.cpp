@@ -245,7 +245,7 @@ namespace {
                      && !pos.hand(pos.turn()).exists<HGold>()
                      && !pos.hand(pos.turn()).exists<HSilver>())
             {
-                return (pos.turn() == Black ? BlackBishopInDangerIn785838 : WhiteBishopInDangerIn785838);
+                return (pos.turn() == Black ? BlackBishopInDangerIn78584838 : WhiteBishopInDangerIn78584838);
             }
         }
         return NotBishopInDanger;
@@ -1407,10 +1407,10 @@ void MainThread::search() {
         };
         switch (detectBishopInDanger(pos)) {
         case NotBishopInDanger: break;
-        case BlackBishopInDangerIn28    : deleteFunc("0082KA"); break;
-        case WhiteBishopInDangerIn28    : deleteFunc("0028KA"); break;
-        case BlackBishopInDangerIn785838: deleteFunc("0032KA"); deleteFunc("0052KA"); deleteFunc("0072KA"); break;
-        case WhiteBishopInDangerIn785838: deleteFunc("0078KA"); deleteFunc("0058KA"); deleteFunc("0038KA"); break;
+        case BlackBishopInDangerIn28      : deleteFunc("0082KA"); break;
+        case WhiteBishopInDangerIn28      : deleteFunc("0028KA"); break;
+        case BlackBishopInDangerIn78584838: deleteFunc("0032KA"); deleteFunc("0052KA"); deleteFunc("0062KA"); deleteFunc("0072KA"); break;
+        case WhiteBishopInDangerIn78584838: deleteFunc("0078KA"); deleteFunc("0058KA"); deleteFunc("0048KA"); deleteFunc("0038KA"); break;
         default: UNREACHABLE;
         }
     }
