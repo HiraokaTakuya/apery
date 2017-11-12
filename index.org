@@ -2,7 +2,8 @@
 #+AUTHOR: 平岡 拓也
 #+EMAIL: hiraoka64@gmail.com
 * Engine Binaries
-- [[https://drive.google.com/open?id=1Ip9jP9toZmK690W-dIg19c2fxumIGsr0][第5回将棋電王トーナメント version (for Windows 64bit) on Google Drive]]
+- [[https://drive.google.com/open?id=1Ip9jP9toZmK690W-dIg19c2fxumIGsr0][第5回将棋電王トーナメント version (for Windows 64bit) Google Drive からダウンロード]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT5][第5回将棋電王トーナメント version (for Windows 64bit) GitHub からダウンロード]]
 
 * Source Code
 - [[https://github.com/HiraokaTakuya/apery][Apery on GitHub]]
