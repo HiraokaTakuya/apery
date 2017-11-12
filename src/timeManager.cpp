@@ -62,7 +62,9 @@ void TimeManager::init(LimitsType& limits, const Color us, const Ply ply, const 
     const int moveOverhead    = s->options["Move_Overhead"];
     const int slowMover       = (pos.gamePly() < 10 ? s->options["Slow_Mover_10"] :
                                  pos.gamePly() < 16 ? s->options["Slow_Mover_16"] :
-                                 pos.gamePly() < 20 ? s->options["Slow_Mover_20"] : s->options["Slow_Mover"]);
+                                 pos.gamePly() < 20 ? s->options["Slow_Mover_20"] :
+                                 pos.gamePly() < 30 ? s->options["Slow_Mover_30"] :
+                                 pos.gamePly() < 40 ? s->options["Slow_Mover_40"] : s->options["Slow_Mover"]);
     const Ply drawPly         = s->options["Draw_Ply"];
     // Draw_Ply までで引き分けになるから、そこまでで時間を使い切る。
     auto moveHorizon = [&](const Ply p) { return std::min(MoveHorizon, drawPly - p); };
