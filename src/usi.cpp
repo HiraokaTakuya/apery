@@ -860,8 +860,8 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     // 平均化していない合成後の評価関数バイナリも出力しておく。
     auto writeSyn = [&] {
         std::cout << "write eval ... " << std::flush;
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP_synthesized.bin").c_str()).write((char*)Evaluator::KPP, sizeof(KPPEvalElementType2));
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP_synthesized.bin").c_str()).write((char*)Evaluator::KKP, sizeof(KKPEvalElementType2));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP.bin").c_str()).write((char*)Evaluator::KPP, sizeof(KPPEvalElementType2));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP.bin").c_str()).write((char*)Evaluator::KKP, sizeof(KKPEvalElementType2));
         std::cout << "done" << std::endl;
     };
     auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
@@ -1207,7 +1207,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
         else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
             if (!evalTableIsRead)
                 Evaluator::init(options["Eval_Dir"]);
-            Evaluator::writeSynthesized(options["Eval_Dir"]);
+            Evaluator::writeEvalFile(options["Eval_Dir"]);
         }
 #if defined LEARN
         else if (token == "make_teacher") {

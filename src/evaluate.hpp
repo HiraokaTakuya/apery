@@ -363,13 +363,13 @@ struct Evaluator /*: public EvaluatorBase<EvalElementType>*/ {
             memset(KPP, 0, sizeof(KPPEvalElementType1) * (size_t)SquareNum);
             memset(KKP, 0, sizeof(KKPEvalElementType1) * (size_t)SquareNum);
         }
-        readSynthesized(dirName);
+        readEvalFile(dirName);
     }
 
     // 2GB を超えるファイルは Msys2 環境では std::ifstream では一度に read 出来ず、分割して read する必要がある。
-    static bool readSynthesized(const std::string& dirName) {
+    static bool readEvalFile(const std::string& dirName) {
 #define FOO(x) {                                                        \
-            std::ifstream fs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
+            std::ifstream fs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
             if (!fs)                                                    \
                 return false;                                           \
             auto end = (char*)x + sizeof(x ## EvalElementType2);        \
@@ -383,9 +383,9 @@ struct Evaluator /*: public EvaluatorBase<EvalElementType>*/ {
 #undef FOO
         return true;
     }
-    static bool writeSynthesized(const std::string& dirName) {
+    static bool writeEvalFile(const std::string& dirName) {
 #define FOO(x) {                                                        \
-            std::ofstream fs((addSlashIfNone(dirName) + #x "_synthesized.bin").c_str(), std::ios::binary); \
+            std::ofstream fs((addSlashIfNone(dirName) + #x ".bin").c_str(), std::ios::binary); \
             if (!fs)                                                    \
                 return false;                                           \
             auto end = (char*)x + sizeof(x ## EvalElementType2);        \
