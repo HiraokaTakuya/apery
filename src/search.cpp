@@ -278,10 +278,8 @@ namespace {
             return false;
 
         // 四 宣言側の敵陣三段目以内の駒は、玉を除いて10枚以上存在する。
-
-        // 玉は敵陣にいるので、自駒が敵陣に11枚以上あればよい。
-        const int ownPiecesCount = (pos.bbOf(us) & opponentsField).popCount();
-        if (ownPiecesCount < 11)
+        const int ownPiecesCount = (pos.bbOf(us) & opponentsField).popCount() - 1;
+        if (ownPiecesCount < 10)
             return false;
 
         // 三 宣言側が、大駒5点小駒1点で計算して
