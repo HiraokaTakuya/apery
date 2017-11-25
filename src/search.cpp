@@ -1392,7 +1392,7 @@ void MainThread::search() {
                      << " score " << scoreToUSI(std::get<1>(bookMoveScore))
                      << " pv " << std::get<0>(bookMoveScore).toUSI()
                      << SYNCENDL;
-
+            rootMoves[0].score = std::get<1>(bookMoveScore);
             goto finalize;
         }
     }
