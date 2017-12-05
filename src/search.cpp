@@ -1202,6 +1202,17 @@ movesLoop:
             }
             else
                 rm.score = -ScoreInfinite;
+#if defined BISHOP_IN_DANGER
+            auto demeritPoints = [&](const Move m) { if (rm.pv[0] == m) rm.score -= (Score)200; };
+            switch (detectBishopInDanger(pos)) {
+            case NotBishopInDanger: break;
+            case BlackBishopInDangerIn28      : demeritPoints(makeDropMove(Bishop, SQ82)); break;
+            case WhiteBishopInDangerIn28      : demeritPoints(makeDropMove(Bishop, SQ28)); break;
+            case BlackBishopInDangerIn78584838: demeritPoints(makeDropMove(Bishop, SQ32)); demeritPoints(makeDropMove(Bishop, SQ52)); demeritPoints(makeDropMove(Bishop, SQ62)); demeritPoints(makeDropMove(Bishop, SQ72)); break;
+            case WhiteBishopInDangerIn78584838: demeritPoints(makeDropMove(Bishop, SQ78)); demeritPoints(makeDropMove(Bishop, SQ58)); demeritPoints(makeDropMove(Bishop, SQ48)); demeritPoints(makeDropMove(Bishop, SQ38)); break;
+            default: UNREACHABLE;
+            }
+#endif
         }
 
         if (score > bestScore) {
@@ -1394,25 +1405,6 @@ void MainThread::search() {
             goto finalize;
         }
     }
-#if defined BISHOP_IN_DANGER
-    {
-        auto deleteFunc = [&](const std::string& str) {
-            auto it = std::find_if(std::begin(rootMoves), std::end(rootMoves), [&str](const RootMove& rm) {
-                    return rm.pv[0].toCSA() == str;
-                });
-            if (it != std::end(rootMoves))
-                rootMoves.erase(it);
-        };
-        switch (detectBishopInDanger(pos)) {
-        case NotBishopInDanger: break;
-        case BlackBishopInDangerIn28      : deleteFunc("0082KA"); break;
-        case WhiteBishopInDangerIn28      : deleteFunc("0028KA"); break;
-        case BlackBishopInDangerIn78584838: deleteFunc("0032KA"); deleteFunc("0052KA"); deleteFunc("0062KA"); deleteFunc("0072KA"); break;
-        case WhiteBishopInDangerIn78584838: deleteFunc("0078KA"); deleteFunc("0058KA"); deleteFunc("0048KA"); deleteFunc("0038KA"); break;
-        default: UNREACHABLE;
-        }
-    }
-#endif
 
 #if defined INANIWA_SHIFT
     searcher->detectInaniwa(pos);
