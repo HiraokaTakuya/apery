@@ -434,7 +434,7 @@ void make_teacher(std::istringstream& ssCmd) {
                 }
                 pos.searcher()->alpha = -ScoreMaxEvaluate;
                 pos.searcher()->beta  =  ScoreMaxEvaluate;
-                go(pos, static_cast<Depth>(8));
+                go(pos, static_cast<Depth>(10));
                 const Score score = pos.searcher()->threads.main()->rootMoves[0].score;
                 const Move bestMove = pos.searcher()->threads.main()->rootMoves[0].pv[0];
                 const int ScoreThresh = 10000; // 自己対局を決着がついたとして止める閾値

@@ -22,7 +22,7 @@
 #ifndef APERY_IFDEF_HPP
 #define APERY_IFDEF_HPP
 
-#if 0
+#if 1
 // 機械学習を行う際に使う。
 #define LEARN
 #endif
