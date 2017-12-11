@@ -241,4 +241,8 @@ inline bool canPromote(const Color c, const Rank fromOrToRank) {
 #endif
 }
 
+inline bool isOpponentField(const Color c, const Rank r) {
+    return canPromote(c, r);
+}
+
 #endif // #ifndef APERY_SQUARE_HPP

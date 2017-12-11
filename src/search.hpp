@@ -60,10 +60,8 @@ enum InaniwaFlag {
 
 enum BishopInDangerFlag {
     NotBishopInDanger,
-    BlackBishopInDangerIn28,
-    WhiteBishopInDangerIn28,
-    BlackBishopInDangerIn78584838,
-    WhiteBishopInDangerIn78584838,
+    BlackBishopInDanger,
+    WhiteBishopInDanger,
     BishopInDangerFlagNum
 };
 

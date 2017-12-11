@@ -225,28 +225,14 @@ namespace {
 
 #if defined BISHOP_IN_DANGER
     BishopInDangerFlag detectBishopInDanger(const Position& pos) {
-        if (pos.gamePly() <= 60) {
-            const Color them = oppositeColor(pos.turn());
-            if (pos.hand(pos.turn()).exists<HBishop>()
-                && pos.bbOf(Silver, them).isSet(inverseIfWhite(them, SQ27))
-                && (pos.bbOf(King  , them).isSet(inverseIfWhite(them, SQ48))
-                    || pos.bbOf(King  , them).isSet(inverseIfWhite(them, SQ47))
-                    || pos.bbOf(King  , them).isSet(inverseIfWhite(them, SQ59)))
-                && pos.bbOf(Pawn  , them).isSet(inverseIfWhite(them, SQ37))
-                && pos.piece(inverseIfWhite(them, SQ28)) == Empty
-                && pos.piece(inverseIfWhite(them, SQ38)) == Empty
-                && pos.piece(inverseIfWhite(them, SQ39)) == Empty)
-            {
-                return (pos.turn() == Black ? BlackBishopInDangerIn28 : WhiteBishopInDangerIn28);
-            }
-            else if (pos.hand(pos.turn()).exists<HBishop>()
-                     && pos.hand(them).exists<HBishop>()
-                     && !pos.hand(pos.turn()).exists<HRook>()
-                     && !pos.hand(pos.turn()).exists<HGold>()
-                     && !pos.hand(pos.turn()).exists<HSilver>())
-            {
-                return (pos.turn() == Black ? BlackBishopInDangerIn78584838 : WhiteBishopInDangerIn78584838);
-            }
+        const Color them = oppositeColor(pos.turn());
+        if (pos.hand(pos.turn()).exists<HBishop>()
+            && pos.hand(them).exists<HBishop>()
+            && !pos.hand(pos.turn()).exists<HRook>()
+            && !pos.hand(pos.turn()).exists<HGold>()
+            && !pos.hand(pos.turn()).exists<HSilver>())
+        {
+            return (pos.turn() == Black ? BlackBishopInDanger : WhiteBishopInDanger);
         }
         return NotBishopInDanger;
     }
@@ -1187,6 +1173,18 @@ movesLoop:
 
         if (RootNode) {
             RootMove& rm = *std::find(std::begin(thisThread->rootMoves), std::end(thisThread->rootMoves), move);
+#if defined BISHOP_IN_DANGER
+            auto demeritPoints = [&] {
+                if (move.isDrop() && move.pieceTypeDropped() == Bishop && isOpponentField(pos.turn(), makeRank(move.to())))
+                    score -= (Score)300;
+            };
+            switch (detectBishopInDanger(pos)) {
+            case NotBishopInDanger: break;
+            case BlackBishopInDanger: demeritPoints(); break;
+            case WhiteBishopInDanger: demeritPoints(); break;
+            default: UNREACHABLE;
+            }
+#endif
             if (moveCount == 1 || score > alpha) {
                 rm.score = score;
 #if 0
