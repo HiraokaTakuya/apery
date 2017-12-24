@@ -735,6 +735,86 @@ namespace {
     };
 }
 
+void conv_teacher_bin(Position& pos, std::istringstream& ssCmd) {
+    std::string teacherFileName;
+    ssCmd >> teacherFileName;
+
+    std::string outFileName;
+    ssCmd >> outFileName;
+    std::cout<<"convert to bin from "<<teacherFileName<<" to "<<outFileName<<std::endl;
+    std::ifstream ifs(teacherFileName.c_str());
+    std::ofstream ofs(outFileName.c_str(), std::ios::binary);
+    HuffmanCodedPosAndEval hcpe;
+    std::string line;
+    while(std::getline(ifs,line)){
+      std::stringstream ss(line);
+      std::string token;
+      std::string value;
+      ss >> token;
+      if(token == "sfen"){
+          pos.set(line.substr(5), pos.searcher()->threads.main());
+          hcpe.hcp = pos.toHuffmanCodedPos();
+      }else if(token == "move"){
+          ss >> value;
+          hcpe.bestMove16 =  static_cast<u16>(usiToMove(pos, value).value());
+      }else if(token == "score"){
+          ss >> hcpe.eval;
+      }else if(token == "result"){
+          int temp;
+          ss >> temp;
+          if(temp == -1){
+              hcpe.gameResult = (pos.turn() == Black ? WhiteWin : BlackWin);
+          }
+          else if(temp == 1){
+              hcpe.gameResult = (pos.turn() == Black ? BlackWin : WhiteWin);
+          }else{
+              hcpe.gameResult = Draw;
+          }
+      }else if(token == "e"){
+          ofs.write((char*)&hcpe, sizeof(HuffmanCodedPosAndEval));
+          // debug
+          /*
+            std::cout<<tpos<<std::endl;
+            std::cout<<to_usi_string(Move(p.move))<<","<<p.score<<","<<int(p.gamePly)<<","<<int(p.game_result)<<std::endl;
+          */
+      }
+    }   
+}
+
+void conv_teacher_sfen(Position& pos, std::istringstream& ssCmd) {
+    std::string teacherFileName;
+    ssCmd >> teacherFileName;
+
+    std::string outFileName;
+    ssCmd >> outFileName;
+    std::cout<<"convert to sfen from "<<teacherFileName<<" to "<<outFileName<<std::endl;
+    std::ifstream ifs(teacherFileName.c_str(), std::ios::binary);
+    std::ofstream ofs(outFileName.c_str());
+
+    HuffmanCodedPosAndEval hcpe;
+    while(1){
+        ifs.read(reinterpret_cast<char*>(&hcpe), sizeof(hcpe));
+        if (ifs.eof()){
+            break;
+        }
+        setPosition(pos, hcpe.hcp);
+        ofs<<pos.toSFEN()<<std::endl; // aperyのpacked_sfenにはplyの情報がないように見える？
+        ofs<<"move "<<Move(hcpe.bestMove16).toUSI()<<std::endl;
+        ofs<<"score "<<hcpe.eval<<std::endl;
+        int gr = 0;
+        if ((hcpe.gameResult == BlackWin && pos.turn() == Black) ||(hcpe.gameResult == WhiteWin && pos.turn() == White)){
+            gr = 1;
+        }else{
+            gr = -1;
+        }
+        ofs<<"result "<<gr<<std::endl; // やねうら王形式に統一 -1で負け、0で引き分け、1で勝ち
+        ofs<<"e"<<std::endl;   
+    }
+    ofs.close();
+    ifs.close();
+   
+}
+
 void use_teacher(Position& pos, std::istringstream& ssCmd) {
     std::string teacherFileName;
     int threadNum;
@@ -1217,6 +1297,21 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
             }
             make_teacher(ssCmd);
         }
+        else if (token == "conv_teacher_sfen"){
+            if (!evalTableIsRead) {
+                Evaluator::init(options["Eval_Dir"]);
+                evalTableIsRead = true;
+            }
+            conv_teacher_sfen(pos, ssCmd);
+        }
+        else if (token == "conv_teacher_bin"){
+            if (!evalTableIsRead) {
+                Evaluator::init(options["Eval_Dir"]);
+                evalTableIsRead = true;
+            }
+            conv_teacher_bin(pos, ssCmd);
+        }
+
         else if (token == "use_teacher") {
             if (!evalTableIsRead) {
                 Evaluator::init(options["Eval_Dir"]);
