@@ -860,8 +860,8 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     // 平均化していない合成後の評価関数バイナリも出力しておく。
     auto writeSyn = [&] {
         std::cout << "write eval ... " << std::flush;
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP.bin").c_str()).write((char*)Evaluator::KPP, sizeof(KPPEvalElementType2));
-        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP.bin").c_str()).write((char*)Evaluator::KKP, sizeof(KKPEvalElementType2));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KPP.bin").c_str(), std::ios::binary).write((char*)Evaluator::KPP, sizeof(KPPEvalElementType2));
+        std::ofstream((Evaluator::addSlashIfNone(pos.searcher()->options["Eval_Dir"]) + "KKP.bin").c_str(), std::ios::binary).write((char*)Evaluator::KKP, sizeof(KKPEvalElementType2));
         std::cout << "done" << std::endl;
     };
     auto readThread = std::thread([&readFunc, &ifs, &teacherBuffers] { readFunc(); });
