@@ -218,20 +218,11 @@ public:
         std::cout << "   A  B  C  D  E  F  G  H  I\n";
         for (Rank r = Rank1; r < RankNum; ++r) {
             std::cout << (9 - r);
-            for (File f = File9; File1 <= f; --f)
+            for (File f = File9; f != File1Wall; f += FileDeltaE)
                 std::cout << (this->isSet(makeSquare(f, r)) ? "  X" : "  .");
             std::cout << "\n";
         }
 
-        std::cout << std::endl;
-    }
-
-    void printTable(const int part) const {
-        for (Rank r = Rank1; r < RankNum; ++r) {
-            for (File f = File7; File1 <= f; --f)
-                std::cout << (UINT64_C(1) & (this->p(part) >> makeSquare(f, r)));
-            std::cout << std::endl;
-        }
         std::cout << std::endl;
     }
 
@@ -306,7 +297,7 @@ extern const Bitboard InFrontMask[ColorNum][RankNum];
 
 inline Bitboard fileMask(const File f) { return FileMask[f]; }
 template <File F> inline Bitboard fileMask() {
-    static_assert(File1 <= F && F <= File9, "");
+    static_assert(FileBegin <= F && F < FileNum, "");
     return (F == File1 ? File1Mask
             : F == File2 ? File2Mask
             : F == File3 ? File3Mask

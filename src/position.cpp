@@ -1586,7 +1586,7 @@ void Position::print() const {
     for (Rank r = Rank1; r < RankNum; ++r) {
         ++i;
         std::cout << "P" << i;
-        for (File f = File9; File1 <= f; --f)
+        for (File f = File9; f != File1Wall; f += FileDeltaE)
             std::cout << pieceToCharCSA(piece(makeSquare(f, r)));
         std::cout << std::endl;
     }
@@ -1602,7 +1602,7 @@ std::string Position::toSFEN(const Ply ply) const {
     ss << "sfen ";
     int space = 0;
     for (Rank rank = Rank1; rank <= Rank9; ++rank) {
-        for (File file = File9; file >= File1; --file) {
+        for (File file = File9; file != File1Wall; file += FileDeltaE) {
             const Square sq = makeSquare(file, rank);
             const Piece pc = piece(sq);
             if (pc == Empty)

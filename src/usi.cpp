@@ -49,7 +49,7 @@ bool CaseInsensitiveLess::operator () (const std::string& s1, const std::string&
 
 inline void printEvalTable(const Square ksq, const int p0, const int p1_base, const bool isTurn) {
     for (Rank r = Rank1; r < RankNum; ++r) {
-        for (File f = File9; File1 <= f; --f) {
+        for (File f = File9; f != File1Wall; f += FileDeltaE) {
             const Square sq = makeSquare(f, r);
             printf("%5d", Evaluator::KPP[ksq][p0][p1_base + sq][isTurn]);
         }
