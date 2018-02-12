@@ -1583,7 +1583,7 @@ void Position::initZobrist() {
 void Position::print() const {
     std::cout << "'  9  8  7  6  5  4  3  2  1" << std::endl;
     int i = 0;
-    for (Rank r = Rank1; r < RankNum; ++r) {
+    for (Rank r = Rank1; r != Rank9Wall; r += RankDeltaS) {
         ++i;
         std::cout << "P" << i;
         for (File f = File9; f != File1Wall; f += FileDeltaE)
@@ -1601,7 +1601,7 @@ std::string Position::toSFEN(const Ply ply) const {
     std::stringstream ss;
     ss << "sfen ";
     int space = 0;
-    for (Rank rank = Rank1; rank <= Rank9; ++rank) {
+    for (Rank rank = Rank1; rank != Rank9Wall; rank += RankDeltaS) {
         for (File file = File9; file != File1Wall; file += FileDeltaE) {
             const Square sq = makeSquare(file, rank);
             const Piece pc = piece(sq);

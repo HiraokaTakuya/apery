@@ -216,7 +216,7 @@ public:
     // for debug
     void printBoard() const {
         std::cout << "   A  B  C  D  E  F  G  H  I\n";
-        for (Rank r = Rank1; r < RankNum; ++r) {
+        for (Rank r = Rank1; r != Rank9Wall; r += RankDeltaS) {
             std::cout << (9 - r);
             for (File f = File9; f != File1Wall; f += FileDeltaE)
                 std::cout << (this->isSet(makeSquare(f, r)) ? "  X" : "  .");
@@ -311,7 +311,7 @@ template <File F> inline Bitboard fileMask() {
 
 inline Bitboard rankMask(const Rank r) { return RankMask[r]; }
 template <Rank R> inline Bitboard rankMask() {
-    static_assert(Rank1 <= R && R <= Rank9, "");
+    static_assert(RankBegin <= R && R < RankNum, "");
     return (R == Rank1 ? Rank1Mask
             : R == Rank2 ? Rank2Mask
             : R == Rank3 ? Rank3Mask
@@ -358,7 +358,7 @@ const Bitboard InFrontOfRank1White = InFrontOfRank2White | rankMask<Rank2>();
 inline Bitboard inFrontMask(const Color c, const Rank r) { return InFrontMask[c][r]; }
 template <Color C, Rank R> inline Bitboard inFrontMask() {
     static_assert(C == Black || C == White, "");
-    static_assert(Rank1 <= R && R <= Rank9, "");
+    static_assert(RankBegin <= R && R < RankNum, "");
     return (C == Black ? (R == Rank1 ? InFrontOfRank1Black
                           : R == Rank2 ? InFrontOfRank2Black
                           : R == Rank3 ? InFrontOfRank3Black

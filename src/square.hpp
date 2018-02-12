@@ -79,6 +79,11 @@ inline int abs(const File f) { return std::abs(static_cast<int>(f)); }
 enum Rank {
     Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, Rank9, RankNum,
     RankBegin = 0,
+    // 画面表示など順序が決まっているループに使う。
+    // ループで <, > を使わない事で、レイアウトを変えても変更点が少なくて済む。
+    RankDeltaN = -1, RankDeltaS = 1,
+    Rank1Wall = Rank1 + RankDeltaN, // Rank1 の上の壁の位置。
+    Rank9Wall = Rank9 + RankDeltaS, // Rank9 の下の壁の位置。
 };
 OverloadEnumOperators(Rank);
 inline int abs(const Rank r) { return std::abs(static_cast<int>(r)); }
