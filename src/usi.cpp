@@ -99,8 +99,8 @@ void OptionsMap::init(Searcher* s) {
     const int MaxHashMB = 1024 * 1024;
     (*this)["USI_Hash"]                    = USIOption(256, 1, MaxHashMB, onHashSize, s);
     (*this)["Clear_Hash"]                  = USIOption(onClearHash, s);
-    (*this)["Book_File"]                   = USIOption("book/20150503/book.bin");
-    (*this)["Eval_Dir"]                    = USIOption("20171106");
+    (*this)["Book_File"]                   = USIOption("book/20180505/book.bin");
+    (*this)["Eval_Dir"]                    = USIOption("20180416");
     (*this)["Best_Book_Move"]              = USIOption(false);
     (*this)["OwnBook"]                     = USIOption(true);
     (*this)["Min_Book_Ply"]                = USIOption(SHRT_MAX, 0, SHRT_MAX);
