@@ -50,7 +50,7 @@
 #endif
 #endif
 
-#if 1
+#if 0
 // 定跡作成時に探索を用いて定跡に点数を付ける。
 #define MAKE_SEARCHED_BOOK
 #endif
