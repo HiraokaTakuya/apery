@@ -2,8 +2,7 @@
 #+AUTHOR: 平岡 拓也
 #+EMAIL: hiraoka64@gmail.com
 * Engine Binaries
-- [[https://drive.google.com/open?id=1Ip9jP9toZmK690W-dIg19c2fxumIGsr0][第5回将棋電王トーナメント version (for Windows 64bit) Google Drive からダウンロード]]
-- [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT5][第5回将棋電王トーナメント version (for Windows 64bit) GitHub からダウンロード]]
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC28][第28回世界コンピュータ将棋選手権バージョン (for Windows 64bit) GitHub からダウンロード]]
 
 * Source Code
 - [[https://github.com/HiraokaTakuya/apery][Apery on GitHub]]
@@ -12,6 +11,7 @@
 - [[./howtouse.html][Aperyの使い方]]
 
 * Previous Versions
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT5][第5回将棋電王トーナメント version (for Windows 64bit)]]
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT4][第4回将棋電王トーナメント version (for Windows 64bit) (出場ソフト名「浮かむ瀬」)]]
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC26][第26回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT3][第3回将棋電王トーナメント version (for Windows 64bit) (出場ソフト名「大樹の枝」)]]
