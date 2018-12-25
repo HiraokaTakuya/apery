@@ -1675,6 +1675,7 @@ HuffmanCodedPos Position::toHuffmanCodedPos() const {
     }
     assert(bs.data() == std::end(result.data));
     assert(bs.curr() == 0);
+    result.ply = gamePly();
     return result;
 }
 
@@ -2032,7 +2033,7 @@ bool Position::set(const HuffmanCodedPos& hcp, Thread* th) {
     kingSquare_[White] = bbOf(King, White).constFirstOneFromSQ11();
     goldsBB_ = bbOf(Gold, ProPawn, ProLance, ProKnight, ProSilver);
 
-    gamePly_ = 1; // ply の情報は持っていないので 1 にしておく。
+    gamePly_ = tmp.ply;
 
     st_->boardKey = computeBoardKey();
     st_->handKey = computeHandKey();

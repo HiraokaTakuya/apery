@@ -173,16 +173,19 @@ struct HuffmanCodedPos {
     void clear() { std::fill(std::begin(data), std::end(data), 0); }
 
     u8 data[32];
+    s16 ply;
 };
-static_assert(sizeof(HuffmanCodedPos) == 32, "");
+static_assert(sizeof(HuffmanCodedPos) == 34, "");
 
 struct HuffmanCodedPosAndEval {
     HuffmanCodedPos hcp;
     s16 eval;
     u16 bestMove16; // 使うかは分からないが教師データ生成時についでに取得しておく。
+    s16 endPly; // 対局終了時の手数。
     GameResult gameResult; // 自己対局で勝ったかどうか。
+    u8 padding;
 };
-static_assert(sizeof(HuffmanCodedPosAndEval) == 38, "");
+static_assert(sizeof(HuffmanCodedPosAndEval) == 42, "");
 
 class Move;
 struct Thread;

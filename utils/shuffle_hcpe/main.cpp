@@ -30,11 +30,14 @@
 
 struct HuffmanCodedPosAndEval {
     char c[32];
-    int16_t e;
-    uint16_t m;
-    int8_t r;
+    int16_t ply;
+    int16_t eval;
+    uint16_t bestMove16;
+    int16_t endPly;
+    int8_t gameResult;
+    uint8_t padding;
 };
-static_assert(sizeof(HuffmanCodedPosAndEval) == 38, "");
+static_assert(sizeof(HuffmanCodedPosAndEval) == 42, "");
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {

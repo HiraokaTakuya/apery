@@ -424,12 +424,15 @@ void make_teacher(std::istringstream& ssCmd) {
             StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
             std::vector<HuffmanCodedPosAndEval> hcpevec;
             GameResult gameResult = Draw;
-            for (Ply ply = pos.gamePly(); ply < 400; ++ply, ++idx) { // 400 手くらいで終了しておく。
+            const Ply startPly = pos.gamePly();
+            Ply endPly = 0;
+            for (Ply ply = pos.gamePly(); ply < startPly + 400; ++ply, ++idx) { // 400 手くらいで終了しておく。
                 const Key key = pos.getKey();
                 if (keyHash.find(key) == std::end(keyHash))
                     keyHash.insert(key);
                 else { // 同一局面 2 回目で千日手判定とする。
                     gameResult = Draw;
+                    endPly = ply;
                     break;
                 }
                 pos.searcher()->alpha = -ScoreMaxEvaluate;
@@ -443,10 +446,12 @@ void make_teacher(std::istringstream& ssCmd) {
                         gameResult = (score < ScoreZero ? WhiteWin : BlackWin);
                     else
                         gameResult = (score < ScoreZero ? BlackWin : WhiteWin);
+                    endPly = ply;
                     break;
                 }
                 else if (!bestMove) { // 勝ち宣言
                     gameResult = (pos.turn() == Black ? BlackWin : WhiteWin);
+                    endPly = ply;
                     break;
                 }
 
@@ -476,8 +481,10 @@ void make_teacher(std::istringstream& ssCmd) {
                 pos.doMove(bestMove, states->back());
             }
             // 勝敗を1局全てに付ける。
-            for (auto& elem : hcpevec)
+            for (auto& elem : hcpevec) {
+                elem.endPly = endPly;
                 elem.gameResult = gameResult;
+            }
             std::unique_lock<Mutex> lock(omutex);
             ofs.write(reinterpret_cast<char*>(hcpevec.data()), sizeof(HuffmanCodedPosAndEval) * hcpevec.size());
         }
