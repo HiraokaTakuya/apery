@@ -366,10 +366,23 @@ void make_teacher(std::istringstream& ssCmd) {
     std::string outputFileName;
     int threadNum;
     s64 teacherNodes; // 教師局面数
+    // このファイルが存在する間だけ、この関数を実行するようにする。
+    // ファイルの内容は使用しない。
+    // 複数人で共有していてお互いに管理者権限が無いサーバーで使用している時に、
+    // 他の人がこのプロセスを終了出来るようにするのが目的。
+    // 他の人がアクセス可能な場所にファイルを作成してプロセスを実行しておき、
+    // 他の人はプロセスを消したい時はファイルを消す事にする。
+    std::string stopFileName;
     ssCmd >> recordFileName;
     ssCmd >> outputFileName;
     ssCmd >> threadNum;
     ssCmd >> teacherNodes;
+    ssCmd >> stopFileName;
+    std::cout << "record_file_name: " << recordFileName << std::endl;
+    std::cout << "output_file_name: " << outputFileName << std::endl;
+    std::cout << "thread_num: " << threadNum << std::endl;
+    std::cout << "teacher_nodes: " << teacherNodes << std::endl;
+    std::cout << "stop_file_name: " << stopFileName << std::endl;
     if (threadNum <= 0) {
         std::cerr << "Error: thread num = " << threadNum << std::endl;
         exit(EXIT_FAILURE);
@@ -412,7 +425,7 @@ void make_teacher(std::istringstream& ssCmd) {
         std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count() + threadID);
         std::uniform_real_distribution<double> doRandomMoveDist(0.0, 1.0);
         HuffmanCodedPos hcp;
-        while (idx < teacherNodes) {
+        while (fileExist(stopFileName) && idx < teacherNodes) {
             {
                 std::unique_lock<Mutex> lock(imutex);
                 ifs.seekg(inputFileDist(mt) * sizeof(HuffmanCodedPos), std::ios_base::beg);

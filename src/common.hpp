@@ -208,6 +208,14 @@ inline int count1s(u64 x) //任意の値の1のビットの数を数える。( x
 }
 #endif
 
+inline bool fileExist(const char* path) {
+    std::ifstream ifs(path);
+    return ifs.is_open();
+}
+inline bool fileExist(const std::string& path) {
+    return fileExist(path.c_str());
+}
+
 // for debug
 // 2進表示
 template <typename T>
