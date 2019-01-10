@@ -695,7 +695,7 @@ namespace {
         }
     }
 
-    constexpr s64 NodesPerIteration = 1000000; // 1回評価値を更新するのに使う教師局面数
+    constexpr s64 NodesPerIteration = 30000000; // 1回評価値を更新するのに使う教師局面数
 
     // 別スレッドで読み込む教師データを読み込む為のstruct。
     // ファイルの終端では、buffer の途中までしか値を入れる事が出来ないので、
