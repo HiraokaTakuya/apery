@@ -310,10 +310,10 @@ void randomMove(Position& pos, std::mt19937& mt) {
     const Square from = pos.kingSquare(us);
     std::uniform_int_distribution<int> dist(0, 1);
     switch (dist(mt)) {
-    case 0: { // 玉の25近傍の移動
+    case 0: { // 玉の近傍への移動
         ExtMove legalMoves[MaxLegalMoves]; // 玉の移動も含めた普通の合法手
         ExtMove* pms = &legalMoves[0];
-        Bitboard kingToBB = pos.bbOf(us).notThisAnd(neighbor5x5Table(from));
+        Bitboard kingToBB = pos.bbOf(us).notThisAnd(kingAttack(from));
         while (kingToBB) {
             const Square to = kingToBB.firstOneFromSQ11();
             const Move move = makeNonPromoteMove<Capture>(King, from, to, pos);
@@ -340,7 +340,7 @@ void randomMove(Position& pos, std::mt19937& mt) {
     }
     case 1: { // 玉も含めた全ての合法手
         bool moved = false;
-        for (int i = 0; i < dist(mt) + 1; ++i) { // 自分だけ、または両者ランダムに1手指してみる。
+        for (int i = 0; i < 2; ++i) { // 両者ランダムに1手指してみる。
             MoveList<LegalAll> ml(pos);
             if (ml.size()) {
                 std::uniform_int_distribution<int> moveDist(0, ml.size()-1);
