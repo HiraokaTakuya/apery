@@ -408,7 +408,7 @@ void make_teacher(std::istringstream& ssCmd) {
         std::cerr << "Error: cannot open " << outputFileName << std::endl;
         exit(EXIT_FAILURE);
     }
-    auto func = [&omutex, &ofs, &imutex, &ifs, &inputFileDist, &teacherNodes](Position& pos, std::atomic<s64>& idx, const int threadID) {
+    auto func = [&omutex, &ofs, &imutex, &ifs, &inputFileDist, &teacherNodes, &stopFileName](Position& pos, std::atomic<s64>& idx, const int threadID) {
         std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count() + threadID);
         std::uniform_real_distribution<double> doRandomMoveDist(0.0, 1.0);
         HuffmanCodedPos hcp;
@@ -489,8 +489,8 @@ void make_teacher(std::istringstream& ssCmd) {
             ofs.write(reinterpret_cast<char*>(hcpevec.data()), sizeof(HuffmanCodedPosAndEval) * hcpevec.size());
         }
     };
-    auto progressFunc = [&teacherNodes] (std::atomic<s64>& index, Timer& t) {
-        while (true) {
+    auto progressFunc = [&teacherNodes, &stopFileName] (std::atomic<s64>& index, Timer& t) {
+        while (fileExist(stopFileName)) {
             std::this_thread::sleep_for(std::chrono::seconds(5)); // 指定秒だけ待機し、進捗を表示する。
             const s64 madeTeacherNodes = index;
             const double progress = static_cast<double>(madeTeacherNodes) / teacherNodes;
