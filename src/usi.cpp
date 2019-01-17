@@ -360,7 +360,7 @@ void randomMove(Position& pos, std::mt19937& mt) {
     std::istringstream ss(sfen);
     setPosition(pos, ss);
 }
-// 教師局面を作成する。100万局面で34MB。
+// 教師局面を作成する。100万局面で42MB。
 void make_teacher(std::istringstream& ssCmd) {
     std::string recordFileName;
     std::string outputFileName;
@@ -420,6 +420,14 @@ void make_teacher(std::istringstream& ssCmd) {
             }
             setPosition(pos, hcp);
             randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
+            pos.searcher()->alpha = -ScoreMaxEvaluate;
+            pos.searcher()->beta  =  ScoreMaxEvaluate;
+            go(pos, static_cast<Depth>(4)); // まずは浅く探索して、最初の局面の評価値を得る。
+            const Score firstScore = pos.searcher()->threads.main()->rootMoves[0].score;
+            // 最初から評価値が離れすぎていれば、学習に不適なので別の局面にする。
+            if (4000 < abs(firstScore)) {
+                continue;
+            }
             std::unordered_set<Key> keyHash;
             StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
             std::vector<HuffmanCodedPosAndEval> hcpevec;
@@ -825,7 +833,6 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
             const Score teacherEval = static_cast<Score>(hcpe.eval); // root から見た評価値が入っている。
             const Color leafColor = pos.turn(); // pos は末端の局面になっている。
             // 目的関数をelmoと同様に変更。
-            // 
             const double evalWinRate = sigmoidWinningRate(eval);
             const double teacherEvalWinRate = sigmoidWinningRate(teacherEval);
             const double t = (hcpe.gameResult == BlackWin ? (rootColor == Black ? 1.0 : 0.0) :
