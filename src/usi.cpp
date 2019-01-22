@@ -411,26 +411,24 @@ void make_teacher(std::istringstream& ssCmd) {
         std::cerr << "Error: cannot open " << recordFileName << std::endl;
         exit(EXIT_FAILURE);
     }
-    const size_t entryNum = ifs.tellg() / sizeof(HuffmanCodedPos);
-    std::uniform_int_distribution<s64> inputFileDist(0, entryNum-1);
+    const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
+    ifs.seekg(0, std::ios::beg);     // ストリームのポインタを一番前に戻して、これから先で使いやすいようにする
+    const size_t entryNum = fileSize / sizeof(HuffmanCodedPos);
+    std::vector<HuffmanCodedPos> roots(entryNum);
+    ifs.read(reinterpret_cast<char*>(roots.data()), fileSize);
 
-    Mutex imutex;
     Mutex omutex;
     std::ofstream ofs(outputFileName.c_str(), std::ios::binary);
     if (!ofs) {
         std::cerr << "Error: cannot open " << outputFileName << std::endl;
         exit(EXIT_FAILURE);
     }
-    auto func = [&omutex, &ofs, &imutex, &ifs, &inputFileDist, &teacherNodes, &stopFileName](Position& pos, std::atomic<s64>& idx, const int threadID) {
+    auto func = [&omutex, &ofs, &roots, &teacherNodes, &stopFileName](Position& pos, std::atomic<s64>& idx, const int threadID) {
         std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count() + threadID);
-        std::uniform_real_distribution<double> doRandomMoveDist(0.0, 1.0);
+        std::uniform_int_distribution<s64> rootsDist(0, roots.size()-1);
         HuffmanCodedPos hcp;
         while (fileExist(stopFileName) && idx < teacherNodes) {
-            {
-                std::unique_lock<Mutex> lock(imutex);
-                ifs.seekg(inputFileDist(mt) * sizeof(HuffmanCodedPos), std::ios_base::beg);
-                ifs.read(reinterpret_cast<char*>(&hcp), sizeof(hcp));
-            }
+            hcp = roots[rootsDist(mt)];
             setPosition(pos, hcp);
             randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
             pos.searcher()->alpha = -ScoreMaxEvaluate;
