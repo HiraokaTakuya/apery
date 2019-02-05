@@ -40,8 +40,8 @@ struct HuffmanCodedPosAndEval {
 static_assert(sizeof(HuffmanCodedPosAndEval) == 42, "");
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        std::cout << "USAGE: " << argv[0] << " <input hcpe> <output shuffled hcpe>\n" << std::endl;
+    if (argc != 4) {
+        std::cout << "USAGE: " << argv[0] << " <input hcpe> <output shuffled hcpe> <is_append (not append: 0, append: 1)>\n" << std::endl;
         return 0;
     }
     std::ifstream ifs(argv[1], std::ios::binary);
@@ -51,6 +51,11 @@ int main(int argc, char *argv[]) {
     ifs.read(reinterpret_cast<char*>(buf.data()), fileSize);
     std::mt19937_64 mt(std::chrono::system_clock::now().time_since_epoch().count());
     std::shuffle(std::begin(buf), std::end(buf), mt);
-    std::ofstream ofs(argv[2], std::ios::binary);
-    ofs.write(reinterpret_cast<char*>(buf.data()), fileSize);
+    if (std::string(argv[3]) == "1") {
+        std::ofstream ofs(argv[2], std::ios::binary | std::ios::app);
+        ofs.write(reinterpret_cast<char*>(buf.data()), fileSize);
+    } else {
+        std::ofstream ofs(argv[2], std::ios::binary);
+        ofs.write(reinterpret_cast<char*>(buf.data()), fileSize);
+    }
 }
