@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
     ifs.seekg(0, std::ios::beg); // ストリームのポインタを一番前に戻して、これから先で使いやすいようにする
     std::vector<HuffmanCodedPosAndEval> buf(fileSize/sizeof(HuffmanCodedPosAndEval));
     ifs.read(reinterpret_cast<char*>(buf.data()), fileSize);
+    ifs.close(); // 入力ファイルを上書きする場合に備えて、writeより先にcloseしておく。
     std::mt19937_64 mt(std::chrono::system_clock::now().time_since_epoch().count());
     std::shuffle(std::begin(buf), std::end(buf), mt);
     if (std::string(argv[3]) == "1") {
