@@ -737,13 +737,6 @@ namespace {
             buffer.assign(NodesPerIteration, HuffmanCodedPosAndEval());
             state = WaitFilling;
         }
-
-        void fill(std::ifstream& ifs) {
-            assert(state == WaitFilling);
-            state = Filling;
-            ifs.read((char*)buffer.data(), sizeof(HuffmanCodedPosAndEval) * NodesPerIteration);
-            state = WaitUsing;
-        }
     };
 
     // 教師データ読み込みの待ち時間を無くす為、２つのバッファを切り替えて使う。
@@ -759,13 +752,76 @@ namespace {
         TeacherBuffer& currentBuffer() { return teacherBuffers[index]; }
         void setAnotherBuffer() { index = index ^ 1; }
     };
+
+    // 複数のファイルを扱う std::ifstream のようなもの。
+    // 関数は必要なものだけを作った。
+    struct TeacherFilesStream {
+        std::vector<std::string> fileNames;
+        size_t fileIndex;
+        size_t currentFileSize;
+        bool eof_;
+        std::ifstream ifs;
+
+        explicit TeacherFilesStream(const std::vector<std::string>& f) : fileNames(f), fileIndex(), eof_() {
+            for (; fileIndex < fileNames.size(); ++fileIndex) {
+                const auto& file = fileNames[fileIndex];
+                ifs.open(file.c_str(), std::ios::binary);
+                if (ifs.is_open()) {
+                    currentFileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
+                    ifs.seekg(0, std::ios::beg);     // ストリームのポインタを一番前に戻して、これから先で使いやすいようにする
+                    break;
+                }
+            }
+        }
+        explicit operator bool() const {
+            return fileIndex < fileNames.size();
+        }
+        // ファイルサイズを直接取得する関数は ifstream には無いが、
+        // ここでは全てのファイルの合計のサイズを返す事にする。
+        size_t fileSize() const {
+            size_t sum = 0;
+            for (size_t i = 0; i < fileNames.size(); ++i) {
+                std::ifstream tmp_ifs(fileNames[i].c_str(), std::ios::binary);
+                const size_t fs = static_cast<size_t>(tmp_ifs.seekg(0, std::ios::end).tellg());
+                sum += fs;
+            }
+            return sum;
+        }
+        // ファイルの末端に到達したら、続きで次のファイルを読み込む。
+        void read(char* buf, const size_t size) {
+            size_t sum = 0;
+            for (; fileIndex < fileNames.size();) {
+                const int64_t before = ifs.tellg();
+                ifs.read(buf + sum, size - sum);
+                const int64_t after = ifs.tellg();
+                if (after == -1)
+                    sum += currentFileSize - before;
+                else
+                    sum += after - before;
+                if (sum == size)
+                    break;
+                if (ifs.eof()) {
+                    ifs.close();
+                    ifs.open(fileNames[++fileIndex].c_str(), std::ios::binary);
+                    currentFileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
+                    ifs.seekg(0, std::ios::beg);     // ストリームのポインタを一番前に戻して、これから先で使いやすいようにする
+                }
+            }
+            if (sum != size)
+                eof_ = true;
+        }
+        bool eof() const { return eof_; }
+    };
 }
 
 void use_teacher(Position& pos, std::istringstream& ssCmd) {
-    std::string teacherFileName;
     int threadNum;
-    ssCmd >> teacherFileName;
+    std::string teacherFileName;
+    std::vector<std::string> teacherFileNames;
     ssCmd >> threadNum;
+    while (ssCmd >> teacherFileName) {
+        teacherFileNames.push_back(teacherFileName);
+    }
     if (threadNum <= 0)
         exit(EXIT_FAILURE);
     std::vector<Searcher> searchers(threadNum);
@@ -786,7 +842,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     }
     if (teacherFileName == "-") // "-" なら棋譜ファイルを読み込まない。
         exit(EXIT_FAILURE);
-    std::ifstream ifs(teacherFileName.c_str(), std::ios::binary);
+    TeacherFilesStream ifs(teacherFileNames);
     if (!ifs)
         exit(EXIT_FAILURE);
 
@@ -869,9 +925,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     //Evaluator::init(pos.searcher()->options["Eval_Dir"]);
     copyEvalToDecimal(*evalBase); // 小数に直してコピー。
     //memcpy(averagedEvalBase.get(), evalBase.get(), sizeof(EvalBaseType));
-    const size_t fileSize = static_cast<size_t>(ifs.seekg(0, std::ios::end).tellg());
-    ifs.clear(); // 読み込み完了をクリアする。
-    ifs.seekg(0, std::ios::beg); // ストリームポインタを先頭に戻す。
+    const size_t fileSize = ifs.fileSize();
     const s64 MaxNodes = fileSize / sizeof(HuffmanCodedPosAndEval);
     std::atomic<s64> nodes(0); // 今回のイテレーションで読み込んだ学習局面数。
     //auto writeEval = [&] {
