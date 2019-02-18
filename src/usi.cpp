@@ -973,7 +973,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         //averageEval(*averagedEvalBase, *evalBase); // 平均化する。
         copyEvalToInteger(*evalBase); // 整数の評価値にコピー
         g_evalTable.clear(); // 評価関数のハッシュテーブルも更新しないと、これまで探索した評価値と矛盾が生じる。
-        if (iteration != 0 && iteration % 10 == 0) {
+        if (iteration != 0 && iteration % 1000 == 0) {
             //writeEval();
             writeSyn();
         }
