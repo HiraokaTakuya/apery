@@ -444,8 +444,8 @@ void make_teacher(std::istringstream& ssCmd) {
             std::vector<HuffmanCodedPosAndEval> hcpevec;
             GameResult gameResult = Draw;
             const Ply startPly = pos.gamePly();
-            Ply endPly = 0;
-            for (Ply ply = pos.gamePly(); ply < startPly + 400; ++ply, ++idx) { // 400 手くらいで終了しておく。
+            Ply endPly = startPly + 399; // 400 手くらいで終了しておく。
+            for (Ply ply = pos.gamePly(); ply <= endPly; ++ply, ++idx) {
                 const Key key = pos.getKey();
                 if (keyHash.find(key) == std::end(keyHash))
                     keyHash.insert(key);
