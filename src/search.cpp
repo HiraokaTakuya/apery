@@ -273,10 +273,12 @@ namespace {
         //     後手の場合27点以上の持点がある。
         //     点数の対象となるのは、宣言側の持駒と敵陣三段目以内に存在する玉を除く宣言側の駒のみである。
         const int ownBigPiecesCount = (pos.bbOf(Rook, Dragon, Bishop, Horse) & opponentsField & pos.bbOf(us)).popCount();
+        const int ownSmallPiecesCount = ownPiecesCount - ownBigPiecesCount;
         const Hand hand = pos.hand(us);
-        const int val = ownPiecesCount + (ownBigPiecesCount + hand.numOf<HRook>() + hand.numOf<HBishop>()) * 4
+        const int val = ownSmallPiecesCount
             + hand.numOf<HPawn>() + hand.numOf<HLance>() + hand.numOf<HKnight>()
-            + hand.numOf<HSilver>() + hand.numOf<HGold>();
+            + hand.numOf<HSilver>() + hand.numOf<HGold>()
+            + (ownBigPiecesCount + hand.numOf<HRook>() + hand.numOf<HBishop>()) * 5;
 #if defined LAW_24
         if (val < 31)
             return false;
