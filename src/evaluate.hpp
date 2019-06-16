@@ -191,21 +191,14 @@ template <typename EvalElementType> struct EvaluatorBase {
     constexpr size_t kpps_end_index() const { return sizeof(kpps)/sizeof(EvalElementType); }
     constexpr size_t kkps_end_index() const { return sizeof(kkps)/sizeof(EvalElementType); }
 
-    // KPP に関する対称な位置を若いインデックスに直したインデックスを返す。
-    // 負のインデックスは、正のインデックスに変換した位置の点数を引く事を意味する。
+    // KPP に関してi, jを入れ替えた場合と比べてインデックスが若い方を返す。
     int64_t minKPPIndex(Square ksq, EvalIndex i, EvalIndex j) {
         // i == j のKP要素はKKPの方で行うので、こちらでは何も有効なindexを返さない。
         if (i == j)
             return std::numeric_limits<int64_t>::max();
-
-        // 左右対称や、玉以外の2駒の入れ替えにより本質的に同じ位置関係のものは、常に同じアドレスを参照するようにする。
-        const auto invk = inverseFile(ksq);
-        const auto invi = inverseFileIndexIfOnBoard(i);
-        const auto invj = inverseFileIndexIfOnBoard(j);
-        auto p = std::min({&kpps.kpp[ksq][i][j], &kpps.kpp[ksq][j][i], &kpps.kpp[invk][invi][invj], &kpps.kpp[invk][invj][invi]});
+        auto p = std::min({&kpps.kpp[ksq][i][j], &kpps.kpp[ksq][j][i]});
         return p - oneArrayKPP(0);
     }
-    // KKP で対称な位置の中で最小のものを選ぶ。ただし、KKP の P は必ず味方の駒として扱うようにする。
     int64_t minKKPIndex(Square ksq0, Square ksq1, EvalIndex i) {
         if (ksq0 == ksq1)
             return std::numeric_limits<int64_t>::max();
@@ -219,26 +212,7 @@ template <typename EvalElementType> struct EvaluatorBase {
             if (ksq0 == isq || ksq1 == isq)
                 return std::numeric_limits<int64_t>::max();
         }
-        int sign = 1;
-        if (!kppIndexIsBlack(i)) {
-            const Square tmp = ksq0;
-            ksq0 = inverse(ksq1);
-            ksq1 = inverse(tmp);
-            i = kppIndexToOpponentIndex(i);
-            sign = -1;
-        }
-        if (SQ59 < ksq0) {
-            ksq0 = inverseFile(ksq0);
-            ksq1 = inverseFile(ksq1);
-            i = inverseFileIndexIfOnBoard(i);
-        }
-        else if (makeFile(ksq0) == File5 && SQ59 < ksq1) {
-            ksq1 = inverseFile(ksq1);
-            i = inverseFileIndexIfOnBoard(i);
-        }
-        else if (makeFile(ksq0) == File5 && makeFile(ksq1) == File5)
-            i = inverseFileIndexIfLefterThanMiddle(i);
-        return sign*(&kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0));
+        return &kkps.kkp[ksq0][ksq1][i] - oneArrayKKP(0);
     }
     void clear() { memset(this, 0, sizeof(*this)); } // float 型とかだと規格的に 0 は保証されなかった気がするが実用上問題ないだろう。
 };
@@ -280,8 +254,7 @@ struct EvaluatorGradient : public EvaluatorBase<std::array<std::atomic<float>, 2
         }
     }
 
-    // 点対称や線対称や、駒を入れ替えたような本質的に同じ価値の位置関係の値を、
-    // その中で最も若いインデックスの位置関係の部分に全て足し込む。
+    // 2駒を入れ替えた場合と比べてインデックスが若い方に足しこむ。
     void sumMirror() {
 #if defined _OPENMP
 #pragma omp parallel
