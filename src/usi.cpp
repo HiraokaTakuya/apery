@@ -699,7 +699,7 @@ namespace {
 #ifdef _OPENMP
 #pragma omp for
 #endif
-#if 1
+#if 0
             // 次元下げをしていないので、絶対に線対称や点対称の若いindexの位置関係がある場合はupdateを省く。
             for (int ksq = SQ11; ksq < SquareNoLeftNum; ++ksq) { // 5筋より左は使わない。
                 for (EvalIndex i = (EvalIndex)0; i < fe_end; ++i) {
