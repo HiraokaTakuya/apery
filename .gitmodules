@@ -1,0 +1,3 @@
+[submodule "bin/eval/20190224"]
+	path = bin/eval/20190224
+	url = https://bitbucket.org/hiraoka64/apery-evaluation-binaries-2019-02-24.git
