@@ -366,23 +366,14 @@ void make_teacher(std::istringstream& ssCmd) {
     std::string outputFileName;
     int threadNum;
     s64 teacherNodes; // 教師局面数
-    // このファイルが存在する間だけ、この関数を実行するようにする。
-    // ファイルの内容は使用しない。
-    // 複数人で共有していてお互いに管理者権限が無いサーバーで使用している時に、
-    // 他の人がこのプロセスを終了出来るようにするのが目的。
-    // 他の人がアクセス可能な場所にファイルを作成してプロセスを実行しておき、
-    // 他の人はプロセスを消したい時はファイルを消す事にする。
-    std::string stopFileName;
     ssCmd >> recordFileName;
     ssCmd >> outputFileName;
     ssCmd >> threadNum;
     ssCmd >> teacherNodes;
-    ssCmd >> stopFileName;
     std::cout << "record_file_name: " << recordFileName << std::endl;
     std::cout << "output_file_name: " << outputFileName << std::endl;
     std::cout << "thread_num: " << threadNum << std::endl;
     std::cout << "teacher_nodes: " << teacherNodes << std::endl;
-    std::cout << "stop_file_name: " << stopFileName << std::endl;
     if (threadNum <= 0) {
         std::cerr << "Error: thread num = " << threadNum << std::endl;
         exit(EXIT_FAILURE);
@@ -423,11 +414,11 @@ void make_teacher(std::istringstream& ssCmd) {
         std::cerr << "Error: cannot open " << outputFileName << std::endl;
         exit(EXIT_FAILURE);
     }
-    auto func = [&omutex, &ofs, &roots, &teacherNodes, &stopFileName](Position& pos, std::atomic<s64>& idx, const int threadID) {
+    auto func = [&omutex, &ofs, &roots, &teacherNodes](Position& pos, std::atomic<s64>& idx, const int threadID) {
         std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count() + threadID);
         std::uniform_int_distribution<s64> rootsDist(0, roots.size()-1);
         HuffmanCodedPos hcp;
-        while (fileExist(stopFileName) && idx < teacherNodes) {
+        while (idx < teacherNodes) {
             hcp = roots[rootsDist(mt)];
             setPosition(pos, hcp);
             randomMove(pos, mt); // 教師局面を増やす為、取得した元局面からランダムに動かしておく。
@@ -508,8 +499,8 @@ void make_teacher(std::istringstream& ssCmd) {
             ofs.write(reinterpret_cast<char*>(hcpevec.data()), sizeof(HuffmanCodedPosAndEval) * hcpevec.size());
         }
     };
-    auto progressFunc = [&teacherNodes, &stopFileName] (std::atomic<s64>& index, Timer& t) {
-        while (fileExist(stopFileName)) {
+    auto progressFunc = [&teacherNodes] (std::atomic<s64>& index, Timer& t) {
+        while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(5)); // 指定秒だけ待機し、進捗を表示する。
             const s64 madeTeacherNodes = index;
             const double progress = static_cast<double>(madeTeacherNodes) / teacherNodes;
