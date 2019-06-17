@@ -25,13 +25,13 @@ Apery は GNU General Public License version 3 またはそれ以降のバージ
 使い方
 
 最初に、実行ファイルは apery/bin フォルダに置くことを想定しています。
+ご自身でビルドした場合は apery/src に実行ファイルが出来ますので、適宜 apery/bin に移動させて下さい。
 
 将棋所での使い方のみを説明します。
 将棋所を立ち上げます。
 
 Windows の場合
 Shogidokoro.exe をダブルクリックして下さい。
-立ち上がらない場合は、.NET Framework が古い可能性が高いです。新しいものにして下さい。
 
 
 Linux の場合
@@ -54,32 +54,25 @@ usiok が表示されない場合は、ご利用の PC では Apery が動作し
 
 開発者向け注意点
 
-Linux, Windows で g++-4.8 以上のバージョンで動作確認をしています。
-Mac では clang++ で動作確認しています。(clang++ が OpenMP に対応していない場合は Makefile の -fopenmp を消して下さい。)
-Visual Studio でも UTF8 BOM有り にすればほとんど修正無しでビルド出来ます。
+Linux, Windows で g++-7 以上のバージョンで動作確認をしています。
+Visual Studio でビルドする際は、
+プラットフォームを x64 にし、
+C/C++ コマンドライン に
+/source-charset:utf-8 /bigobj
+を記載して下さい。
 
 評価関数の機械学習をするには
-ifdef.hpp で LEARN を有効にして下さい。
-apery をビルドして、
-./apery l <学習用棋譜ファイル名(先後利用)> <学習用棋譜ファイル名(先手のみ利用)> <学習用棋譜ファイル名(後手のみ利用)> <使用する棋譜の数(0なら全て使うという意味)> <並列数(parse1)> <並列数(parse2)> <最低探索深さ> <最大探索深さ> <更新ステップ数> <1イテレーションに使う棋譜数> <最初のステップでの更新する最大値(64まで)> <最後のステップでの更新する最大値(64まで)> <L1正則化のペナルティを使用するかどうか(0または1)>
-とコマンド入力すると、Bonanza Methodでの学習を開始します。
-棋譜の形式はCSA1行形式です。詳しくは learner.hpp のコメントを参照して下さい。
-棋譜はプロの棋譜60000棋譜程度、最低探索深さ 3 最大探索深さ 4 で学習する事を推奨します。
+ifdef.hpp を修正して LEARN を有効にして下さい。
 
 ./apery make_teacher <対局開始局面集データ(ハフマン符号化したもの)> <出力教師データ> <スレッド数> <出力教師局面数>
 とコマンドすると、強化学習用の教師データを生成します。
 
-./apery_use_teacher <教師データ> <スレッド数>
-とコマンドすると、強化学習を開始します。既存評価関数から学習する際には、
-KPP_synthesized.bin, KKP_synthesized.bin, KK_synthesized.bin はそれぞれ
-KPP_some_synthesized.bin, KKP_some_synthesized.bin, KK_some_synthesized.bin に名前を変更しておいて下さい。
-
+./apery use_teacher <教師データ> <スレッド数>
+とコマンドすると、強化学習を開始します。
+評価関数バイナリが上書きされるので気を付けて下さい。
 
 定跡を生成するには
 apery をビルドして、
 ./apery b <定跡用棋譜ファイル名>
 とコマンド入力すると定跡生成を開始します。
 棋譜の形式はCSA1行形式です。詳しくは book.cpp のコメントを参照して下さい。
-
-定跡はfloodgate上位のソフトが上手く指した棋譜のみを抽出して生成する事が出来ます。
-utils/onesidebook/oneside_filter.rb で floodgate の棋譜を抽出して CSA1行形式で出力しています。
