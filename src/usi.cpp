@@ -822,6 +822,10 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
     while (ssCmd >> teacherFileName) {
         teacherFileNames.push_back(teacherFileName);
     }
+    {
+        std::mt19937 mt(std::chrono::system_clock::now().time_since_epoch().count());
+        std::shuffle(std::begin(teacherFileNames), std::end(teacherFileNames), mt);
+    }
     if (threadNum <= 0)
         exit(EXIT_FAILURE);
     std::vector<Searcher> searchers(threadNum);
