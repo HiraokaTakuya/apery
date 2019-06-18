@@ -1278,6 +1278,7 @@ void Searcher::doUSICommandLoop(int argc, char* argv[]) {
             SYNCCOUT << "readyok" << SYNCENDL;
         }
         else if (token == "setoption") setOption(ssCmd);
+        else if (token == "wait"     ) pos.searcher()->threads.main()->waitForSearchFinished();
         else if (token == "write_eval") { // 対局で使う為の評価関数バイナリをファイルに書き出す。
             if (!evalTableIsRead)
                 Evaluator::init(options["Eval_Dir"]);
