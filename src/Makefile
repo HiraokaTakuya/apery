@@ -28,7 +28,7 @@ DEPENDS  = $(OBJECTS:.o=.d)
 $(TARGET): $(OBJECTS) $(LIBS)
 	$(COMPILER) -o $@ $^ $(LDFLAGS) $(CFLAGS)
 
-$(OBJDIR)/%.o: %.cpp
+$(OBJDIR)/%.o: %.cpp Makefile
 	@[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
 	$(COMPILER) $(CFLAGS) $(INCLUDE) -o $@ -c $<
 
