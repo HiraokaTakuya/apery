@@ -2,15 +2,17 @@
 #+AUTHOR: 平岡 拓也
 #+EMAIL: hiraoka64@gmail.com
 * Engine Binaries
-- [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC28][第28回世界コンピュータ将棋選手権バージョン (for Windows 64bit) GitHub からダウンロード]]
+- [[https://github.com/HiraokaTakuya/apery_rust/releases/tag/WCSC30][第30回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]](2020年の第30回世界コンピュータ将棋選手権は中止になりましたが、開催された時の為に準備していたバージョンです。)
 
 * Source Code
-- [[https://github.com/HiraokaTakuya/apery][Apery on GitHub]]
+- [[https://github.com/HiraokaTakuya/apery_rust][Apery on GitHub (Current repository written in Rust)]]
+- [[https://github.com/HiraokaTakuya/apery][Apery on GitHub (Previous repository written in C++)]]
 
 * 使い方
 - [[./howtouse.html][Aperyの使い方]]
 
 * Previous Versions
+- [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC28][第28回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT5][第5回将棋電王トーナメント version (for Windows 64bit)]]
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/SDT4][第4回将棋電王トーナメント version (for Windows 64bit) (出場ソフト名「浮かむ瀬」)]]
 - [[https://github.com/HiraokaTakuya/apery/releases/tag/WCSC26][第26回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]]
