@@ -1,8 +1,12 @@
+重要なお知らせ
+
+開発は https://github.com/HiraokaTakuya/apery_rust に移行しましたので、
+最新版の取得や、開発にご参加頂く場合は、そちらを参照して下さい。
+
 概要
 
 Apery は USI プロトコルの将棋エンジンです。
-USI エンジンに対応した GUI ソフトを使って下さい。
-将棋所 以外で動作検証しておりませんので、将棋所 の使用を推奨します。
+USI エンジンに対応した GUI ソフト (将棋所やShogiGUIなど) を使って下さい。
 Apery は GNU General Public License version 3 またはそれ以降のバージョンのもとで配布されます。
 主にチェスエンジンの Stockfish の実装を参考にしています。
 将棋固有のデータ構造、評価関数等、Bonanza の実装を非常によく参考にしています。
