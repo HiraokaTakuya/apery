@@ -2,7 +2,7 @@
 #+AUTHOR: 平岡 拓也
 #+EMAIL: hiraoka64@gmail.com
 * Engine Binaries
-- [[https://github.com/HiraokaTakuya/apery_rust/releases/tag/WCSC30][第30回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]](2020年の第30回世界コンピュータ将棋選手権は中止になりましたが、開催された時の為に準備していたバージョンです。)
+- [[https://github.com/HiraokaTakuya/apery_rust/releases/tag/v1.1.0][第30回世界コンピュータ将棋選手権バージョン (for Windows 64bit)]](2020年の第30回世界コンピュータ将棋選手権は中止になりましたが、開催された時の為に準備していたバージョンです。)
 
 * Source Code
 - [[https://github.com/HiraokaTakuya/apery_rust][Apery on GitHub (Current repository written in Rust)]]
