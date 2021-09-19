@@ -243,7 +243,7 @@ inline double dsigmoidWinningRate(const double x) {
 // 学習でqsearchだけ呼んだ時のPVを取得する為の関数。
 // RootMoves が存在しない為、別の関数とする。
 template <bool Undo> // 局面を戻し、moves に PV を書き込むなら true。末端の局面に移動したいだけなら false
-bool extractPVFromTT(Position& pos, Move* moves, const Move bestMove) {
+bool extractPVFromTT(Position& pos, Move* moves, const Move /*bestMove*/) {
     StateInfo state[MaxPly+7];
     StateInfo* st = state;
     TTEntry* tte;
@@ -860,7 +860,7 @@ void use_teacher(Position& pos, std::istringstream& ssCmd) {
         }
     };
 
-    auto func = [&teacherBuffers](Position& pos, EvaluatorGradient& evaluatorGradient, double& loss, std::atomic<s64>& nodes, const s64 iteration, const s64 MaxNodes) {
+    auto func = [&teacherBuffers](Position& pos, EvaluatorGradient& evaluatorGradient, double& /*loss*/, std::atomic<s64>& nodes, const s64 iteration, const s64 MaxNodes) {
         SearchStack ss[2];
         HuffmanCodedPosAndEval hcpe;
         pos.searcher()->tt.clear();

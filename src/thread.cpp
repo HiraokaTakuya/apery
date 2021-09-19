@@ -109,7 +109,7 @@ s64 ThreadPool::nodesSearched() const {
     return nodes;
 }
 
-void ThreadPool::startThinking(const Position& pos, const LimitsType& limits, StateListPtr& states) {
+void ThreadPool::startThinking(const Position& pos, const LimitsType& limits, StateListPtr& /*states*/) {
     main()->waitForSearchFinished();
     pos.searcher()->signals.stopOnPonderHit = pos.searcher()->signals.stop = false;
     pos.searcher()->limits = limits;

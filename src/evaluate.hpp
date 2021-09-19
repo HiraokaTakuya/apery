@@ -314,7 +314,6 @@ using KKPEvalElementType0 = EvalElementType[fe_end];
 using KKPEvalElementType1 = KKPEvalElementType0[SquareNum];
 using KKPEvalElementType2 = KKPEvalElementType1[SquareNum];
 struct Evaluator /*: public EvaluatorBase<EvalElementType>*/ {
-    using Base = EvaluatorBase<EvalElementType>;
     static bool allocated;
     static KPPEvalElementType1* KPP;
     static KKPEvalElementType1* KKP;

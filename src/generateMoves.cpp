@@ -318,7 +318,7 @@ namespace {
             const Square from = fromBB.firstOneFromSQ11();
             const PieceType pt = pieceToPieceType(pos.piece(from));
             switch (pt) {
-            case Empty    : assert(false); break; // 最適化の為のダミー
+            case Occupied : assert(false); break; // 最適化の為のダミー
             case Pawn     : case Lance    : case Knight   : case Silver   : case Bishop   : case Rook     :
                 (*moveList++).move = ((canPromote(us, makeRank(to)) | canPromote(us, makeRank(from))) ?
                                       makePromoteMove<Capture>(pt, from, to, pos) :
