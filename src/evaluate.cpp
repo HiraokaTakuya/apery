@@ -28,8 +28,8 @@ EvalIndex KPPIndexBeginArray[fe_end];
 bool KPPIndexIsBlackArray[fe_end];
 
 bool Evaluator::allocated = false;
-KPPEvalElementType1 *Evaluator::KPP;
-KKPEvalElementType1 *Evaluator::KKP;
+EvalElementType Evaluator::KPP[SquareNum][fe_end][fe_end];
+EvalElementType Evaluator::KKP[SquareNum][SquareNum][fe_end];
 EvaluateHashTable g_evalTable;
 
 const EvalIndex kppArray[31] = {
