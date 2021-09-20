@@ -232,7 +232,7 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
                 }
                 if (isFind == false) {
 #if defined MAKE_SEARCHED_BOOK
-                    states->push_back(StateInfo());
+                    states->emplace_back();
                     pos.doMove(move, states->back());
 
                     std::istringstream ssCmd("byoyomi 1000");
@@ -255,7 +255,7 @@ void makeBook(Position& pos, std::istringstream& ssCmd) {
                     bookMap[key].push_back(be);
                 }
             }
-            states->push_back(StateInfo());
+            states->emplace_back();
             pos.doMove(move, states->back());
         }
     }

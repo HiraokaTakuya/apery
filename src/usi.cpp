@@ -487,7 +487,7 @@ void make_teacher(std::istringstream& ssCmd) {
                         pos.undoMove(pv[--i]);
                 }
 
-                states->push_back(StateInfo());
+                states->emplace_back();
                 pos.doMove(bestMove, states->back());
             }
             // 勝敗を1局全てに付ける。
@@ -1158,7 +1158,7 @@ void setPosition(Position& pos, std::istringstream& ssCmd) {
     while (ssCmd >> token) {
         const Move move = usiToMove(pos, token);
         if (!move) break;
-        pos.searcher()->states->push_back(StateInfo());
+        pos.searcher()->states->emplace_back();
         pos.doMove(move, pos.searcher()->states->back());
         ++currentPly;
     }
