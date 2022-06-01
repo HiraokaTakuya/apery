@@ -184,6 +184,35 @@ std::ostream& operator << (std::ostream& os, const OptionsMap& om) {
     return os;
 }
 
+template <bool Root>
+u64 perft(Position& pos, u32 depth) {
+    const auto leaf = depth == 2;
+    StateInfo st;
+    u64 nodes = 0;
+    for (MoveList<LegalAll> ml(pos); !ml.end(); ++ml) {
+        u64 cnt;
+        if (Root && depth <= 1) {
+            cnt = 1;
+            nodes += 1;
+        } else {
+            Move m = ml.move();
+            pos.doMove(m, st);
+            if (leaf) {
+                MoveList<LegalAll> ml(pos);
+                cnt = ml.size();
+            } else {
+                cnt = perft<false>(pos, depth - 1);
+            }
+            nodes += cnt;
+            pos.undoMove(m);
+        }
+        if (Root) {
+            std::cout << ml.move().toUSI() << " : " << cnt << "\n";
+        }
+    }
+    return nodes;
+}
+
 void go(const Position& pos, std::istringstream& ssCmd) {
     LimitsType limits;
     std::string token;
@@ -204,6 +233,17 @@ void go(const Position& pos, std::istringstream& ssCmd) {
         else if (token == "searchmoves") {
             while (ssCmd >> token)
                 limits.searchmoves.push_back(usiToMove(pos, token));
+        }
+        else if (token == "perft"      ) {
+            Position pos_perft = Position(pos, pos.searcher()->threads.main());
+            u32 d;
+            ssCmd >> d;
+            Timer t = Timer::currentTime();
+            const auto ret = perft<true>(pos_perft, d);
+            const int elapsed = t.elapsed();
+            std::cout << "perft " << d << ": " << ret
+                      << "\nelapsed: " << elapsed << "[ms]" << std::endl;
+            return;
         }
     }
     if      (limits.moveTime != 0)
